@@ -1,0 +1,8 @@
+VENUZ_BACKUP_SavageMode/
+BACKUP_*
+node_modules/
+.DS_Store
+.env
+.env.local
+venuz-con-bots/.next/
+venuz-con-bots/node_modules/
