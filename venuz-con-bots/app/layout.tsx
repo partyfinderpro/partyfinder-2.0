@@ -27,6 +27,10 @@ export const viewport: Viewport = {
   themeColor: '#0a0a0a',
 }
 
+import OnboardingModal from '@/components/OnboardingModal';
+
+// ... (existing imports)
+
 export default function RootLayout({
   children,
 }: {
@@ -34,10 +38,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className="dark">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      </head>
+      {/* ... (head) */}
       <body className="overflow-x-hidden">
         {/* Background effects */}
         <div className="fixed inset-0 z-0 pointer-events-none">
@@ -46,13 +47,12 @@ export default function RootLayout({
           <div className="absolute -bottom-8 left-20 w-96 h-96 bg-venuz-gold opacity-10 rounded-full mix-blend-multiply filter blur-3xl animate-pulse-slow animation-delay-4000" />
         </div>
 
+        <OnboardingModal />
+
         {/* Main content */}
         <div className="relative z-10">
           {children}
         </div>
-
-        {/* Lateral fixed banners */}
-
       </body>
     </html>
   )

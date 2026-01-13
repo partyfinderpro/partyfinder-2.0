@@ -38,6 +38,10 @@ jobs:
           echo "🤖 1. Scraping Telegram..."
           node bots/telegram-scraper.js || echo "⚠️ Telegram Scraper failed but continuing..."
           
+          echo "🤖 1.5. Scraping Facebook (Fiestas Patronales)..."
+          npx playwright install chromium
+          node bots/facebook-events-scraper.js "Fiestas patronales" "Puerto Vallarta" || echo "⚠️ Facebook Scraper failed but continuing..."
+          
           echo "✨ 2. Curating with Gemini AI..."
           node scripts/autonomous-curator-gemini.js || echo "⚠️ Gemini Curator failed but continuing..."
           
