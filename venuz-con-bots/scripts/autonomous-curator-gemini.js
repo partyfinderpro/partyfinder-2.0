@@ -4,7 +4,7 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // ⚙️ CONFIGURATION
 const API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_PLACES_API_KEY;
-const MODEL_NAME = 'gemini-2.0-flash';
+const MODEL_NAME = 'gemini-flash-latest';
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
@@ -31,7 +31,7 @@ Ubicación detectada: ${item.location_text || 'Puerto Vallarta'}
 INSTRUCCIONES:
 1. Mejora el título si está sucio (ej: "MANDALA PV" -> "Mandala Puerto Vallarta").
 2. Escribe una descripción SEDUCTORA y corta (máx 250 caracteres) en español. Usa un tono premium, vibrante y exclusivo.
-3. Clasifica el lugar con UN solo término de esta lista: Nightclub, Beach Club, Bar, Restaurant, Lounge, Adult Entertainment, Spa, Evento.
+3. Clasifica el lugar con UN solo término de esta lista EXACTA (en minúsculas): club, beach, bar, restaurant, show, escort, masaje, tabledance. (Usa 'club' para Nightclubs/Antros, 'beach' para Beach Clubs, 'show' para eventos/conciertos).
 4. Genera 3 keywords relevantes (ej: "Open-air, House Music, Ocean View").
 
 RESPONDE ÚNICAMENTE EN FORMATO JSON VÁLIDO (sin bloques de código markdown):
@@ -52,7 +52,10 @@ RESPONDE ÚNICAMENTE EN FORMATO JSON VÁLIDO (sin bloques de código markdown):
 
         return JSON.parse(text);
     } catch (error) {
-        console.error(`❌ Error con Gemini para "${item.title}":`, error.message);
+        console.log(`❌ Error con Gemini para "${item.title}":`, error);
+        if (error.response) {
+            console.log('Error details:', JSON.stringify(error.response, null, 2));
+        }
         return null;
     }
 }

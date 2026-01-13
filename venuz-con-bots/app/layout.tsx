@@ -52,16 +52,7 @@ export default function RootLayout({
         </div>
 
         {/* Lateral fixed banners */}
-        <div className="hidden xl:block fixed left-0 top-1/2 -translate-y-1/2 -rotate-90 origin-left z-50">
-          <div className="bg-venuz-pink/20 backdrop-blur-md px-6 py-2 border border-venuz-pink/30 rounded-t-xl">
-            <span className="text-venuz-pink font-bold text-sm tracking-[0.5em] whitespace-nowrap">ESPACIO PUBLICITARIO</span>
-          </div>
-        </div>
-        <div className="hidden xl:block fixed right-0 top-1/2 -translate-y-1/2 rotate-90 origin-right z-50">
-          <div className="bg-venuz-pink/20 backdrop-blur-md px-6 py-2 border border-venuz-pink/30 rounded-t-xl">
-            <span className="text-venuz-pink font-bold text-sm tracking-[0.5em] whitespace-nowrap">ESPACIO PUBLICITARIO</span>
-          </div>
-        </div>
+
       </body>
     </html>
   )

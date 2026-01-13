@@ -35,7 +35,7 @@ async function searchGooglePlace(name, location = 'Puerto Vallarta') {
 
         // Get detailed info
         const detailsResponse = await fetch(
-            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=rating,user_ratings_total,opening_hours,formatted_phone_number,website,url,price_level&key=${GOOGLE_API_KEY}`
+            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=rating,user_ratings_total,opening_hours,formatted_phone_number,website,url,price_level,formatted_address&key=${GOOGLE_API_KEY}`
         );
 
         const details = await detailsResponse.json();
@@ -55,12 +55,11 @@ async function enrichContent() {
         return;
     }
 
-    // 1. Obtener contenido sin datos de Google
-    // Buscamos items que NO tengan google_place_id o que sea NULL
+    // 1. Obtener contenido sin datos de Google (o que falló antes)
     const { data: contents, error: fetchError } = await supabase
         .from('content')
         .select('*')
-        .is('google_place_id', null)
+        .or('google_place_id.is.null,google_place_id.eq.NOT_FOUND')
         .limit(10); // Procesar de 10 en 10
 
     if (fetchError) {
@@ -69,7 +68,7 @@ async function enrichContent() {
     }
 
     if (!contents || contents.length === 0) {
-        console.log('✅ Todo el contenido ya está enriquecido (o no hay nada pendiente en este lote).');
+        console.log('✅ Todo el contenido ya está enriquecido.');
         return;
     }
 
@@ -84,18 +83,18 @@ async function enrichContent() {
                 // 3. Actualizar Supabase con datos enriquecidos
                 const updatePayload = {
                     rating: placeData.rating,
-                    total_ratings: placeData.user_ratings_total,
-                    is_open_now: placeData.opening_hours?.open_now,
+                    total_ratings: placeData.user_ratings_total, // Mapped to existing column
+                    // is_open_now: placeData.opening_hours?.open_now, 
                     google_maps_url: placeData.url,
-                    google_place_id: placeData.place_id || 'FOUND_BUT_NO_ID', // Fallback
-                    phone: placeData.formatted_phone_number,
+                    google_place_id: placeData.place_id || 'FOUND_BUT_NO_ID',
+                    phone: placeData.formatted_phone_number, // Mapped to existing column
                     website: placeData.website,
                     price_level: placeData.price_level,
+                    // formatted_address: placeData.formatted_address // Column doesn't exist, omit
                 };
 
                 // Si hay horarios (weekday_text es array de strings)
                 if (placeData.opening_hours && placeData.opening_hours.weekday_text) {
-                    // Convertimos a JSON o texto según tu schema. Supabase JSONB aguanta arrays.
                     updatePayload.opening_hours = placeData.opening_hours.weekday_text;
                 }
 

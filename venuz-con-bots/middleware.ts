@@ -5,16 +5,16 @@ import type { NextRequest } from 'next/server';
 
 export async function middleware(req: NextRequest) {
     const res = NextResponse.next();
-    const supabase = createMiddlewareClient({ req, res });
+    // const supabase = createMiddlewareClient({ req, res });
 
     // Refrescar sesión si existe
-    const {
-        data: { session },
-    } = await supabase.auth.getSession();
+    // const {
+    //     data: { session },
+    // } = await supabase.auth.getSession();
 
     // Log para debugging
     console.log('[Middleware] Path:', req.nextUrl.pathname);
-    console.log('[Middleware] Session exists:', !!session);
+    // console.log('[Middleware] Session exists:', !!session);
 
     return res;
 }
