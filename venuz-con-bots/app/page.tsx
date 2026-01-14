@@ -43,25 +43,53 @@ export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
-    fetchContent();
+    // 📍 ZERO FRICTION: Intentar obtener ubicación silenciosamente al inicio
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        console.log('📍 [VENUZ] Ubicación detectada:', position.coords);
+        fetchNearbyContent(position.coords.latitude, position.coords.longitude);
+      },
+      (error) => {
+        console.log('📍 [VENUZ] Ubicación no disponible o denegada, cargando feed estándar.');
+        fetchDefaultContent();
+      }
+    );
   }, []);
 
-  async function fetchContent() {
-    console.log('🔍 [VENUZ] Starting content fetch...');
-    console.log('🔍 [VENUZ] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'NOT SET');
+  // 🌍 Opción A: Cargar contenido cercano (RPC)
+  async function fetchNearbyContent(lat: number, lng: number) {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .rpc('get_nearby_places', {
+          user_lat: lat,
+          user_long: lng,
+          radius_meters: 20000 // 20km a la redonda
+        });
+
+      if (error) throw error;
+      console.log('✅ [VENUZ] Lugares cercanos cargados:', data?.length);
+      setContent(data || []);
+    } catch (error) {
+      console.error('❌ Error cargando cercanos:', error);
+      fetchDefaultContent(); // Fallback si falla el RPC
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // 📅 Opción B: Cargar contenido por fecha (Default)
+  async function fetchDefaultContent() {
+    setLoading(true);
+    console.log('🔍 [VENUZ] Fetching default content...');
 
     try {
-      // Simplified query for flattened schema
       const { data, error } = await supabase
         .from('content')
         .select('*')
         .eq('active', true)
         .order('scraped_at', { ascending: false })
         .limit(50);
-
-      console.log('🔍 [VENUZ] Query completed');
-      console.log('🔍 [VENUZ] Error:', error);
-      console.log('🔍 [VENUZ] Data count:', data?.length || 0);
 
       if (error) throw error;
       setContent(data || []);

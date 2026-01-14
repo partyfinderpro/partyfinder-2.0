@@ -29,6 +29,7 @@ export const viewport: Viewport = {
 
 import OnboardingModal from '@/components/OnboardingModal';
 import { AuthProvider } from '@/context/AuthContext';
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export default function RootLayout({
   children,
@@ -50,6 +51,7 @@ export default function RootLayout({
           {/* Main content */}
           <div className="relative z-10">
             {children}
+            <SpeedInsights />
           </div>
         </AuthProvider>
       </body>
