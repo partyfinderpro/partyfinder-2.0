@@ -97,7 +97,9 @@ export default function Home() {
     { id: 'masaje', name: 'Masajes', icon: '💆' },
     { id: 'restaurante', name: 'Restaurantes', icon: '🍽️' },
     { id: 'beach', name: 'Beach Clubs', icon: '🏖️' },
+    { id: 'hotel', name: 'Hoteles', icon: '🏨' },
   ];
+
 
   return (
     <div className="h-screen bg-black overflow-hidden flex flex-col">
