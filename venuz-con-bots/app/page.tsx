@@ -105,22 +105,17 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10 group focus-within:ring-2 focus-within:ring-venuz-pink/50 transition-all">
-            <Search className="w-4 h-4 text-gray-500 group-hover:text-venuz-pink transition-colors" />
-            <input
-              type="text"
-              placeholder="Buscar planes..."
-              className="bg-transparent border-none outline-none text-sm w-48 placeholder:text-gray-600"
-            />
-          </div>
-          <button className="p-2 text-gray-400 hover:text-venuz-pink transition-colors relative">
-            <Bell className="w-6 h-6" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-venuz-pink rounded-full" />
+        <div className="flex items-center gap-6">
+          <button className="flex items-center gap-2 text-gray-400 hover:text-venuz-pink transition-colors group">
+            <Bell className="w-5 h-5 group-hover:animate-bounce" />
+            <span className="text-sm font-medium">Notificaciones</span>
           </button>
-          <button className="hidden lg:flex venuz-button py-2 px-6 text-sm">
-            Destacados
+
+          <button className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-venuz-pink to-venuz-red text-white font-bold text-sm shadow-glow-pink hover:scale-105 transition-all">
+            <span>🔥</span>
+            <span>Destacados</span>
           </button>
+
           <button
             onClick={() => setIsMenuOpen(true)}
             className="lg:hidden p-2 text-white bg-venuz-pink/20 rounded-xl"
@@ -133,24 +128,28 @@ export default function Home() {
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar Izquierda - EXCLUSIVA DESKTOP */}
         <aside className="hidden lg:flex flex-col w-[280px] border-r border-white/5 bg-black p-6 gap-8 overflow-y-auto">
-          <div className="space-y-2">
-            {navItems.map(item => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group"
-                >
-                  <Icon className="w-5 h-5 group-hover:text-venuz-pink transition-colors" />
-                  <span className="font-medium">{item.name}</span>
-                </button>
-              );
-            })}
+          <div className="space-y-1">
+            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl bg-venuz-pink/10 text-venuz-pink border border-venuz-pink/20 group">
+              <TrendingUp className="w-5 h-5" />
+              <span className="font-bold">Inicio</span>
+            </button>
+            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group">
+              <Zap className="w-5 h-5" />
+              <span className="font-medium">Tendencias</span>
+            </button>
+            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group">
+              <MapPin className="w-5 h-5" />
+              <span className="font-medium">Cerca de mí</span>
+            </button>
+            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group">
+              <Star className="w-5 h-5" />
+              <span className="font-medium">Favoritos</span>
+            </button>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-4">
-              Categorías
+            <h3 className="text-xs font-black text-venuz-pink uppercase tracking-[0.2em] px-4">
+              CATEGORÍAS
             </h3>
             <div className="space-y-1">
               {categories.map(cat => (
@@ -205,18 +204,16 @@ export default function Home() {
                 ))}
 
                 {filteredContent.length === 0 && (
-                  <div className="h-full flex items-center justify-center text-center p-6 bg-transparent">
-                    <div className="venuz-card p-12 glass-strong">
-                      <p className="text-2xl text-gray-500 mb-6">
-                        😔 No hay contenido en esta categoría
-                      </p>
-                      <button
-                        onClick={() => setFilter('all')}
-                        className="venuz-button"
-                      >
-                        Ver todo
-                      </button>
-                    </div>
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-6">
+                    <p className="text-2xl text-gray-500 font-medium flex items-center gap-3">
+                      <span>😔</span> No hay contenido en esta categoría
+                    </p>
+                    <button
+                      onClick={() => setFilter('all')}
+                      className="px-10 py-4 rounded-full bg-venuz-pink text-white font-bold text-lg shadow-glow-pink hover:scale-105 active:scale-95 transition-all"
+                    >
+                      Ver todo
+                    </button>
                   </div>
                 )}
               </>
@@ -237,69 +234,65 @@ export default function Home() {
 
         {/* Sidebar Derecha - PUBLICIDAD & ESTADÍSTICAS */}
         <aside className="hidden xl:flex flex-col w-[350px] border-l border-white/5 bg-black p-6 gap-8 overflow-y-auto">
-          {/* Banner Publicitario Premium */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between px-2">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Publicidad</h3>
-              <button className="text-[10px] text-venuz-pink hover:underline uppercase font-bold">Anúnciate</button>
+          {/* Espacio Publicitario Gradient Box */}
+          <div className="relative aspect-video rounded-3xl overflow-hidden bg-gradient-to-br from-venuz-pink via-red-500 to-amber-400 p-8 flex flex-col justify-center">
+            <div className="flex items-center gap-2 mb-2">
+              <Bell className="w-5 h-5 text-white/80" />
+              <h4 className="text-white font-black text-xl tracking-tight">ESPACIO PUBLICITARIO</h4>
             </div>
+            <p className="text-white/90 text-sm font-medium">Promociona tu negocio aquí</p>
 
-            <div className="group relative aspect-[4/5] rounded-3xl overflow-hidden cursor-pointer border border-white/10">
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-500/20 to-amber-500/20 group-hover:scale-110 transition-transform duration-700" />
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-black/40 backdrop-blur-sm">
-                <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center mb-6 ring-1 ring-white/20">
-                  <TrendingUp className="w-8 h-8 text-white" />
-                </div>
-                <h4 className="text-xl font-display font-bold text-white mb-2 leading-tight">TU NEGOCIO AQUÍ</h4>
-                <p className="text-gray-400 text-sm mb-6 leading-relaxed">Promociona tu club, bar o servicio con banners premium que destacan.</p>
-                <button className="w-full py-3 rounded-2xl bg-white text-black font-bold text-sm hover:bg-venuz-pink hover:text-white transition-colors">
-                  Contactar Ventas
-                </button>
-              </div>
-
-              {/* Decorative Glow */}
-              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-venuz-pink/30 rounded-full blur-[80px]" />
-            </div>
+            {/* Minimal decoration */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-white/20 blur-[60px] rounded-full pointer-events-none" />
           </div>
 
-          {/* Estadísticas / Actividad */}
           <div className="space-y-6">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest px-2">Estadísticas Hoy</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="glass rounded-2xl p-4 space-y-2 border border-white/5">
-                <p className="text-gray-400 text-[10px] uppercase font-bold">Eventos</p>
-                <p className="text-2xl font-display font-bold text-white">42</p>
-                <div className="flex items-center gap-1 text-[10px] text-green-500">
-                  <TrendingUp className="w-3 h-3" /> +12%
-                </div>
+            <h3 className="text-xs font-black text-venuz-pink uppercase tracking-[0.2em] px-2 flex items-center gap-2">
+              📊 ESTADÍSTICAS HOY
+            </h3>
+            <div className="space-y-4 px-2">
+              <div className="flex items-center justify-between group">
+                <span className="text-gray-400 text-sm font-medium">Eventos totales</span>
+                <span className="text-xl font-bold text-venuz-gold">0</span>
               </div>
-              <div className="glass rounded-2xl p-4 space-y-2 border border-white/5">
-                <p className="text-gray-400 text-[10px] uppercase font-bold">Vistas</p>
-                <p className="text-2xl font-display font-bold text-white">12.5k</p>
-                <div className="flex items-center gap-1 text-[10px] text-green-500">
-                  <TrendingUp className="w-3 h-3" /> +24%
+              <div className="flex items-center justify-between group">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-venuz-red animate-pulse" />
+                  <span className="text-gray-400 text-sm font-medium">En vivo</span>
                 </div>
+                <span className="text-xl font-bold text-venuz-gold">0</span>
+              </div>
+              <div className="flex items-center justify-between group">
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4 text-venuz-gold" />
+                  <span className="text-gray-400 text-sm font-medium">Destacados</span>
+                </div>
+                <span className="text-xl font-bold text-venuz-gold">0</span>
+              </div>
+              <div className="flex items-center justify-between group">
+                <div className="flex items-center gap-2">
+                  <Search className="w-4 h-4 text-gray-500" />
+                  <span className="text-gray-400 text-sm font-medium">Vistas totales</span>
+                </div>
+                <span className="text-xl font-bold text-venuz-gold">0</span>
               </div>
             </div>
           </div>
 
-          {/* Footer Sidebar */}
-          <div className="mt-auto space-y-4">
-            <div className="glass rounded-2xl p-4 flex items-center justify-between border border-white/5 group cursor-pointer hover:border-venuz-pink/30 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-venuz-pink/10 flex items-center justify-center group-hover:shadow-glow-pink transition-all">
-                  <HelpCircle className="w-5 h-5 text-venuz-pink" />
+          {/* Banner Premium Bottom */}
+          <div className="mt-auto group cursor-pointer">
+            <div className="venuz-card p-6 border border-white/5 group-hover:border-venuz-pink/30 hover:bg-white/5 transition-all">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-venuz-pink/10 text-venuz-pink">
+                  <Star className="w-5 h-5 fill-current" />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-white">Centro de Ayuda</p>
-                  <p className="text-[10px] text-gray-500 tracking-tight">Preguntas frecuentes</p>
-                </div>
+                <h5 className="font-black text-lg tracking-tight">BANNER PREMIUM</h5>
               </div>
-              <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-white" />
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500 font-bold">$200 USD/mes</span>
+                <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
+              </div>
             </div>
-            <p className="text-[10px] text-gray-600 text-center px-4">
-              &copy; 2026 VENUZ APP. Todos los derechos reservados. Hecho con pasión en Vallarta.
-            </p>
           </div>
         </aside>
       </div>

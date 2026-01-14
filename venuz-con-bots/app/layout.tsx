@@ -28,8 +28,7 @@ export const viewport: Viewport = {
 }
 
 import OnboardingModal from '@/components/OnboardingModal';
-
-// ... (existing imports)
+import { AuthProvider } from '@/context/AuthContext';
 
 export default function RootLayout({
   children,
@@ -38,21 +37,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className="dark">
-      {/* ... (head) */}
       <body className="overflow-x-hidden">
         {/* Background effects */}
         <div className="fixed inset-0 z-0 pointer-events-none">
           <div className="absolute top-0 -left-4 w-96 h-96 bg-venuz-pink opacity-10 rounded-full mix-blend-multiply filter blur-3xl animate-pulse-slow" />
-          <div className="absolute top-0 -right-4 w-96 h-96 bg-venuz-red opacity-10 rounded-full mix-blend-multiply filter blur-3xl animate-pulse-slow animation-delay-2000" />
+          <div className="absolute top-0 -right-4 w-96 h-96 bg-venuz-red opacity-10 rounded-full mix-blend-multiply filter blur-3xl animation-delay-2000" />
           <div className="absolute -bottom-8 left-20 w-96 h-96 bg-venuz-gold opacity-10 rounded-full mix-blend-multiply filter blur-3xl animate-pulse-slow animation-delay-4000" />
         </div>
 
-        <OnboardingModal />
-
-        {/* Main content */}
-        <div className="relative z-10">
-          {children}
-        </div>
+        <AuthProvider>
+          <OnboardingModal />
+          {/* Main content */}
+          <div className="relative z-10">
+            {children}
+          </div>
+        </AuthProvider>
       </body>
     </html>
   )

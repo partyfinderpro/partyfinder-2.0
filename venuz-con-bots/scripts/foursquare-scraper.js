@@ -36,14 +36,15 @@ const BUSQUEDAS = [
   { query: 'adult entertainment', type: 'club' },
 ];
 
-// 🔍 Buscar lugares en Foursquare
+// 🔍 Buscar lugares en Foursquare (Migrado a API v2025)
 async function buscarLugares(query) {
+  // Legacy V3 endpoint with new Bearer auth (as per migration guide)
   const url = `https://api.foursquare.com/v3/places/search?query=${encodeURIComponent(query)}&ll=${PUERTO_VALLARTA.lat},${PUERTO_VALLARTA.lng}&radius=25000&limit=50`;
 
   try {
     const response = await fetch(url, {
       headers: {
-        'Authorization': FOURSQUARE_API_KEY,
+        'Authorization': FOURSQUARE_API_KEY, // Plain key format
         'Accept': 'application/json'
       }
     });
@@ -62,13 +63,14 @@ async function buscarLugares(query) {
   }
 }
 
+
 // 📸 Obtener foto de Foursquare
 async function obtenerFoto(fsqId) {
   try {
     const url = `https://api.foursquare.com/v3/places/${fsqId}/photos?limit=1`;
     const response = await fetch(url, {
       headers: {
-        'Authorization': FOURSQUARE_API_KEY,
+        'Authorization': `Bearer ${FOURSQUARE_API_KEY}`,
         'Accept': 'application/json'
       }
     });
@@ -85,6 +87,7 @@ async function obtenerFoto(fsqId) {
     return null;
   }
 }
+
 
 // 🏷️ Extraer zona de la dirección
 function extraerZona(lugar) {

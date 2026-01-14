@@ -2,30 +2,29 @@
 
 Este archivo es la memoria oficial del proyecto. NO BORRAR.
 
-## 🕒 Última Actualización: 2026-01-06 21:50 (CST)
-
-## 🔑 Credenciales Guardadas
-- **GitHub Token**: ✅ Guardado en `.env` / `.env.persistent`
-- **Supabase**: ✅ Configurado con `SUPABASE_SERVICE_ROLE_KEY` para automatización total.
-- **Social Connect**: ✅ Telegram Session, Facebook Token y Google Places (pendiente API Key).
+## 🕒 Última Actualización: 2026-01-13 18:02 (CST)
 
 ## 🚀 Estado Actual del Proyecto (Actualizado)
 1. **Infraestructura & Bots**:
-   - ✅ **Premium UI**: Transformación completa del feed a un estilo "vertical snap scroll" tipo TikTok/Reels con Glassmorphism extremo.
-   - ✅ **Interacciones Pro**: Likes con efecto "burst" y Saves integrados.
-   - ✅ **Estandarización**: Tipografías `Inter` y `Playfair Display` configuradas.
+   - ✅ **Base de datos poblada**: 526 lugares activos en Supabase.
+   - ✅ **OpenStreetMap Scraper**: Funcionando con la nueva API.
+   - ✅ **Credenciales**: `.env.local` configurado con todas las llaves.
 
-2. **Logros Recientes**:
-   - ✅ **Pipeline de Datos**: Telegram -> Supabase -> PWA funcionando al 100%.
-   - ✅ **Enriquecimiento de Datos**: Creado script `enrich-with-google-places.ts` para traer ratings y horarios automáticamente.
+2. **Contenido en la Base de Datos**:
+   - 🍽️ **368 Restaurantes**
+   - 🏨 **115 Hoteles**
+   - 🍸 **10 Bares**
+   - 🎉 **8 Clubs nocturnos**
+   - 🏖️ **6 Beach Clubs/Resorts**
+   - 📱 **9 Creadoras (Social Media)**
+   - 🎊 **4 Eventos**
+   - 🎭 **1 Show**
 
-3. **🌍 Localhost vs Vercel**
-   - El sistema Premium es 100% funcional en Localhost. A la espera de actualización de esquema en Supabase Cloud.
-
-4. **🎯 Siguientes Pasos**:
-   - [ ] **SQL Update**: Ejecutar el script para añadir columnas de Google Places.
-   - [ ] **Enriquecimiento**: Correr el script de Google Places para llenar ratings y horarios.
-   - [ ] **Automatización**: Configurar GitHub Actions para que los scrapers y el enriquecimiento corran solos.
+3. **🎯 Siguientes Pasos**:
+   - [ ] **Verificar PWA**: Abrir venuz.vercel.app y ver el feed con contenido real.
+   - [ ] **Push a GitHub**: Subir cambios para activar deploy en Vercel.
+   - [ ] **Mejorar categorización**: Refinar categorías como 'Nightclub' vs 'club'.
 
 ## 📝 Notas para la siguiente sesión
-"La tubería de datos (Data Pipeline) desde Telegram -> Supabase -> PWA está abierta y funcionando. El enfoque ahora debe ser la **Escalabilidad**: agregar más canales de Telegram y asegurar que el despliegue en Vercel refleje este mismo flujo automatizado."
+"¡La base de datos ahora tiene más de 500 lugares reales de Puerto Vallarta! El scraper de Foursquare está deprecado pero OpenStreetMap funciona perfectamente y es gratuito. El feed debería ahora mostrar contenido real."
+

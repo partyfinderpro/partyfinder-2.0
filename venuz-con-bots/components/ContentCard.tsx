@@ -4,6 +4,7 @@ import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { Bookmark, MapPin, Clock, Star, Navigation } from 'lucide-react';
 import { useState } from 'react';
 import { useInteractions } from '@/hooks/useInteractions';
+import { useAuthContext } from '@/context/AuthContext';
 import { LikeButton } from './LikeButton';
 import clsx from 'clsx';
 
@@ -29,6 +30,7 @@ interface ContentCardProps {
 }
 
 export default function ContentCard({ content, isActive }: ContentCardProps) {
+  const { openAuthModal } = useAuthContext();
   const {
     isLiked,
     isSaved,
@@ -177,14 +179,24 @@ export default function ContentCard({ content, isActive }: ContentCardProps) {
             {/* Like Button */}
             <LikeButton
               isLiked={isLiked}
-              onClick={toggleLike}
+              onClick={async (e) => {
+                const result = await toggleLike();
+                if (result?.error === 'login_required') {
+                  openAuthModal();
+                }
+              }}
               count={likesCount}
             />
 
             {/* Save Button */}
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={toggleSave}
+              onClick={async (e) => {
+                const result = await toggleSave();
+                if (result?.error === 'login_required') {
+                  openAuthModal();
+                }
+              }}
               className={clsx(
                 "glass rounded-2xl p-4 flex flex-col items-center gap-2 transition-all duration-300",
                 isSaved
