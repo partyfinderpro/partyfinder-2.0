@@ -1,319 +1,55 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import ContentCard from '@/components/ContentCard';
-import clsx from 'clsx';
-import MegaMenu from '@/components/MegaMenu';
-import {
-  Bell,
-  Search,
-  TrendingUp,
-  MapPin,
-  Heart,
-  Star,
-  Menu,
-  Zap,
-  ChevronRight,
-  User,
-  Settings,
-  HelpCircle,
-  BarChart3
-} from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-interface ContentItem {
-  id: string;
-  title: string;
-  description: string | null;
-  image_url: string | null;
-  video_url: string | null;
-  category: string | null;
-  source: string | null;
-  lat: number | null;
-  lng: number | null;
-  rating?: number;
-  total_ratings?: number;
-  is_open_now?: boolean;
-}
-
-export default function Home() {
-  const [content, setContent] = useState<ContentItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+export default function HomePage() {
+  const [diagnostico, setDiagnostico] = useState<any>(null);
 
   useEffect(() => {
-    fetchContent();
+    // EXPONER CONFIG EN CONSOLA DEL NAVEGADOR
+    const config = {
+      // @ts-ignore
+      url: (supabase as any).supabaseUrl || 'unknown',
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent
+    };
+
+    console.log('🔍 SUPABASE CONFIG EN PRODUCCIÓN:', config);
+
+    // Test de conexión básico
+    supabase
+      .from('content')
+      .select('id, title, category, active')
+      .limit(5)
+      .then(({ data, error }) => {
+        const resultado = {
+          success: !error,
+          count: data?.length || 0,
+          error: error?.message || null,
+          sample: data?.[0] || null,
+          config
+        };
+
+        console.log('🧪 TEST QUERY RESULT:', resultado);
+        setDiagnostico(resultado);
+      });
   }, []);
 
-  async function fetchContent() {
-    console.log('🔍 [VENUZ] Starting content fetch...');
-    console.log('🔍 [VENUZ] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'NOT SET');
-
-    try {
-      // Simplified query for flattened schema
-      const { data, error } = await supabase
-        .from('content')
-        .select('*')
-        .eq('active', true)
-        .order('scraped_at', { ascending: false })
-        .limit(50);
-
-      console.log('🔍 [VENUZ] Query completed');
-      console.log('🔍 [VENUZ] Error:', error);
-      console.log('🔍 [VENUZ] Data count:', data?.length || 0);
-
-      if (error) throw error;
-      setContent(data || []);
-    } catch (error) {
-      console.error('🔍 [VENUZ] Error fetching content:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-
-  const filteredContent = filter === 'all'
-    ? content
-    : content.filter(item => item.category === filter);
-
-  const navItems = [
-    { id: 'all', name: 'Inicio', icon: TrendingUp },
-    { id: 'trending', name: 'Tendencias', icon: Zap },
-    { id: 'nearby', name: 'Cerca de mí', icon: MapPin },
-    { id: 'favorites', name: 'Favoritos', icon: Star },
-  ];
-
-  const categories = [
-    { id: 'all', name: 'Todo', icon: '🌟' },
-    { id: 'club', name: 'Clubs', icon: '🎉' },
-    { id: 'evento', name: 'Eventos', icon: '🎊' },
-    { id: 'concierto', name: 'Conciertos', icon: '🎸' },
-    { id: 'bar', name: 'Bares', icon: '🍺' },
-    { id: 'show', name: 'Shows', icon: '🎭' },
-    { id: 'feria', name: 'Ferias', icon: '🎪' },
-    { id: 'tabledance', name: 'Table Dance', icon: '💃' },
-    { id: 'escort', name: 'Acompañantes', icon: '💋' },
-    { id: 'masaje', name: 'Masajes', icon: '💆' },
-    { id: 'restaurante', name: 'Restaurantes', icon: '🍽️' },
-    { id: 'beach', name: 'Beach Clubs', icon: '🏖️' },
-    { id: 'hotel', name: 'Hoteles', icon: '🏨' },
-  ];
-
-
   return (
-    <div className="h-screen bg-black overflow-hidden flex flex-col">
-      {/* Header Superior - Desktop & Mobile */}
-      <header className="h-20 flex items-center justify-between px-6 border-b border-white/5 bg-black/50 backdrop-blur-md z-[60]">
-        <div className="flex items-center gap-8">
-          <h1 className="text-3xl font-display font-bold text-gradient glow-strong cursor-pointer">
-            VENUZ
-          </h1>
-          <div className="hidden lg:flex items-center gap-2 text-gray-400 text-sm hover:text-white transition-colors cursor-pointer">
-            <MapPin className="w-4 h-4 text-venuz-pink" />
-            <span>Puerto Vallarta, Jalisco</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-6">
-          <button className="flex items-center gap-2 text-gray-400 hover:text-venuz-pink transition-colors group">
-            <Bell className="w-5 h-5 group-hover:animate-bounce" />
-            <span className="text-sm font-medium">Notificaciones</span>
-          </button>
-
-          <button className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-venuz-pink to-venuz-red text-white font-bold text-sm shadow-glow-pink hover:scale-105 transition-all">
-            <span>🔥</span>
-            <span>Destacados</span>
-          </button>
-
-          <button
-            onClick={() => setIsMenuOpen(true)}
-            className="lg:hidden p-2 text-white bg-venuz-pink/20 rounded-xl"
-          >
-            <Menu className="w-6 h-6 text-venuz-pink" />
-          </button>
-        </div>
-      </header>
-
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar Izquierda - EXCLUSIVA DESKTOP */}
-        <aside className="hidden lg:flex flex-col w-[280px] border-r border-white/5 bg-black p-6 gap-8 overflow-y-auto">
-          <div className="space-y-1">
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl bg-venuz-pink/10 text-venuz-pink border border-venuz-pink/20 group">
-              <TrendingUp className="w-5 h-5" />
-              <span className="font-bold">Inicio</span>
-            </button>
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group">
-              <Zap className="w-5 h-5" />
-              <span className="font-medium">Tendencias</span>
-            </button>
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group">
-              <MapPin className="w-5 h-5" />
-              <span className="font-medium">Cerca de mí</span>
-            </button>
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group">
-              <Star className="w-5 h-5" />
-              <span className="font-medium">Favoritos</span>
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="text-xs font-black text-venuz-pink uppercase tracking-[0.2em] px-4">
-              CATEGORÍAS
-            </h3>
-            <div className="space-y-1">
-              {categories.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setFilter(cat.id)}
-                  className={clsx(
-                    "w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all group",
-                    filter === cat.id ? "bg-venuz-pink/10 text-venuz-pink" : "text-gray-400 hover:text-white hover:bg-white/5"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg">{cat.icon}</span>
-                    <span className="text-sm font-medium">{cat.name}</span>
-                  </div>
-                  {filter === cat.id && <ChevronRight className="w-4 h-4" />}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-auto pt-6 border-t border-white/5 space-y-1">
-            <button className="w-full flex items-center gap-3 px-4 py-2 text-gray-500 hover:text-white text-sm transition-colors">
-              <User className="w-4 h-4" /> Mi Perfil
-            </button>
-            <button className="w-full flex items-center gap-3 px-4 py-2 text-gray-500 hover:text-white text-sm transition-colors">
-              <Settings className="w-4 h-4" /> Ajustes
-            </button>
-          </div>
-        </aside>
-
-        {/* Feed Principal - Responsive */}
-        <main className="flex-1 relative bg-black overflow-hidden flex flex-col items-center">
-          <div className="w-full max-w-[500px] lg:max-w-none h-full feed-container scrollbar-none">
-            {loading ? (
-              <div className="h-full flex items-center justify-center">
-                <div className="w-16 h-16 border-4 border-venuz-pink border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : (
-              <>
-                {filteredContent.map((item) => (
-                  <div key={item.id} className="h-full snap-item">
-                    <ContentCard
-                      content={{
-                        ...item,
-                        // Fix for missing image_url if only video exists or vice-versa
-                        image_url: item.image_url || '/placeholder-venue.jpg'
-                      }}
-                      isActive={true}
-                    />
-                  </div>
-                ))}
-
-                {filteredContent.length === 0 && (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-6">
-                    <p className="text-2xl text-gray-500 font-medium flex items-center gap-3">
-                      <span>😔</span> No hay contenido en esta categoría
-                    </p>
-                    <button
-                      onClick={() => setFilter('all')}
-                      className="px-10 py-4 rounded-full bg-venuz-pink text-white font-bold text-lg shadow-glow-pink hover:scale-105 active:scale-95 transition-all"
-                    >
-                      Ver todo
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Navigation Mobile pill - EXTRA LARGE FOR ACCESSIBILITY */}
-          <nav className="lg:hidden absolute bottom-10 left-1/2 -translate-x-1/2 z-[60] w-full px-6 flex justify-center">
-            <button
-              onClick={() => setIsMenuOpen(true)}
-              className="bg-venuz-pink text-white px-10 py-5 rounded-2xl flex items-center gap-4 shadow-[0_20px_50px_rgba(255,20,147,0.4)] hover:scale-105 active:scale-95 transition-all font-black text-xl uppercase tracking-tighter"
-            >
-              <Menu className="w-8 h-8" />
-              <span>Explorar Categorías</span>
-            </button>
-          </nav>
-        </main>
-
-        {/* Sidebar Derecha - PUBLICIDAD & ESTADÍSTICAS */}
-        <aside className="hidden xl:flex flex-col w-[350px] border-l border-white/5 bg-black p-6 gap-8 overflow-y-auto">
-          {/* Espacio Publicitario Gradient Box */}
-          <div className="relative aspect-video rounded-3xl overflow-hidden bg-gradient-to-br from-venuz-pink via-red-500 to-amber-400 p-8 flex flex-col justify-center">
-            <div className="flex items-center gap-2 mb-2">
-              <Bell className="w-5 h-5 text-white/80" />
-              <h4 className="text-white font-black text-xl tracking-tight">ESPACIO PUBLICITARIO</h4>
-            </div>
-            <p className="text-white/90 text-sm font-medium">Promociona tu negocio aquí</p>
-
-            {/* Minimal decoration */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-white/20 blur-[60px] rounded-full pointer-events-none" />
-          </div>
-
-          <div className="space-y-6">
-            <h3 className="text-xs font-black text-venuz-pink uppercase tracking-[0.2em] px-2 flex items-center gap-2">
-              📊 ESTADÍSTICAS HOY
-            </h3>
-            <div className="space-y-4 px-2">
-              <div className="flex items-center justify-between group">
-                <span className="text-gray-400 text-sm font-medium">Eventos totales</span>
-                <span className="text-xl font-bold text-venuz-gold">0</span>
-              </div>
-              <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-venuz-red animate-pulse" />
-                  <span className="text-gray-400 text-sm font-medium">En vivo</span>
-                </div>
-                <span className="text-xl font-bold text-venuz-gold">0</span>
-              </div>
-              <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-venuz-gold" />
-                  <span className="text-gray-400 text-sm font-medium">Destacados</span>
-                </div>
-                <span className="text-xl font-bold text-venuz-gold">0</span>
-              </div>
-              <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-2">
-                  <Search className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-400 text-sm font-medium">Vistas totales</span>
-                </div>
-                <span className="text-xl font-bold text-venuz-gold">0</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Banner Premium Bottom */}
-          <div className="mt-auto group cursor-pointer">
-            <div className="venuz-card p-6 border border-white/5 group-hover:border-venuz-pink/30 hover:bg-white/5 transition-all">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-venuz-pink/10 text-venuz-pink">
-                  <Star className="w-5 h-5 fill-current" />
-                </div>
-                <h5 className="font-black text-lg tracking-tight">BANNER PREMIUM</h5>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500 font-bold">$200 USD/mes</span>
-                <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
-              </div>
-            </div>
-          </div>
-        </aside>
+    <div style={{ padding: '20px', fontFamily: 'monospace', backgroundColor: '#111', color: '#0f0', minHeight: '100vh', wordBreak: 'break-word' }}>
+      <h1>🔬 DIAGNÓSTICO VENUZ - FASE 1</h1>
+      <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(diagnostico, null, 2)}</pre>
+      <div style={{ marginTop: '20px', borderTop: '1px solid #333', paddingTop: '20px' }}>
+        <p>Instrucciones Vercel (IMPORTANTE):</p>
+        <p>1. Ve a Vercel -> Settings -> General -> <strong>Clear Build Cache</strong></p>
+        <p>2. Haz <strong>Redeploy</strong> manualmente.</p>
+        <hr style={{ borderColor: '#333', margin: '10px 0' }} />
+        <p>Lectura de Resultados:</p>
+        <p>A. ¿URL = jbrmziwo...? (Si es rumilv... -> Cache no se limpió)</p>
+        <p>B. Success=true y Count=0? -> Problema RLS</p>
+        <p>C. Error explícito? -> Reportar a soporte</p>
       </div>
-
-      {/* MEGA MENU MOBILE OVERLAY */}
-      <MegaMenu
-        isOpen={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
-        onSelectCategory={(id) => setFilter(id)}
-        currentCategory={filter}
-      />
     </div>
   );
 }
