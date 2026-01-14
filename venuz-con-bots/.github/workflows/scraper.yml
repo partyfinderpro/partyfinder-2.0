@@ -35,10 +35,14 @@ jobs:
         run: |
           echo "🚀 STARTING VENUZ AUTOMATION CYCLE"
           
-          echo "🤖 1. Scraping Telegram..."
+          echo "🤖 1. Scraping OpenStreetMap (Massive Data)..."
+          node scripts/openstreetmap-scraper.js || echo "⚠️ OSM Scraper failed but continuing..."
+
+          echo "🤖 1.5. Scraping Telegram..."
           node bots/telegram-scraper.js || echo "⚠️ Telegram Scraper failed but continuing..."
           
-          echo "🤖 1.5. Scraping Facebook (Fiestas Patronales)..."
+          echo "🤖 1.6. Scraping Facebook (Fiestas Patronales)..."
+
           npx playwright install chromium
           node bots/facebook-events-scraper.js "Fiestas patronales" "Puerto Vallarta" || echo "⚠️ Facebook Scraper failed but continuing..."
           

@@ -7,8 +7,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// 📍 BOUNDING BOX DE PUERTO VALLARTA (lat_min, lon_min, lat_max, lon_max)
-const PUERTO_VALLARTA_BBOX = '20.5,-105.35,20.75,-105.15';
+// 📍 BOUNDING BOX AMPLIADO (Bahía de Banderas: Vallarta + Nuevo Vallarta + Bucerías)
+const PUERTO_VALLARTA_BBOX = '20.45,-105.5,20.9,-105.1';
+
 
 // 🎯 CONSULTAS OVERPASS POR CATEGORÍA
 const BUSQUEDAS = [
@@ -38,6 +39,11 @@ const BUSQUEDAS = [
     nombre: 'Cafés'
   },
   {
+    amenity: 'fast_food',
+    type: 'restaurante',
+    nombre: 'Comida Rápida'
+  },
+  {
     leisure: 'beach_resort',
     type: 'beach',
     nombre: 'Beach Resorts'
@@ -46,6 +52,11 @@ const BUSQUEDAS = [
     tourism: 'hotel',
     type: 'hotel',
     nombre: 'Hoteles'
+  },
+  {
+    tourism: 'guest_house',
+    type: 'hotel',
+    nombre: 'Hostales'
   },
   {
     amenity: 'spa',
@@ -72,7 +83,28 @@ const BUSQUEDAS = [
     type: 'club',
     nombre: 'Dance Clubs'
   },
+  {
+    tourism: 'attraction',
+    type: 'beach',
+    nombre: 'Atracciones'
+  },
+  {
+    tourism: 'viewpoint',
+    type: 'beach',
+    nombre: 'Miradores'
+  },
+  {
+    amenity: 'cinema',
+    type: 'show',
+    nombre: 'Cines'
+  },
+  {
+    amenity: 'theatre',
+    type: 'show',
+    nombre: 'Teatros'
+  },
 ];
+
 
 // 🔍 Buscar lugares con Overpass API
 async function buscarLugares(busqueda) {
@@ -201,21 +233,21 @@ async function guardarEnSupabase(items) {
 
   for (const item of items) {
     try {
-      // Verificar si existe
+      // Verificar si existe por título (más seguro para OSM que no tiene Place ID fijo)
       const { data: existente } = await supabase
         .from('content')
-        .select('id, google_place_id')
-        .or(`google_place_id.eq.${item.google_place_id},title.eq.${item.title}`)
+        .select('id')
+        .eq('title', item.title)
         .maybeSingle();
 
       if (existente) {
-        // Actualizar
+        // Actualizar datos si es necesario
         const { error } = await supabase
           .from('content')
           .update({
-            address: item.address,
-            latitude: item.latitude,
-            longitude: item.longitude,
+            location_text: item.location_text,
+            lat: item.lat,
+            lng: item.lng,
             updated_at: new Date().toISOString()
           })
           .eq('id', existente.id);
@@ -231,13 +263,10 @@ async function guardarEnSupabase(items) {
         else console.error('Error insertando:', item.title, error.message);
       }
     } catch (error) {
-      const { error: insertError } = await supabase
-        .from('content')
-        .insert(item);
-
-      if (!insertError) nuevos++;
+      console.error('Catch error:', error.message);
     }
   }
+
 
   return { nuevos, actualizados };
 }
@@ -283,12 +312,13 @@ async function main() {
   // Breakdown por tipo
   const breakdown = {};
   todosLosLugares.forEach(item => {
-    breakdown[item.type] = (breakdown[item.type] || 0) + 1;
+    breakdown[item.category] = (breakdown[item.category] || 0) + 1;
   });
   console.log('📊 Breakdown por categoría:');
-  Object.entries(breakdown).forEach(([type, count]) => {
-    console.log(`   - ${type}: ${count}`);
+  Object.entries(breakdown).forEach(([cat, count]) => {
+    console.log(`   - ${cat}: ${count}`);
   });
+
 
   // Guardar en Supabase
   console.log('\n💾 Guardando en Supabase...');
