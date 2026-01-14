@@ -47,6 +47,9 @@ export default function Home() {
   }, []);
 
   async function fetchContent() {
+    console.log('🔍 [VENUZ] Starting content fetch...');
+    console.log('🔍 [VENUZ] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'NOT SET');
+
     try {
       // Simplified query for flattened schema
       const { data, error } = await supabase
@@ -56,14 +59,19 @@ export default function Home() {
         .order('scraped_at', { ascending: false })
         .limit(50);
 
+      console.log('🔍 [VENUZ] Query completed');
+      console.log('🔍 [VENUZ] Error:', error);
+      console.log('🔍 [VENUZ] Data count:', data?.length || 0);
+
       if (error) throw error;
       setContent(data || []);
     } catch (error) {
-      console.error('Error fetching content:', error);
+      console.error('🔍 [VENUZ] Error fetching content:', error);
     } finally {
       setLoading(false);
     }
   }
+
 
   const filteredContent = filter === 'all'
     ? content
