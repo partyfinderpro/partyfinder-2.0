@@ -1,234 +1,192 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { supabase } from '@/lib/supabaseClient'
-import ContentCard from './ContentCard'
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { useGeolocation } from '@/hooks/useGeolocation';
+import ContentCard from './ContentCard';
+import type { Place } from '@/types';
 
-interface ContentItem {
-    id: string
-    title: string
-    description: string | null
-    image_url: string | null
-    video_url: string | null
-    category: string | null
-    source: string | null
-    source_site: string | null
-    location_text: string | null
-    lat: number | null
-    lng: number | null
+const ITEMS_PER_PAGE = 10;
+const DEFAULT_RADIUS_METERS = 20000; // 20km
 
-    rating: number | null
-    total_ratings: number | null
-    is_open_now: boolean | null
-    google_maps_url: string | null
-
-    views: number
-    featured: boolean
-    active: boolean
+interface InfiniteFeedProps {
+    category?: string;
 }
 
-export default function InfiniteFeed() {
-    const [content, setContent] = useState<ContentItem[]>([])
-    const [loading, setLoading] = useState(true)
-    const [currentIndex, setCurrentIndex] = useState(0)
-    const [userLocation, setUserLocation] = useState<{ lat: number, lon: number } | null>(null)
-    const containerRef = useRef<HTMLDivElement>(null)
-    const observerRef = useRef<IntersectionObserver | null>(null)
+export default function InfiniteFeed({ category = 'all' }: InfiniteFeedProps) {
+    const [places, setPlaces] = useState<Place[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [hasMore, setHasMore] = useState(true);
+    const [offset, setOffset] = useState(0);
+    const [error, setError] = useState<string | null>(null);
 
-    // Get user location
-    useEffect(() => {
-        if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setUserLocation({
-                        lat: position.coords.latitude,
-                        lon: position.coords.longitude
-                    })
-                },
-                (error) => {
-                    console.log('Location access denied, using default region')
-                    // Default to Puerto Vallarta
-                    setUserLocation({ lat: 20.6534, lon: -105.2253 })
-                }
-            )
-        } else {
-            // Default location if geolocation not supported
-            setUserLocation({ lat: 20.6534, lon: -105.2253 })
-        }
-    }, [])
+    const { latitude, longitude, error: geoError, loading: geoLoading, permissionDenied } = useGeolocation();
 
-    // Fetch content based on location
-    const fetchContent = useCallback(async () => {
+    const fetchNearbyPlaces = useCallback(async (lat: number, lng: number, currentOffset: number) => {
         try {
-            setLoading(true)
-
-            // Fetch content from Supabase - Simplified Query
             const { data, error } = await supabase
+                .rpc('get_nearby_places', {
+                    user_lat: lat,
+                    user_long: lng,
+                    radius_meters: DEFAULT_RADIUS_METERS,
+                    filter_category: category === 'all' ? null : category
+                })
+                .range(currentOffset, currentOffset + ITEMS_PER_PAGE - 1);
+
+            if (error) throw error;
+            return data || [];
+        } catch (err) {
+            console.error('Error fetching nearby places:', err);
+            throw err;
+        }
+    }, [category]); // Depende de la categoría
+
+    const fetchRegularPlaces = useCallback(async (currentOffset: number) => {
+        try {
+            let query = supabase
                 .from('content')
                 .select('*')
-                .eq('active', true)
-                .order('scraped_at', { ascending: false })
-                .limit(50)
+                .eq('active', true);
 
-            if (error) {
-                console.error('Supabase query error:', error)
-                throw error
+            if (category !== 'all') {
+                query = query.eq('category', category);
             }
 
-            if (data) {
-                // Sort by distance if we have user location
-                let sortedContent = data
-                if (userLocation) {
-                    sortedContent = data.sort((a: any, b: any) => {
-                        const distA = calculateDistance(
-                            userLocation.lat,
-                            userLocation.lon,
-                            a.lat || 0,
-                            a.lng || 0
-                        )
-                        const distB = calculateDistance(
-                            userLocation.lat,
-                            userLocation.lon,
-                            b.lat || 0,
-                            b.lng || 0
-                        )
-                        return distA - distB
-                    })
+            const { data, error } = await query
+                .order('scraped_at', { ascending: false })
+                .range(currentOffset, currentOffset + ITEMS_PER_PAGE - 1);
+
+            if (error) throw error;
+            return data || [];
+        } catch (err) {
+            console.error('Error fetching regular places:', err);
+            throw err;
+        }
+    }, [category]);
+
+    // Reset y recarga cuando cambia la categoría o ubicación
+    useEffect(() => {
+        const loadInitialPlaces = async () => {
+            if (geoLoading) return;
+
+            setLoading(true);
+            setError(null);
+            setPlaces([]); // Limpiar al cambiar filtro
+            setOffset(0);
+
+            try {
+                let data: Place[];
+
+                if (latitude && longitude) {
+                    console.log(`🌍 [VENUZ] Geo-búsqueda (${category}): ${latitude}, ${longitude}`);
+                    data = await fetchNearbyPlaces(latitude, longitude, 0);
+                } else {
+                    console.log(`📅 [VENUZ] Búsqueda normal (${category})`);
+                    data = await fetchRegularPlaces(0);
                 }
 
-                // Ensure data matches ContentItem interface
-                setContent(sortedContent as ContentItem[])
+                setPlaces(data);
+                setHasMore(data.length === ITEMS_PER_PAGE);
+                setOffset(ITEMS_PER_PAGE);
+            } catch (err) {
+                setError('Error cargando lugares.');
+                console.error(err);
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error('Error fetching content:', error)
+        };
+
+        loadInitialPlaces();
+    }, [latitude, longitude, geoLoading, category, fetchNearbyPlaces, fetchRegularPlaces]);
+
+    // Load More
+    const loadMore = useCallback(async () => {
+        if (loading || !hasMore) return;
+
+        setLoading(true);
+        try {
+            let data: Place[];
+            if (latitude && longitude) {
+                data = await fetchNearbyPlaces(latitude, longitude, offset);
+            } else {
+                data = await fetchRegularPlaces(offset);
+            }
+
+            if (data.length > 0) {
+                setPlaces((prev) => [...prev, ...data]);
+                setHasMore(data.length === ITEMS_PER_PAGE);
+                setOffset((prev) => prev + ITEMS_PER_PAGE);
+            } else {
+                setHasMore(false);
+            }
+        } catch (err) {
+            console.error(err);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }, [userLocation])
+    }, [latitude, longitude, offset, loading, hasMore, fetchNearbyPlaces, fetchRegularPlaces]);
 
+    // Scroll listener global
     useEffect(() => {
-        // Initial fetch even without location (gets default sort)
-        fetchContent()
-    }, [fetchContent]) // Removed userLocation dependency to avoid double fetch? No, keep logic 
+        const handleScroll = () => {
+            // Detectar scroll en el contenedor principal o window
+            const container = document.querySelector('.feed-container');
+            if (container) {
+                if (container.scrollTop + container.clientHeight >= container.scrollHeight - 500) {
+                    loadMore();
+                }
+            }
+        };
 
-    // Calculate distance between two coordinates (Haversine formula)
-    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        if (!lat1 || !lon1 || !lat2 || !lon2) return 999999;
-
-        const R = 6371 // Earth's radius in km
-        const dLat = (lat2 - lat1) * Math.PI / 180
-        const dLon = (lon2 - lon1) * Math.PI / 180
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2)
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-        return R * c
-    }
-
-    // Intersection observer for view tracking
-    useEffect(() => {
-        observerRef.current = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        const index = parseInt(entry.target.getAttribute('data-index') || '0')
-                        setCurrentIndex(index)
-
-                        // Track view
-                        const contentId = entry.target.getAttribute('data-id')
-                        if (contentId) {
-                            trackView(contentId)
-                        }
-                    }
-                })
-            },
-            { threshold: 0.7 }
-        )
+        // Attach to container if exists (mobile/desktop responsive layout)
+        const container = document.querySelector('.feed-container');
+        if (container) {
+            container.addEventListener('scroll', handleScroll);
+        } else {
+            window.addEventListener('scroll', handleScroll);
+        }
 
         return () => {
-            if (observerRef.current) {
-                observerRef.current.disconnect()
-            }
-        }
-    }, [])
+            if (container) container.removeEventListener('scroll', handleScroll);
+            window.removeEventListener('scroll', handleScroll);
+        };
+    }, [loadMore]);
 
-    const trackView = async (contentId: string) => {
-        try {
-            // Increment view count via RPC if available, or just ignore for now if RPC fails
-            const { error } = await supabase
-                .from('content')
-                .update({ views: 0 }) // Dummy update if increment rpc missing? No, user mentioned increment exists.
-            // Let's try call increment if it exists, otherwise just skip logging to console to avoid spam
-
-            // We will skip RPC for now to avoid crashes if function missing.
-            // But track interaction
-            await supabase
-                .from('interactions')
-                .insert({
-                    content_id: contentId,
-                    user_id: localStorage.getItem('venuz_user_id') || 'anonymous',
-                    action: 'view'
-                })
-        } catch (error) {
-            // console.error('Error tracking view:', error) 
-        }
-    }
-
-    if (loading && content.length === 0) {
+    if ((geoLoading && places.length === 0) || (loading && places.length === 0)) {
         return (
-            <div className="h-screen flex items-center justify-center bg-black">
-                <div className="text-center">
-                    <div className="w-16 h-16 border-4 border-venuz-pink border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-venuz-pink font-semibold">Cargando experiencias...</p>
-                </div>
+            <div className="h-full flex flex-col items-center justify-center p-10">
+                <div className="w-16 h-16 border-4 border-venuz-pink border-t-transparent rounded-full animate-spin mb-4" />
+                <p className="text-gray-400 animate-pulse text-sm">Cargando...</p>
             </div>
-        )
+        );
     }
 
     return (
-        <div
-            ref={containerRef}
-            className="h-screen w-full overflow-y-scroll snap-scroll bg-black"
-        >
-            <AnimatePresence mode="wait">
-                {content.map((item, index) => (
-                    <motion.div
-                        key={item.id}
-                        data-index={index}
-                        data-id={item.id}
-                        className="h-screen w-full snap-item relative"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        ref={(el) => {
-                            if (el && observerRef.current) {
-                                observerRef.current.observe(el)
-                            }
-                        }}
-                    >
-                        <ContentCard
-                            content={{
-                                ...item,
-                                location: item.location_text || undefined,
-                                rating: item.rating ?? undefined,
-                                total_ratings: item.total_ratings ?? undefined,
-                                is_open_now: item.is_open_now ?? undefined,
-                                google_maps_url: item.google_maps_url ?? undefined
-                            }}
-                            isActive={currentIndex === index}
-                        />
-                    </motion.div>
-                ))}
-            </AnimatePresence>
-
-            {/* Load more trigger */}
-            {content.length > 0 && (
-                <div className="h-20 flex items-center justify-center snap-start">
-                    {/* Maybe auto load more? */}
+        <div className="pb-20 w-full">
+            {/* Banner Geo Feedback */}
+            {latitude && longitude && (
+                <div className="bg-venuz-pink/5 border-b border-venuz-pink/10 p-2 text-center backdrop-blur-sm sticky top-0 z-40 mb-4 mx-4 rounded-b-xl">
+                    <p className="text-venuz-pink text-[10px] font-bold tracking-widest uppercase flex items-center justify-center gap-2">
+                        <span>📡</span> Radar activo: {(DEFAULT_RADIUS_METERS / 1000).toFixed(0)}km
+                    </p>
                 </div>
             )}
+
+            <div className="flex flex-col items-center w-full min-h-[50vh]">
+                {places.map((place) => (
+                    <div key={place.id} className="w-full snap-start sm:py-4">
+                        <ContentCard content={place} isActive={true} />
+                    </div>
+                ))}
+
+                {places.length === 0 && !loading && (
+                    <div className="text-center py-20 px-6 text-gray-500">
+                        No hay eventos en esta categoría cerca de ti.
+                    </div>
+                )}
+
+                {loading && <div className="py-4 text-center text-xs text-gray-500">Cargando más...</div>}
+            </div>
         </div>
-    )
+    );
 }

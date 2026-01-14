@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import ContentCard from '@/components/ContentCard';
+import { useState } from 'react'; // Eliminado useEffect y otros imports no usados
 import clsx from 'clsx';
+import InfiniteFeed from '@/components/InfiniteFeed'; // Importamos el nuevo componente
 import MegaMenu from '@/components/MegaMenu';
 import {
   Bell,
@@ -37,8 +36,7 @@ interface ContentItem {
 }
 
 export default function Home() {
-  const [content, setContent] = useState<ContentItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Eliminamos estados de content y loading, ya los maneja InfiniteFeed
   const [filter, setFilter] = useState('all');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -221,41 +219,9 @@ export default function Home() {
 
         {/* Feed Principal - Responsive */}
         <main className="flex-1 relative bg-black overflow-hidden flex flex-col items-center">
-          <div className="w-full max-w-[500px] lg:max-w-none h-full feed-container scrollbar-none">
-            {loading ? (
-              <div className="h-full flex items-center justify-center">
-                <div className="w-16 h-16 border-4 border-venuz-pink border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : (
-              <>
-                {filteredContent.map((item) => (
-                  <div key={item.id} className="h-full snap-item">
-                    <ContentCard
-                      content={{
-                        ...item,
-                        // Fix for missing image_url if only video exists or vice-versa
-                        image_url: item.image_url || '/placeholder-venue.jpg'
-                      }}
-                      isActive={true}
-                    />
-                  </div>
-                ))}
-
-                {filteredContent.length === 0 && (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-6">
-                    <p className="text-2xl text-gray-500 font-medium flex items-center gap-3">
-                      <span>😔</span> No hay contenido en esta categoría
-                    </p>
-                    <button
-                      onClick={() => setFilter('all')}
-                      className="px-10 py-4 rounded-full bg-venuz-pink text-white font-bold text-lg shadow-glow-pink hover:scale-105 active:scale-95 transition-all"
-                    >
-                      Ver todo
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
+          <div className="w-full max-w-[500px] lg:max-w-none h-full feed-container scrollbar-none overflow-y-auto">
+            {/* Componente Inteligente de Feed */}
+            <InfiniteFeed category={filter} />
           </div>
 
           {/* Navigation Mobile pill - EXTRA LARGE FOR ACCESSIBILITY */}
