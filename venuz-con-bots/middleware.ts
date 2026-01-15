@@ -1,20 +1,12 @@
 // middleware.ts
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(req: NextRequest) {
     const res = NextResponse.next();
-    // const supabase = createMiddlewareClient({ req, res });
-
-    // Refrescar sesión si existe
-    // const {
-    //     data: { session },
-    // } = await supabase.auth.getSession();
 
     // Log para debugging
     console.log('[Middleware] Path:', req.nextUrl.pathname);
-    // console.log('[Middleware] Session exists:', !!session);
 
     return res;
 }
@@ -32,3 +24,4 @@ export const config = {
         '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],
 };
+

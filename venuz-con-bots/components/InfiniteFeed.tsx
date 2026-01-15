@@ -210,8 +210,17 @@ export default function InfiniteFeed() {
                     >
                         <ContentCard
                             content={{
-                                ...item,
+                                id: item.id,
+                                title: item.title,
+                                description: item.description,
+                                image_url: item.image_url,
+                                video_url: item.video_url,
+                                category: item.category,
+                                source: item.source,
                                 location: item.location_text || undefined,
+                                location_text: item.location_text || undefined,
+                                lat: item.lat,
+                                lng: item.lng,
                                 rating: item.rating ?? undefined,
                                 total_ratings: item.total_ratings ?? undefined,
                                 is_open_now: item.is_open_now ?? undefined,

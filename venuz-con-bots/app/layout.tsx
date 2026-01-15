@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'VENUZ - Tu Mundo de Entretenimiento Adulto',
+  title: 'VENUZ - El Ojo de Dios de la Fiesta',
   description: 'Descubre eventos, clubs, servicios y contenido para adultos cerca de ti',
   manifest: '/manifest.json',
   appleWebApp: {
@@ -24,12 +24,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#0a0a0a',
+  themeColor: '#FF1493',
 }
 
 import OnboardingModal from '@/components/OnboardingModal';
-
-// ... (existing imports)
+import { InstallPrompt } from '@/components/InstallPrompt';
 
 export default function RootLayout({
   children,
@@ -38,7 +37,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className="dark">
-      {/* ... (head) */}
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
       <body className="overflow-x-hidden">
         {/* Background effects */}
         <div className="fixed inset-0 z-0 pointer-events-none">
@@ -53,7 +56,11 @@ export default function RootLayout({
         <div className="relative z-10">
           {children}
         </div>
+
+        {/* PWA Install Prompt */}
+        <InstallPrompt />
       </body>
     </html>
   )
 }
+

@@ -1,12 +1,13 @@
 {
-  "name": "VENUZ - Entretenimiento Adulto",
+  "name": "VENUZ - Party Finder",
   "short_name": "VENUZ",
-  "description": "Tu mundo de entretenimiento adulto cerca de ti",
+  "description": "El Ojo de Dios de la vida nocturna - Encuentra eventos, clubs, y más",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#000000",
+  "theme_color": "#FF1493",
   "orientation": "portrait",
+  "categories": ["entertainment", "lifestyle", "social"],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -21,13 +22,13 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["entertainment", "lifestyle"],
-  "screenshots": [],
-  "shortcuts": [
+  "screenshots": [
     {
-      "name": "Feed",
-      "url": "/",
-      "description": "Ver feed principal"
+      "src": "/screenshot1.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
     }
-  ]
+  ],
+  "prefer_related_applications": false
 }

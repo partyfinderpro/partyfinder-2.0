@@ -1,10 +1,12 @@
 'use client';
 
 import { motion, useMotionValue, useTransform } from 'framer-motion';
-import { Bookmark, MapPin, Clock, Star, Navigation } from 'lucide-react';
+import { Bookmark, MapPin, Clock, Star, Navigation, Route } from 'lucide-react';
 import { useState } from 'react';
 import { useInteractions } from '@/hooks/useInteractions';
+import { useGeolocation, getDistanceKm, formatDistance } from '@/hooks/useGeolocation';
 import { LikeButton } from './LikeButton';
+import { FavoriteButton } from './FavoriteButton';
 import clsx from 'clsx';
 
 interface ContentCardProps {
@@ -17,7 +19,12 @@ interface ContentCardProps {
     category: string | null;
     source: string | null;
     location?: string;
+    location_text?: string;
     tags?: string[] | null;
+
+    // Geolocation data
+    lat?: number | null;
+    lng?: number | null;
 
     // Google Places data
     rating?: number;
@@ -37,9 +44,15 @@ export default function ContentCard({ content, isActive }: ContentCardProps) {
     toggleSave
   } = useInteractions(content.id);
 
+  const { coordinates } = useGeolocation();
   const [imageLoaded, setImageLoaded] = useState(false);
   const y = useMotionValue(0);
   const opacity = useTransform(y, [-100, 0, 100], [0.5, 1, 0.5]);
+
+  // Calcular distancia si hay coords del usuario y del lugar
+  const distance = coordinates && content.lat && content.lng
+    ? getDistanceKm(coordinates.lat, coordinates.lng, content.lat, content.lng)
+    : null;
 
   // Formatear rating
   const formattedRating = content.rating?.toFixed(1);
@@ -158,11 +171,25 @@ export default function ContentCard({ content, isActive }: ContentCardProps) {
               </p>
             )}
 
-            {/* Location */}
-            {(content.location || content.source) && (
-              <div className="flex items-center gap-2 text-white/70">
-                <MapPin className="w-4 h-4 text-venuz-pink" />
-                <span className="text-sm font-semibold tracking-wide">{content.location || content.source || 'PUERTO VALLARTA'}</span>
+            {/* Location + Distance */}
+            {(content.location || content.location_text || content.source) && (
+              <div className="flex items-center gap-3 text-white/70 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-venuz-pink" />
+                  <span className="text-sm font-semibold tracking-wide">
+                    {content.location || content.location_text || content.source || 'PUERTO VALLARTA'}
+                  </span>
+                </div>
+
+                {/* Distance Badge */}
+                {distance !== null && (
+                  <div className="flex items-center gap-1.5 bg-venuz-pink/20 text-venuz-pink px-3 py-1 rounded-full">
+                    <Route className="w-3 h-3" />
+                    <span className="text-xs font-bold">
+                      {formatDistance(distance)}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
           </motion.div>
