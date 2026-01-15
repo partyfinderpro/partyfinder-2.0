@@ -106,3 +106,53 @@
   background-size: 1000px 100%;
   animation: shimmer 2s infinite linear;
 }
+
+/* ========================================
+   LEAFLET MAP - TEMA OSCURO VENUZ
+   ======================================== */
+
+/* Tema oscuro para tiles */
+.leaflet-container {
+  background: #000000;
+  font-family: inherit;
+}
+
+.leaflet-tile {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+}
+
+/* Popups estilizados */
+.leaflet-popup-content-wrapper {
+  background: #1a1a1a;
+  color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3);
+  border: 1px solid rgba(236, 72, 153, 0.2);
+}
+
+.leaflet-popup-tip {
+  background: #1a1a1a;
+}
+
+.leaflet-popup-close-button {
+  color: #ec4899 !important;
+  font-size: 24px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #f472b6 !important;
+}
+
+/* Ocultar atribución en móvil */
+@media (max-width: 640px) {
+  .leaflet-control-attribution {
+    font-size: 8px;
+    opacity: 0.5;
+  }
+}
+
+/* Custom marker styles */
+.custom-marker {
+  background: transparent !important;
+  border: none !important;
+}

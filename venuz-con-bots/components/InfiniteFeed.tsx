@@ -4,7 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import ContentCard from './ContentCard';
+import MapButton from './MapButton';
 import type { Place } from '@/types';
+import type { MapPlace } from './MapView';
 
 const ITEMS_PER_PAGE = 10;
 const DEFAULT_RADIUS_METERS = 20000; // 20km
@@ -161,6 +163,20 @@ export default function InfiniteFeed({ category = 'all' }: InfiniteFeedProps) {
         );
     }
 
+    // Convertir places a MapPlace format
+    const mapPlaces: MapPlace[] = places
+        .filter(p => (p.lat || p.latitude) && (p.lng || p.longitude))
+        .map(p => ({
+            id: p.id,
+            title: p.title,
+            lat: p.lat || p.latitude || 0,
+            lng: p.lng || p.longitude || 0,
+            category: p.category || 'other',
+            image_url: p.image_url,
+            description: p.description,
+            url: p.url,
+        }));
+
     return (
         <div className="pb-20 w-full">
             {/* Banner Geo Feedback */}
@@ -187,6 +203,16 @@ export default function InfiniteFeed({ category = 'all' }: InfiniteFeedProps) {
 
                 {loading && <div className="py-4 text-center text-xs text-gray-500">Cargando más...</div>}
             </div>
+
+            {/* Botón flotante del mapa */}
+            {mapPlaces.length > 0 && (
+                <MapButton
+                    places={mapPlaces}
+                    onPlaceClick={(place) => {
+                        console.log('Lugar seleccionado:', place);
+                    }}
+                />
+            )}
         </div>
     );
 }
