@@ -1,85 +1,118 @@
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config({ path: '.env.local' });
 
 // ⚙️ CONFIGURACIÓN
 const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
+  process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// 📍 BOUNDING BOX DE PUERTO VALLARTA (lat_min, lon_min, lat_max, lon_max)
-const PUERTO_VALLARTA_BBOX = '20.5,-105.35,20.75,-105.15';
+// 📍 BOUNDING BOX AMPLIADO (Bahía de Banderas: Vallarta + Nuevo Vallarta + Bucerías)
+const PUERTO_VALLARTA_BBOX = '20.45,-105.5,20.9,-105.1';
+
 
 // 🎯 CONSULTAS OVERPASS POR CATEGORÍA
 const BUSQUEDAS = [
-  { 
-    amenity: 'nightclub', 
+  {
+    amenity: 'nightclub',
     type: 'club',
     nombre: 'Night Clubs'
   },
-  { 
-    amenity: 'bar', 
+  {
+    amenity: 'bar',
     type: 'bar',
     nombre: 'Bares'
   },
-  { 
-    amenity: 'pub', 
+  {
+    amenity: 'pub',
     type: 'bar',
     nombre: 'Pubs'
   },
-  { 
-    amenity: 'restaurant', 
+  {
+    amenity: 'restaurant',
     type: 'restaurante',
     nombre: 'Restaurantes'
   },
-  { 
-    amenity: 'cafe', 
+  {
+    amenity: 'cafe',
     type: 'restaurante',
     nombre: 'Cafés'
   },
-  { 
-    leisure: 'beach_resort', 
+  {
+    amenity: 'fast_food',
+    type: 'restaurante',
+    nombre: 'Comida Rápida'
+  },
+  {
+    leisure: 'beach_resort',
     type: 'beach',
     nombre: 'Beach Resorts'
   },
-  { 
-    tourism: 'hotel', 
+  {
+    tourism: 'hotel',
     type: 'hotel',
     nombre: 'Hoteles'
   },
-  { 
-    amenity: 'spa', 
+  {
+    tourism: 'guest_house',
+    type: 'hotel',
+    nombre: 'Hostales'
+  },
+  {
+    amenity: 'spa',
     type: 'masaje',
     nombre: 'Spas'
   },
-  { 
-    shop: 'massage', 
+  {
+    shop: 'massage',
     type: 'masaje',
     nombre: 'Masajes'
   },
-  { 
-    amenity: 'casino', 
+  {
+    amenity: 'casino',
     type: 'club',
     nombre: 'Casinos'
   },
-  { 
-    amenity: 'stripclub', 
+  {
+    amenity: 'stripclub',
     type: 'tabledance',
     nombre: 'Strip Clubs'
   },
-  { 
-    leisure: 'dance', 
+  {
+    leisure: 'dance',
     type: 'club',
     nombre: 'Dance Clubs'
   },
+  {
+    tourism: 'attraction',
+    type: 'beach',
+    nombre: 'Atracciones'
+  },
+  {
+    tourism: 'viewpoint',
+    type: 'beach',
+    nombre: 'Miradores'
+  },
+  {
+    amenity: 'cinema',
+    type: 'show',
+    nombre: 'Cines'
+  },
+  {
+    amenity: 'theatre',
+    type: 'show',
+    nombre: 'Teatros'
+  },
 ];
+
 
 // 🔍 Buscar lugares con Overpass API
 async function buscarLugares(busqueda) {
-  const tag = busqueda.amenity ? `amenity=${busqueda.amenity}` : 
-              busqueda.leisure ? `leisure=${busqueda.leisure}` :
-              busqueda.tourism ? `tourism=${busqueda.tourism}` :
-              busqueda.shop ? `shop=${busqueda.shop}` : '';
-  
+  const tag = busqueda.amenity ? `amenity=${busqueda.amenity}` :
+    busqueda.leisure ? `leisure=${busqueda.leisure}` :
+      busqueda.tourism ? `tourism=${busqueda.tourism}` :
+        busqueda.shop ? `shop=${busqueda.shop}` : '';
+
   const query = `
     [out:json][timeout:25];
     (
@@ -89,9 +122,9 @@ async function buscarLugares(busqueda) {
     );
     out center;
   `;
-  
+
   const url = 'https://overpass-api.de/api/interpreter';
-  
+
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -100,12 +133,12 @@ async function buscarLugares(busqueda) {
         'Content-Type': 'application/x-www-form-urlencoded'
       }
     });
-    
+
     if (!response.ok) {
       console.error(`❌ Error en búsqueda "${busqueda.nombre}": ${response.status}`);
       return [];
     }
-    
+
     const data = await response.json();
     return data.elements || [];
   } catch (error) {
@@ -136,7 +169,7 @@ function generarDescripcion(element, tipo) {
   const phone = element.tags?.phone ? ` Tel: ${element.tags.phone}.` : '';
   const website = element.tags?.website ? ' Sitio web disponible.' : '';
   const horario = element.tags?.opening_hours ? ` Horario: ${element.tags.opening_hours}.` : '';
-  
+
   const descripciones = {
     club: `Club nocturno en ${zona}.${cuisine}${horario} El mejor ambiente para tu noche en Vallarta.`,
     bar: `Bar en ${zona}.${cuisine}${horario} Bebidas, música y ambiente único.`,
@@ -147,7 +180,7 @@ function generarDescripcion(element, tipo) {
     hotel: `Hotel en ${zona}.${website} Hospedaje y servicios.`,
     evento: `Eventos y fiestas en ${zona}.${horario} No te lo pierdas.`
   };
-  
+
   return descripciones[tipo] || `Lugar en ${zona}.${phone}${website}`;
 }
 
@@ -156,13 +189,13 @@ function transformarLugar(element, tipo) {
   const lat = element.lat || element.center?.lat;
   const lon = element.lon || element.center?.lon;
   const nombre = element.tags?.name;
-  
+
   // Solo procesar si tiene nombre
   if (!nombre) return null;
-  
+
   const osmId = `osm_${element.type}_${element.id}`;
   const zona = extraerZona(lat, lon);
-  
+
   // Construir dirección
   const direccion = [
     element.tags?.['addr:street'],
@@ -170,25 +203,23 @@ function transformarLugar(element, tipo) {
     element.tags?.['addr:city'] || 'Puerto Vallarta',
     'Jalisco, México'
   ].filter(Boolean).join(', ') || `${zona}, Puerto Vallarta, Jalisco, México`;
-  
+
   return {
     title: nombre,
     description: generarDescripcion(element, tipo),
     image_url: `https://picsum.photos/400/600?random=${Date.now()}_${element.id}`,
-    type: tipo,
+    category: tipo,
     active: true,
-    featured: Math.random() > 0.7,
-    views: Math.floor(Math.random() * 200) + 50,
     source_url: `https://www.openstreetmap.org/${element.type}/${element.id}`,
-    source_site: 'OpenStreetMap',
-    google_place_id: osmId,
-    google_rating: null,
-    google_reviews_count: null,
-    address: direccion,
-    latitude: lat,
-    longitude: lon,
+    source: 'OpenStreetMap',
+    external_ids: { osm: osmId },
+    location_text: direccion,
+    lat: lat,
+    lng: lon,
+    scraped_at: new Date().toISOString()
   };
 }
+
 
 // 💾 Guardar en Supabase
 async function guardarEnSupabase(items) {
@@ -196,50 +227,47 @@ async function guardarEnSupabase(items) {
     console.log('⚠️  No hay items para guardar');
     return { nuevos: 0, actualizados: 0 };
   }
-  
+
   let nuevos = 0;
   let actualizados = 0;
-  
+
   for (const item of items) {
     try {
-      // Verificar si existe
+      // Verificar si existe por título (más seguro para OSM que no tiene Place ID fijo)
       const { data: existente } = await supabase
         .from('content')
-        .select('id, google_place_id')
-        .or(`google_place_id.eq.${item.google_place_id},title.eq.${item.title}`)
+        .select('id')
+        .eq('title', item.title)
         .maybeSingle();
-      
+
       if (existente) {
-        // Actualizar
+        // Actualizar datos si es necesario
         const { error } = await supabase
           .from('content')
           .update({
-            address: item.address,
-            latitude: item.latitude,
-            longitude: item.longitude,
+            location_text: item.location_text,
+            lat: item.lat,
+            lng: item.lng,
             updated_at: new Date().toISOString()
           })
           .eq('id', existente.id);
-        
+
         if (!error) actualizados++;
       } else {
         // Insertar nuevo
         const { error } = await supabase
           .from('content')
           .insert(item);
-        
+
         if (!error) nuevos++;
         else console.error('Error insertando:', item.title, error.message);
       }
     } catch (error) {
-      const { error: insertError } = await supabase
-        .from('content')
-        .insert(item);
-      
-      if (!insertError) nuevos++;
+      console.error('Catch error:', error.message);
     }
   }
-  
+
+
   return { nuevos, actualizados };
 }
 
@@ -250,21 +278,21 @@ async function main() {
   console.log('📅', new Date().toISOString());
   console.log('📍 Target: Puerto Vallarta, MX');
   console.log('🔥 ========================================\n');
-  
+
   const todosLosLugares = [];
   const lugaresVistos = new Set();
-  
+
   // Ejecutar todas las búsquedas
   for (const busqueda of BUSQUEDAS) {
     console.log(`🔍 Buscando: "${busqueda.nombre}"...`);
-    
+
     const resultados = await buscarLugares(busqueda);
     let agregados = 0;
-    
+
     for (const elemento of resultados) {
       const id = `${elemento.type}_${elemento.id}`;
       if (lugaresVistos.has(id)) continue;
-      
+
       const transformado = transformarLugar(elemento, busqueda.type);
       if (transformado) {
         lugaresVistos.add(id);
@@ -272,29 +300,30 @@ async function main() {
         agregados++;
       }
     }
-    
+
     console.log(`   📦 Encontrados: ${resultados.length} | Con nombre: ${agregados}`);
-    
+
     // Pausa para no sobrecargar Overpass API
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
-  
+
   console.log(`\n✅ Total lugares únicos: ${todosLosLugares.length}\n`);
-  
+
   // Breakdown por tipo
   const breakdown = {};
   todosLosLugares.forEach(item => {
-    breakdown[item.type] = (breakdown[item.type] || 0) + 1;
+    breakdown[item.category] = (breakdown[item.category] || 0) + 1;
   });
   console.log('📊 Breakdown por categoría:');
-  Object.entries(breakdown).forEach(([type, count]) => {
-    console.log(`   - ${type}: ${count}`);
+  Object.entries(breakdown).forEach(([cat, count]) => {
+    console.log(`   - ${cat}: ${count}`);
   });
-  
+
+
   // Guardar en Supabase
   console.log('\n💾 Guardando en Supabase...');
   const { nuevos, actualizados } = await guardarEnSupabase(todosLosLugares);
-  
+
   console.log('\n🔥 ========================================');
   console.log('✅ Scraper completado exitosamente');
   console.log(`📊 Nuevos: ${nuevos} | Actualizados: ${actualizados}`);

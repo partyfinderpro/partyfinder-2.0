@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, User } from 'lucide-react';
+import { X, Mail, Lock, User, Chrome, Sparkles } from 'lucide-react';
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -20,21 +20,13 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
 
-    // Using singleton supabase client from lib/supabaseClient
-
-    // Obtener la URL de callback correcta
     const getCallbackUrl = () => {
-        // Priorizar variable de entorno (para producción)
         if (process.env.NEXT_PUBLIC_SITE_URL) {
             return `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`;
         }
-
-        // Fallback a window.location (para desarrollo)
         if (typeof window !== 'undefined') {
             return `${window.location.origin}/auth/callback`;
         }
-
-        // Último fallback (no debería llegar aquí)
         return '/auth/callback';
     };
 
@@ -46,58 +38,40 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
         try {
             const redirectTo = getCallbackUrl();
-            console.log('🔐 [AuthModal] Callback URL:', redirectTo);
 
             if (mode === 'signup') {
-                // Registro
                 const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
                         emailRedirectTo: redirectTo,
                         data: {
-                            name: name || email.split('@')[0], // Usar nombre o email como fallback
+                            name: name || email.split('@')[0],
                         },
                     },
                 });
 
-                if (error) {
-                    console.error('🔐 [AuthModal] Signup error:', error);
-                    throw error;
-                }
-
-                console.log('🔐 [AuthModal] Signup successful:', data.user?.email);
-                setMessage('¡Registro exitoso! Revisa tu email para confirmar tu cuenta.');
-
-                // Cerrar modal después de 3 segundos
+                if (error) throw error;
+                setMessage('¡Registro exitoso! Revisa tu email para confirmar.');
                 setTimeout(() => {
                     onClose();
                     setMessage(null);
                 }, 3000);
 
             } else {
-                // Inicio de sesión
                 const { data, error } = await supabase.auth.signInWithPassword({
                     email,
                     password,
                 });
 
-                if (error) {
-                    console.error('🔐 [AuthModal] Signin error:', error);
-                    throw error;
-                }
-
-                console.log('🔐 [AuthModal] Signin successful:', data.user?.email);
-                setMessage('¡Inicio de sesión exitoso!');
-
-                // Cerrar modal y recargar
+                if (error) throw error;
+                setMessage('¡Bienvenido de nuevo!');
                 setTimeout(() => {
                     onClose();
                     window.location.reload();
                 }, 1000);
             }
         } catch (err: any) {
-            console.error('🔐 [AuthModal] Auth error:', err);
             setError(err.message || 'Error de autenticación');
         } finally {
             setLoading(false);
@@ -107,69 +81,15 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     const handleGoogleAuth = async () => {
         setLoading(true);
         setError(null);
-
         try {
             const redirectTo = getCallbackUrl();
-            console.log('🔐 [AuthModal] Google OAuth redirect:', redirectTo);
-
-            const { data, error } = await supabase.auth.signInWithOAuth({
+            const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
-                options: {
-                    redirectTo,
-                },
+                options: { redirectTo },
             });
-
-            if (error) {
-                console.error('🔐 [AuthModal] Google OAuth error:', error);
-                throw error;
-            }
-
-            console.log('🔐 [AuthModal] Google OAuth initiated');
-            // El usuario será redirigido a Google
+            if (error) throw error;
         } catch (err: any) {
-            console.error('🔐 [AuthModal] Google auth error:', err);
-            setError(err.message || 'Error de autenticación con Google');
-            setLoading(false);
-        }
-    };
-
-    const handleMagicLink = async () => {
-        if (!email) {
-            setError('Por favor ingresa tu email');
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            const redirectTo = getCallbackUrl();
-            console.log('🔐 [AuthModal] Magic link redirect:', redirectTo);
-
-            const { error } = await supabase.auth.signInWithOtp({
-                email,
-                options: {
-                    emailRedirectTo: redirectTo,
-                },
-            });
-
-            if (error) {
-                console.error('🔐 [AuthModal] Magic link error:', error);
-                throw error;
-            }
-
-            console.log('🔐 [AuthModal] Magic link sent to:', email);
-            setMessage('¡Link mágico enviado! Revisa tu email.');
-
-            setTimeout(() => {
-                onClose();
-                setMessage(null);
-            }, 3000);
-
-        } catch (err: any) {
-            console.error('🔐 [AuthModal] Magic link error:', err);
-            setError(err.message || 'Error al enviar link mágico');
-        } finally {
+            setError(err.message || 'Error con Google');
             setLoading(false);
         }
     };
@@ -178,155 +98,137 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
     return (
         <AnimatePresence>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                {/* Backdrop */}
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
-                    className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                    className="absolute inset-0 bg-black/90 backdrop-blur-xl"
                 />
 
-                {/* Modal */}
                 <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                    initial={{ opacity: 0, scale: 0.9, y: 30 }}
                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                    className="relative w-full max-w-md"
+                    exit={{ opacity: 0, scale: 0.9, y: 30 }}
+                    className="relative w-full max-w-md overflow-hidden"
                 >
-                    {/* Glass Card */}
-                    <div className="backdrop-blur-2xl bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-6">
-                        {/* Header */}
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-white">
-                                {mode === 'signin' ? 'Iniciar Sesión' : 'Crear Cuenta'}
-                            </h2>
-                            <button
-                                onClick={onClose}
-                                className="text-white/70 hover:text-white transition-colors"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
+                    {/* Background Decorative Glow */}
+                    <div className="absolute -top-24 -left-24 w-64 h-64 bg-venuz-pink/20 rounded-full blur-[100px]" />
+                    <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-venuz-gold/10 rounded-full blur-[100px]" />
+
+                    <div className="relative backdrop-blur-3xl bg-zinc-900/50 border border-white/10 rounded-[2.5rem] shadow-2xl p-8 md:p-10">
+                        {/* Close Button */}
+                        <button
+                            onClick={onClose}
+                            className="absolute top-6 right-6 p-2 rounded-full bg-white/5 text-white/50 hover:text-white hover:bg-white/10 transition-all"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+
+                        {/* Title Section */}
+                        <div className="mb-10 text-center">
+                            <h1 className="text-4xl font-display font-black text-white mb-3 tracking-tighter">
+                                {mode === 'signin' ? 'HOLA DE NUEVO' : 'ÚNETE A VENUZ'}
+                            </h1>
+                            <p className="text-gray-400 font-medium">
+                                Para guardar tus lugares favoritos y dar likes.
+                            </p>
                         </div>
 
-                        {/* Error/Success Messages */}
+                        {/* Error/Success */}
                         {error && (
-                            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm">
+                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-bold text-center">
                                 {error}
-                            </div>
+                            </motion.div>
                         )}
                         {message && (
-                            <div className="mb-4 p-3 bg-green-500/20 border border-green-500/50 rounded-lg text-green-200 text-sm">
+                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-2xl text-green-400 text-sm font-bold text-center">
                                 {message}
-                            </div>
+                            </motion.div>
                         )}
 
-                        {/* Form */}
-                        <form onSubmit={handleAuth} className="space-y-4">
-                            {/* Name (solo en signup) */}
+                        <form onSubmit={handleAuth} className="space-y-5">
                             {mode === 'signup' && (
-                                <div>
-                                    <label className="block text-sm font-medium text-white/70 mb-2">
-                                        Nombre
-                                    </label>
+                                <div className="space-y-2">
                                     <div className="relative">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                                         <input
                                             type="text"
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
-                                            className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-pink-500/50"
-                                            placeholder="Tu nombre"
+                                            className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/5 rounded-2xl text-white font-medium focus:outline-none focus:ring-2 focus:ring-venuz-pink/30 focus:bg-white/10 transition-all"
+                                            placeholder="Tu nombre completo"
                                         />
                                     </div>
                                 </div>
                             )}
 
-                            {/* Email */}
-                            <div>
-                                <label className="block text-sm font-medium text-white/70 mb-2">
-                                    Email
-                                </label>
+                            <div className="space-y-2">
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                                     <input
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         required
-                                        className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-pink-500/50"
+                                        className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/5 rounded-2xl text-white font-medium focus:outline-none focus:ring-2 focus:ring-venuz-pink/30 focus:bg-white/10 transition-all"
                                         placeholder="tu@email.com"
                                     />
                                 </div>
                             </div>
 
-                            {/* Password */}
-                            <div>
-                                <label className="block text-sm font-medium text-white/70 mb-2">
-                                    Contraseña
-                                </label>
+                            <div className="space-y-2">
                                 <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                                     <input
                                         type="password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         required
-                                        className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-pink-500/50"
-                                        placeholder="••••••••"
+                                        className="w-full pl-12 pr-6 py-4 bg-white/5 border border-white/5 rounded-2xl text-white font-medium focus:outline-none focus:ring-2 focus:ring-venuz-pink/30 focus:bg-white/10 transition-all"
+                                        placeholder="Tu contraseña"
                                     />
                                 </div>
                             </div>
 
-                            {/* Submit Button */}
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl text-white font-semibold hover:from-pink-600 hover:to-purple-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full py-5 bg-gradient-to-r from-venuz-pink to-venuz-red rounded-2xl text-white font-black text-lg shadow-glow-pink hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                             >
-                                {loading ? 'Cargando...' : mode === 'signin' ? 'Entrar' : 'Registrarse'}
+                                {loading ? 'ESPERA...' : mode === 'signin' ? 'INICIAR SESIÓN' : 'REGISTRARME'}
                             </button>
                         </form>
 
-                        {/* Divider */}
-                        <div className="relative my-6">
+                        <div className="relative my-10">
                             <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-white/10" />
+                                <div className="w-full border-t border-white/5" />
                             </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-black/50 text-white/50">O continúa con</span>
+                            <div className="relative flex justify-center text-xs uppercase font-black tracking-widest">
+                                <span className="px-4 bg-[#18181b] text-gray-500">O TAMBIÉN</span>
                             </div>
                         </div>
 
-                        {/* Social Auth */}
-                        <div className="space-y-3">
+                        <div className="grid grid-cols-1 gap-4">
                             <button
                                 onClick={handleGoogleAuth}
                                 disabled={loading}
-                                className="w-full py-3 bg-white/10 border border-white/20 rounded-xl text-white font-semibold hover:bg-white/20 transition-all disabled:opacity-50"
+                                className="flex items-center justify-center gap-3 w-full py-4 bg-white text-black rounded-2xl font-bold hover:bg-gray-200 transition-all group"
                             >
-                                🔍 Google
-                            </button>
-
-                            <button
-                                onClick={handleMagicLink}
-                                disabled={loading}
-                                className="w-full py-3 bg-white/10 border border-white/20 rounded-xl text-white font-semibold hover:bg-white/20 transition-all disabled:opacity-50"
-                            >
-                                ✨ Link Mágico
+                                <Chrome className="w-5 h-5" />
+                                <span>Entrar con Google</span>
                             </button>
                         </div>
 
-                        {/* Toggle Mode */}
-                        <div className="mt-6 text-center">
+                        <div className="mt-10 text-center">
                             <button
                                 onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
-                                className="text-sm text-white/70 hover:text-white transition-colors"
+                                className="text-sm font-bold text-gray-400 hover:text-venuz-pink transition-colors"
                             >
                                 {mode === 'signin'
-                                    ? '¿No tienes cuenta? Regístrate'
-                                    : '¿Ya tienes cuenta? Inicia sesión'
+                                    ? '¿ERES NUEVO? CREAR CUENTA'
+                                    : '¿YA TIENES CUENTA? ENTRAR'
                                 }
                             </button>
                         </div>
