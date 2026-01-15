@@ -7,8 +7,9 @@ interface UseFavoritesReturn {
     favorites: Set<string>;
     addFavorite: (contentId: string) => Promise<void>;
     removeFavorite: (contentId: string) => Promise<void>;
-    toggleFavorite: (contentId: string) => Promise<void>;
+    toggleFavorite: (contentId: string) => Promise<boolean>;
     isFavorite: (contentId: string) => boolean;
+    getFavoriteCount: (contentId: string) => Promise<number>;
     loading: boolean;
     error: string | null;
 }
@@ -71,7 +72,7 @@ export function useFavorites(): UseFavoritesReturn {
     const addFavorite = useCallback(async (contentId: string) => {
         if (!userId) {
             setError('Debes iniciar sesión para guardar favoritos');
-            return;
+            throw new Error('Not authenticated');
         }
 
         // Optimistic update
@@ -94,6 +95,7 @@ export function useFavorites(): UseFavoritesReturn {
                 return newSet;
             });
             setError(err.message);
+            throw err;
         }
     }, [userId]);
 
@@ -119,14 +121,15 @@ export function useFavorites(): UseFavoritesReturn {
             console.error('Error quitando favorito:', err);
             setFavorites(prev => new Set(prev).add(contentId));
             setError(err.message);
+            throw err;
         }
     }, [userId]);
 
     // Toggle favorito
-    const toggleFavorite = useCallback(async (contentId: string) => {
+    const toggleFavorite = useCallback(async (contentId: string): Promise<boolean> => {
         if (!userId) {
             setError('Debes iniciar sesión para guardar favoritos');
-            return;
+            throw new Error('Not authenticated');
         }
 
         const wasFavorite = favorites.has(contentId);
@@ -150,18 +153,7 @@ export function useFavorites(): UseFavoritesReturn {
 
             if (rpcError) throw rpcError;
 
-            // Sincronizar con el estado real del servidor
-            if (data?.is_favorite !== !wasFavorite) {
-                setFavorites(prev => {
-                    const newSet = new Set(prev);
-                    if (data?.is_favorite) {
-                        newSet.add(contentId);
-                    } else {
-                        newSet.delete(contentId);
-                    }
-                    return newSet;
-                });
-            }
+            return data?.is_favorite ?? !wasFavorite;
         } catch (err: any) {
             console.error('Error en toggle favorito:', err);
             // Revertir optimistic update
@@ -175,6 +167,7 @@ export function useFavorites(): UseFavoritesReturn {
                 return newSet;
             });
             setError(err.message);
+            throw err;
         }
     }, [userId, favorites]);
 
@@ -183,12 +176,29 @@ export function useFavorites(): UseFavoritesReturn {
         return favorites.has(contentId);
     }, [favorites]);
 
+    // Obtener contador de favoritos
+    const getFavoriteCount = useCallback(async (contentId: string): Promise<number> => {
+        try {
+            const { count, error } = await supabase
+                .from('favorites')
+                .select('*', { count: 'exact', head: true })
+                .eq('content_id', contentId);
+
+            if (error) throw error;
+            return count || 0;
+        } catch (err) {
+            console.error('Error obteniendo contador:', err);
+            return 0;
+        }
+    }, []);
+
     return {
         favorites,
         addFavorite,
         removeFavorite,
         toggleFavorite,
         isFavorite,
+        getFavoriteCount,
         loading,
         error,
     };
