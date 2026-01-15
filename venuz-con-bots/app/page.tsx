@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react'; // Eliminado useEffect y otros imports no usados
+import { useState } from 'react';
 import clsx from 'clsx';
-import InfiniteFeed from '@/components/InfiniteFeed'; // Importamos el nuevo componente
+import InfiniteFeed from '@/components/InfiniteFeed';
 import MegaMenu from '@/components/MegaMenu';
+import SearchOverlay from '@/components/SearchOverlay';
 import {
   Bell,
   Search,
@@ -36,72 +37,9 @@ interface ContentItem {
 }
 
 export default function Home() {
-  // Eliminamos estados de content y loading, ya los maneja InfiniteFeed
   const [filter, setFilter] = useState('all');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  useEffect(() => {
-    // 📍 ZERO FRICTION: Intentar obtener ubicación silenciosamente al inicio
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        console.log('📍 [VENUZ] Ubicación detectada:', position.coords);
-        fetchNearbyContent(position.coords.latitude, position.coords.longitude);
-      },
-      (error) => {
-        console.log('📍 [VENUZ] Ubicación no disponible o denegada, cargando feed estándar.');
-        fetchDefaultContent();
-      }
-    );
-  }, []);
-
-  // 🌍 Opción A: Cargar contenido cercano (RPC)
-  async function fetchNearbyContent(lat: number, lng: number) {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .rpc('get_nearby_places', {
-          user_lat: lat,
-          user_long: lng,
-          radius_meters: 20000 // 20km a la redonda
-        });
-
-      if (error) throw error;
-      console.log('✅ [VENUZ] Lugares cercanos cargados:', data?.length);
-      setContent(data || []);
-    } catch (error) {
-      console.error('❌ Error cargando cercanos:', error);
-      fetchDefaultContent(); // Fallback si falla el RPC
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // 📅 Opción B: Cargar contenido por fecha (Default)
-  async function fetchDefaultContent() {
-    setLoading(true);
-    console.log('🔍 [VENUZ] Fetching default content...');
-
-    try {
-      const { data, error } = await supabase
-        .from('content')
-        .select('*')
-        .eq('active', true)
-        .order('scraped_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-      setContent(data || []);
-    } catch (error) {
-      console.error('🔍 [VENUZ] Error fetching content:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-
-  const filteredContent = filter === 'all'
-    ? content
-    : content.filter(item => item.category === filter);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const navItems = [
     { id: 'all', name: 'Inicio', icon: TrendingUp },
@@ -125,7 +63,6 @@ export default function Home() {
     { id: 'beach', name: 'Beach Clubs', icon: '🏖️' },
     { id: 'hotel', name: 'Hoteles', icon: '🏨' },
   ];
-
 
   return (
     <div className="h-screen bg-black overflow-hidden flex flex-col">
@@ -307,6 +244,21 @@ export default function Home() {
         onClose={() => setIsMenuOpen(false)}
         onSelectCategory={(id) => setFilter(id)}
         currentCategory={filter}
+      />
+
+      {/* 🔍 BOTÓN FLOTANTE DE BÚSQUEDA AI */}
+      <button
+        onClick={() => setSearchOpen(true)}
+        className="fixed bottom-24 right-6 z-50 bg-gradient-to-r from-venuz-pink to-venuz-red text-white p-4 rounded-full shadow-[0_10px_40px_rgba(255,20,147,0.5)] transition-transform hover:scale-110 active:scale-95"
+        aria-label="Buscar con IA"
+      >
+        <Search className="w-6 h-6" />
+      </button>
+
+      {/* 🧠 BÚSQUEDA SEMÁNTICA OVERLAY */}
+      <SearchOverlay
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
       />
     </div>
   );
