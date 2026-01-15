@@ -4,15 +4,21 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
 
 // ========================================
-// CONFIGURACIÓN
+// LAZY INITIALIZATION (avoid build-time errors)
 // ========================================
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+function getSupabaseClient() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) throw new Error('Supabase credentials not configured');
+    return createClient(url, key);
+}
 
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const embeddingModel = genAI.getGenerativeModel({ model: 'text-embedding-004' });
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+function getEmbeddingModel() {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error('Gemini API key not configured');
+    const genAI = new GoogleGenerativeAI(apiKey);
+    return genAI.getGenerativeModel({ model: 'text-embedding-004' });
+}
 
 // ========================================
 // TIPOS
@@ -64,6 +70,7 @@ export async function POST(request: NextRequest) {
 
         // 2. Generar embedding de la query
         const startEmbedding = Date.now();
+        const embeddingModel = getEmbeddingModel();
         const result = await embeddingModel.embedContent(query.trim());
         const queryEmbedding = result.embedding.values;
 
@@ -76,6 +83,7 @@ export async function POST(request: NextRequest) {
 
         // 3. Buscar en Supabase usando RPC
         const startSearch = Date.now();
+        const supabase = getSupabaseClient();
         const { data, error } = await supabase.rpc('match_content', {
             query_embedding: queryEmbedding,
             match_threshold: threshold,

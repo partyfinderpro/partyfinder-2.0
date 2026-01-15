@@ -6,17 +6,18 @@ import { useState } from 'react';
 import { useInteractions } from '@/hooks/useInteractions';
 import { useAuthContext } from '@/context/AuthContext';
 import { LikeButton } from './LikeButton';
+import FavoriteButton from './FavoriteButton';
 import clsx from 'clsx';
 
 interface ContentCardProps {
   content: {
     id: string;
     title: string;
-    description: string | null;
-    image_url: string | null;
-    video_url: string | null;
-    category: string | null;
-    source: string | null;
+    description?: string | null;
+    image_url?: string | null;
+    video_url?: string | null;
+    category?: string | null;
+    source?: string | null;
     location?: string;
     tags?: string[] | null;
 
@@ -25,6 +26,8 @@ interface ContentCardProps {
     total_ratings?: number;
     is_open_now?: boolean;
     google_maps_url?: string;
+    // Distance from user
+    distance_meters?: number;
   };
   isActive: boolean;
 }
@@ -160,11 +163,19 @@ export default function ContentCard({ content, isActive }: ContentCardProps) {
               </p>
             )}
 
-            {/* Location */}
+            {/* Location + Distance */}
             {(content.location || content.source) && (
-              <div className="flex items-center gap-2 text-white/70">
+              <div className="flex items-center gap-2 text-white/70 flex-wrap">
                 <MapPin className="w-4 h-4 text-venuz-pink" />
                 <span className="text-sm font-semibold tracking-wide">{content.location || content.source || 'PUERTO VALLARTA'}</span>
+                {content.distance_meters && (
+                  <span className="text-xs bg-venuz-pink/20 text-venuz-pink px-2 py-0.5 rounded-full font-bold">
+                    {content.distance_meters < 1000
+                      ? `${Math.round(content.distance_meters)}m`
+                      : `${(content.distance_meters / 1000).toFixed(1)}km`
+                    }
+                  </span>
+                )}
               </div>
             )}
           </motion.div>
@@ -186,6 +197,13 @@ export default function ContentCard({ content, isActive }: ContentCardProps) {
                 }
               }}
               count={likesCount}
+            />
+
+            {/* Favorite Button - Persistente en DB */}
+            <FavoriteButton
+              contentId={content.id}
+              size="md"
+              onAuthRequired={openAuthModal}
             />
 
             {/* Save Button */}

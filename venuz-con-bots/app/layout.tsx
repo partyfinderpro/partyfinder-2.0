@@ -28,8 +28,18 @@ export const viewport: Viewport = {
 }
 
 import OnboardingModal from '@/components/OnboardingModal';
+import NotificationBell from '@/components/NotificationBell';
 import { AuthProvider } from '@/context/AuthContext';
+import { PreferencesProvider } from '@/context/PreferencesContext';
 import { SpeedInsights } from "@vercel/speed-insights/next"
+
+// Client component for Service Worker registration
+function ServiceWorkerRegistration() {
+  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(console.error);
+  }
+  return null;
+}
 
 export default function RootLayout({
   children,
@@ -47,12 +57,20 @@ export default function RootLayout({
         </div>
 
         <AuthProvider>
-          <OnboardingModal />
-          {/* Main content */}
-          <div className="relative z-10">
-            {children}
-            <SpeedInsights />
-          </div>
+          <PreferencesProvider>
+            <OnboardingModal />
+
+            {/* Global Notification Bell - Fixed Position */}
+            <div className="fixed top-4 right-4 z-[100]">
+              <NotificationBell />
+            </div>
+
+            {/* Main content */}
+            <div className="relative z-10">
+              {children}
+              <SpeedInsights />
+            </div>
+          </PreferencesProvider>
         </AuthProvider>
       </body>
     </html>

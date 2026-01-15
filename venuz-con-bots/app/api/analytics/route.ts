@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Lazy initialization to avoid build-time errors
+function getSupabaseClient() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) throw new Error('Supabase credentials not configured');
+    return createClient(url, key);
+}
 
 // POST: Registrar evento
 export async function POST(request: NextRequest) {
@@ -16,6 +19,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'event_type es requerido' }, { status: 400 });
         }
 
+        const supabase = getSupabaseClient();
         const { error } = await supabase
             .from('analytics_events')
             .insert({
@@ -43,6 +47,7 @@ export async function GET(request: NextRequest) {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
 
+        const supabase = getSupabaseClient();
         const { data, error } = await supabase
             .rpc('get_analytics_stats', {
                 p_start_date: startDate.toISOString(),
