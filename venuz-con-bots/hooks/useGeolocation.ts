@@ -39,47 +39,9 @@ export function useGeolocation() {
             }
         }
 
-        // Solicitar ubicación actual
-        if (!navigator.geolocation) {
-            setState(prev => ({
-                ...prev,
-                error: 'Geolocalización no soportada',
-                loading: false,
-            }));
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const coords = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                };
-
-                // Guardar en localStorage
-                localStorage.setItem('venuz_user_location', JSON.stringify(coords));
-
-                setState({
-                    coordinates: coords,
-                    error: null,
-                    loading: false,
-                    permissionDenied: false,
-                });
-            },
-            (error) => {
-                setState(prev => ({
-                    ...prev,
-                    error: error.message,
-                    loading: false,
-                    permissionDenied: error.code === error.PERMISSION_DENIED,
-                }));
-            },
-            {
-                enableHighAccuracy: false,
-                timeout: 10000,
-                maximumAge: 300000, // 5 minutos
-            }
-        );
+        // Automatic geolocation removed for Zero Friction UX
+        // Use useSmartGeolocation from venuz-ux-system instead
+        setState(prev => ({ ...prev, loading: false }));
     }, []);
 
     return state;

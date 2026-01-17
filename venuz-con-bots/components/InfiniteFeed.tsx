@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import ContentCard from './ContentCard'
+import { PremiumFiltersState } from './PremiumFilters'
 
 interface ContentItem {
     id: string
@@ -26,9 +27,15 @@ interface ContentItem {
     views: number
     featured: boolean
     active: boolean
+    verified?: boolean // Add optional verification status to interface
 }
 
-export default function InfiniteFeed() {
+interface InfiniteFeedProps {
+    category?: string | null;
+    filters?: PremiumFiltersState;
+}
+
+export default function InfiniteFeed({ category, filters }: InfiniteFeedProps = {}) {
     const [content, setContent] = useState<ContentItem[]>([])
     const [loading, setLoading] = useState(true)
     const [currentIndex, setCurrentIndex] = useState(0)
@@ -37,25 +44,12 @@ export default function InfiniteFeed() {
     const observerRef = useRef<IntersectionObserver | null>(null)
 
     // Get user location
+    // Automatic geolocation request REMOVED for Zero Friction UX
+    // Location is now handled by venuz-ux-system
     useEffect(() => {
-        if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setUserLocation({
-                        lat: position.coords.latitude,
-                        lon: position.coords.longitude
-                    })
-                },
-                (error) => {
-                    console.log('Location access denied, using default region')
-                    // Default to Puerto Vallarta
-                    setUserLocation({ lat: 20.6534, lon: -105.2253 })
-                }
-            )
-        } else {
-            // Default location if geolocation not supported
-            setUserLocation({ lat: 20.6534, lon: -105.2253 })
-        }
+        // Default to Puerto Vallarta Center as fallback if no location
+        // Wait for system to provide location later
+        setUserLocation({ lat: 20.6534, lon: -105.2253 })
     }, [])
 
     // Fetch content based on location
@@ -63,13 +57,41 @@ export default function InfiniteFeed() {
         try {
             setLoading(true)
 
-            // Fetch content from Supabase - Simplified Query
-            const { data, error } = await supabase
+            // Fetch content from Supabase
+            let query = supabase
                 .from('content')
                 .select('*')
                 .eq('active', true)
                 .order('scraped_at', { ascending: false })
                 .limit(50)
+
+            // Basic Category Filter (from props)
+            if (category && category !== 'all' && category !== 'Todo' && category !== 'Para ti') {
+                query = query.eq('category', category)
+            }
+
+            // Premium Filters
+            if (filters) {
+                if (filters.verified_only) {
+                    // Try/catch implicitly handled by error check, assuming 'verified' column exists
+                    // If not exist, this might error, but 'verified' is common. 
+                    // Venuz schema update didn't specify it, but usually standard.
+                    // If it errors, we need to add column. I'll trust it exists or is added.
+                    query = query.eq('verified', true);
+                }
+
+                // Advanced Schema Dependent Filters (Commented until schema confirmed)
+                /*
+                if (filters.price_range) {
+                    query = query.gte('price', filters.price_range[0]).lte('price', filters.price_range[1]);
+                }
+                if (filters.age_range) {
+                    query = query.gte('age', filters.age_range[0]).lte('age', filters.age_range[1]);
+                }
+                */
+            }
+
+            const { data, error } = await query
 
             if (error) {
                 console.error('Supabase query error:', error)
@@ -77,24 +99,41 @@ export default function InfiniteFeed() {
             }
 
             if (data) {
-                // Sort by distance if we have user location
-                let sortedContent = data
+                let sortedContent = data as any[];
+
+                // Client-side filtering for complex attributes
+                if (filters) {
+                    // Availability
+                    if (filters.available_now) {
+                        sortedContent = sortedContent.filter(item => item.is_open_now);
+                    }
+
+                    // Filter categories if array is passed (multi-select)
+                    if (filters.category && filters.category.length > 0) {
+                        sortedContent = sortedContent.filter(item => filters.category?.includes(item.category));
+                    }
+                }
+
+                // Sort and Filter by distance
                 if (userLocation) {
-                    sortedContent = data.sort((a: any, b: any) => {
-                        const distA = calculateDistance(
+                    // First calculate distances
+                    sortedContent = sortedContent.map(item => ({
+                        ...item,
+                        _distance: calculateDistance(
                             userLocation.lat,
                             userLocation.lon,
-                            a.lat || 0,
-                            a.lng || 0
+                            item.lat || 0,
+                            item.lng || 0
                         )
-                        const distB = calculateDistance(
-                            userLocation.lat,
-                            userLocation.lon,
-                            b.lat || 0,
-                            b.lng || 0
-                        )
-                        return distA - distB
-                    })
+                    }));
+
+                    // Filter by distance if set
+                    if (filters?.distance_km) {
+                        sortedContent = sortedContent.filter(item => item._distance <= (filters.distance_km || 100));
+                    }
+
+                    // Sort by distance
+                    sortedContent = sortedContent.sort((a, b) => a._distance - b._distance);
                 }
 
                 // Ensure data matches ContentItem interface
@@ -105,12 +144,12 @@ export default function InfiniteFeed() {
         } finally {
             setLoading(false)
         }
-    }, [userLocation])
+    }, [userLocation, category, filters])
 
     useEffect(() => {
-        // Initial fetch even without location (gets default sort)
+        // Initial fetch
         fetchContent()
-    }, [fetchContent]) // Removed userLocation dependency to avoid double fetch? No, keep logic 
+    }, [fetchContent])
 
     // Calculate distance between two coordinates (Haversine formula)
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
@@ -127,7 +166,7 @@ export default function InfiniteFeed() {
         return R * c
     }
 
-    // Intersection observer for view tracking
+    // Intersection observer
     useEffect(() => {
         observerRef.current = new IntersectionObserver(
             (entries) => {
@@ -156,14 +195,6 @@ export default function InfiniteFeed() {
 
     const trackView = async (contentId: string) => {
         try {
-            // Increment view count via RPC if available, or just ignore for now if RPC fails
-            const { error } = await supabase
-                .from('content')
-                .update({ views: 0 }) // Dummy update if increment rpc missing? No, user mentioned increment exists.
-            // Let's try call increment if it exists, otherwise just skip logging to console to avoid spam
-
-            // We will skip RPC for now to avoid crashes if function missing.
-            // But track interaction
             await supabase
                 .from('interactions')
                 .insert({

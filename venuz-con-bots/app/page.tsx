@@ -36,16 +36,22 @@ interface ContentItem {
   is_open_now?: boolean;
 }
 
+import { PremiumFilterPanel, PremiumFiltersState } from '@/components/PremiumFilters';
+
+import { useRouter } from 'next/navigation';
+
 export default function Home() {
+  const router = useRouter();
   const [filter, setFilter] = useState('all');
+  const [premiumFilters, setPremiumFilters] = useState<PremiumFiltersState>({});
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
   const navItems = [
-    { id: 'all', name: 'Inicio', icon: TrendingUp },
-    { id: 'trending', name: 'Tendencias', icon: Zap },
-    { id: 'nearby', name: 'Cerca de mí', icon: MapPin },
-    { id: 'favorites', name: 'Favoritos', icon: Star },
+    { id: 'all', name: 'Inicio', icon: TrendingUp, action: () => setFilter('all') },
+    { id: 'trending', name: 'Tendencias', icon: Zap, action: () => setFilter('trending') },
+    { id: 'nearby', name: 'Cerca de mí', icon: MapPin, action: () => setFilter('nearby') },
+    { id: 'favorites', name: 'Favoritos', icon: Star, action: () => router.push('/favorites') },
   ];
 
   const categories = [
@@ -69,7 +75,10 @@ export default function Home() {
       {/* Header Superior - Desktop & Mobile */}
       <header className="h-20 flex items-center justify-between px-6 border-b border-white/5 bg-black/50 backdrop-blur-md z-[60]">
         <div className="flex items-center gap-8">
-          <h1 className="text-3xl font-display font-bold text-gradient glow-strong cursor-pointer">
+          <h1
+            onClick={() => setFilter('all')}
+            className="text-3xl font-display font-bold text-gradient glow-strong cursor-pointer"
+          >
             VENUZ
           </h1>
           <div className="hidden lg:flex items-center gap-2 text-gray-400 text-sm hover:text-white transition-colors cursor-pointer">
@@ -79,12 +88,18 @@ export default function Home() {
         </div>
 
         <div className="flex items-center gap-6">
-          <button className="flex items-center gap-2 text-gray-400 hover:text-venuz-pink transition-colors group">
+          <button
+            onClick={() => router.push('/notifications')}
+            className="flex items-center gap-2 text-gray-400 hover:text-venuz-pink transition-colors group"
+          >
             <Bell className="w-5 h-5 group-hover:animate-bounce" />
             <span className="text-sm font-medium">Notificaciones</span>
           </button>
 
-          <button className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-venuz-pink to-venuz-red text-white font-bold text-sm shadow-glow-pink hover:scale-105 transition-all">
+          <button
+            onClick={() => setFilter('trending')}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-venuz-pink to-venuz-red text-white font-bold text-sm shadow-glow-pink hover:scale-105 transition-all"
+          >
             <span>🔥</span>
             <span>Destacados</span>
           </button>
@@ -102,22 +117,19 @@ export default function Home() {
         {/* Sidebar Izquierda - EXCLUSIVA DESKTOP */}
         <aside className="hidden lg:flex flex-col w-[280px] border-r border-white/5 bg-black p-6 gap-8 overflow-y-auto">
           <div className="space-y-1">
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl bg-venuz-pink/10 text-venuz-pink border border-venuz-pink/20 group">
-              <TrendingUp className="w-5 h-5" />
-              <span className="font-bold">Inicio</span>
-            </button>
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group">
-              <Zap className="w-5 h-5" />
-              <span className="font-medium">Tendencias</span>
-            </button>
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group">
-              <MapPin className="w-5 h-5" />
-              <span className="font-medium">Cerca de mí</span>
-            </button>
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group">
-              <Star className="w-5 h-5" />
-              <span className="font-medium">Favoritos</span>
-            </button>
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={item.action}
+                className={clsx(
+                  "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all group",
+                  filter === item.id ? "bg-venuz-pink/10 text-venuz-pink border border-venuz-pink/20" : "hover:bg-white/5 text-gray-400 hover:text-white"
+                )}
+              >
+                <item.icon className="w-5 h-5" />
+                <span className={clsx("font-medium", filter === item.id && "font-bold")}>{item.name}</span>
+              </button>
+            ))}
           </div>
 
           <div className="space-y-4">
@@ -158,8 +170,11 @@ export default function Home() {
         <main className="flex-1 relative bg-black overflow-hidden flex flex-col items-center">
           <div className="w-full max-w-[500px] lg:max-w-none h-full feed-container scrollbar-none overflow-y-auto">
             {/* Componente Inteligente de Feed */}
-            <InfiniteFeed category={filter} />
+            <InfiniteFeed category={filter} filters={premiumFilters} />
           </div>
+
+          <PremiumFilterPanel onApply={setPremiumFilters} />
+
 
           {/* Navigation Mobile pill - EXTRA LARGE FOR ACCESSIBILITY */}
           <nav className="lg:hidden absolute bottom-10 left-1/2 -translate-x-1/2 z-[60] w-full px-6 flex justify-center">
@@ -236,12 +251,13 @@ export default function Home() {
             </div>
           </div>
         </aside>
-      </div>
+      </div >
 
       {/* MEGA MENU MOBILE OVERLAY */}
-      <MegaMenu
+      < MegaMenu
         isOpen={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
+        onClose={() => setIsMenuOpen(false)
+        }
         onSelectCategory={(id) => setFilter(id)}
         currentCategory={filter}
       />
@@ -260,6 +276,6 @@ export default function Home() {
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
       />
-    </div>
+    </div >
   );
 }

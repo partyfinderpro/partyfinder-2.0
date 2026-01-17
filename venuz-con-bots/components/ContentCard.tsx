@@ -1,10 +1,10 @@
 'use client';
 
 import { motion, useMotionValue, useTransform } from 'framer-motion';
-import { Bookmark, MapPin, Clock, Star, Navigation, Route } from 'lucide-react';
-import { useState } from 'react';
+import { Bookmark, MapPin, Clock, Star, Navigation, Route, BadgeCheck } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useInteractions } from '@/hooks/useInteractions';
-import { useGeolocation, getDistanceKm, formatDistance } from '@/hooks/useGeolocation';
+import { useVenuzUX } from '@/venuz-ux-system';
 import { LikeButton } from './LikeButton';
 import { FavoriteButton } from './FavoriteButton';
 import clsx from 'clsx';
@@ -21,6 +21,7 @@ interface ContentCardProps {
     location?: string;
     location_text?: string;
     tags?: string[] | null;
+    verified?: boolean;
 
     // Geolocation data
     lat?: number | null;
@@ -44,14 +45,21 @@ export default function ContentCard({ content, isActive }: ContentCardProps) {
     toggleSave
   } = useInteractions(content.id);
 
-  const { coordinates } = useGeolocation();
+  const { formatDistance, getDistanceKm, trackView } = useVenuzUX();
+
+  useEffect(() => {
+    if (isActive) {
+      trackView(content.id, content.category || 'general');
+    }
+  }, [isActive, content.id, content.category, trackView]);
+
   const [imageLoaded, setImageLoaded] = useState(false);
   const y = useMotionValue(0);
   const opacity = useTransform(y, [-100, 0, 100], [0.5, 1, 0.5]);
 
-  // Calcular distancia si hay coords del usuario y del lugar
-  const distance = coordinates && content.lat && content.lng
-    ? getDistanceKm(coordinates.lat, coordinates.lng, content.lat, content.lng)
+  // Calcular distancia usando el sistema UX
+  const distance = content.lat && content.lng
+    ? getDistanceKm(content.lat, content.lng)
     : null;
 
   // Formatear rating
@@ -78,13 +86,18 @@ export default function ContentCard({ content, isActive }: ContentCardProps) {
           )}
 
           <img
-            src={content.image_url || 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?q=80&w=1200'}
+            src={content.image_url || `https://source.unsplash.com/800x600/?${content.category || 'party'},night`}
             alt={content.title}
             className={clsx(
               "h-full w-full object-cover transition-opacity duration-700",
               imageLoaded ? "opacity-100" : "opacity-0"
             )}
             onLoad={() => setImageLoaded(true)}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              const query = content.category || 'party,nightlife';
+              target.src = `https://source.unsplash.com/800x600/?${query}`;
+            }}
           />
 
           {/* Gradient Overlays */}
@@ -98,37 +111,56 @@ export default function ContentCard({ content, isActive }: ContentCardProps) {
 
         {/* Top Section: Category & Status */}
         <div className="flex items-start justify-between pt-safe">
-          {/* Category Badge */}
-          <motion.div
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="glass px-4 py-2 rounded-full"
-          >
-            <span className="text-xs font-bold text-white uppercase tracking-widest">
-              {content.category || content.source || 'VIP'}
-            </span>
-          </motion.div>
-
-          {/* Open/Closed Status */}
-          {content.is_open_now !== undefined && (
+          <div className="flex flex-col gap-2 items-start">
+            {/* Category Badge */}
             <motion.div
-              initial={{ x: 20, opacity: 0 }}
+              initial={{ x: -20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className={clsx(
-                "glass border rounded-full px-4 py-2 flex items-center gap-2",
-                content.is_open_now
-                  ? "bg-green-500/20 border-green-400/30"
-                  : "bg-red-500/20 border-red-400/30"
-              )}
+              className="glass px-4 py-2 rounded-full"
             >
-              <Clock className="w-3 h-3 text-white" />
-              <span className="text-[10px] font-bold text-white tracking-widest">
-                {content.is_open_now ? 'ABIERTO' : 'CERRADO'}
+              <span className="text-xs font-bold text-white uppercase tracking-widest">
+                {content.category || content.source || 'VIP'}
               </span>
             </motion.div>
-          )}
+
+            {/* Verified Badge */}
+            {content.verified && (
+              <motion.div
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.35 }}
+                className="glass px-3 py-2 rounded-full flex items-center gap-1.5 border-blue-400/30 bg-blue-500/10"
+              >
+                <BadgeCheck className="w-3 h-3 text-blue-400 fill-blue-400/20" />
+                <span className="text-[10px] font-black text-blue-300 uppercase tracking-widest">
+                  VERIFICADO
+                </span>
+              </motion.div>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+            {/* Open/Closed Status */}
+            {content.is_open_now !== undefined && (
+              <motion.div
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className={clsx(
+                  "glass border rounded-full px-4 py-2 flex items-center gap-2",
+                  content.is_open_now
+                    ? "bg-green-500/20 border-green-400/30"
+                    : "bg-red-500/20 border-red-400/30"
+                )}
+              >
+                <Clock className="w-3 h-3 text-white" />
+                <span className="text-[10px] font-bold text-white tracking-widest">
+                  {content.is_open_now ? 'ABIERTO' : 'CERRADO'}
+                </span>
+              </motion.div>
+            )}
+          </div>
         </div>
 
         {/* Bottom Section: Info & Actions */}
@@ -182,11 +214,11 @@ export default function ContentCard({ content, isActive }: ContentCardProps) {
                 </div>
 
                 {/* Distance Badge */}
-                {distance !== null && (
+                {content.lat && content.lng && (
                   <div className="flex items-center gap-1.5 bg-venuz-pink/20 text-venuz-pink px-3 py-1 rounded-full">
                     <Route className="w-3 h-3" />
                     <span className="text-xs font-bold">
-                      {formatDistance(distance)}
+                      {formatDistance(content.lat, content.lng)}
                     </span>
                   </div>
                 )}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useFavorites } from '@/hooks/useFavorites';
-import FavoriteButton from '@/components/FavoriteButton';
+import { FavoriteButton } from '@/components/FavoriteButton';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';

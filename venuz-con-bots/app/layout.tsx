@@ -27,8 +27,7 @@ export const viewport: Viewport = {
   themeColor: '#FF1493',
 }
 
-import OnboardingModal from '@/components/OnboardingModal';
-import { InstallPrompt } from '@/components/InstallPrompt';
+import { VenuzUXProvider } from '@/venuz-ux-system';
 
 export default function RootLayout({
   children,
@@ -43,22 +42,27 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className="overflow-x-hidden">
-        {/* Background effects */}
-        <div className="fixed inset-0 z-0 pointer-events-none">
-          <div className="absolute top-0 -left-4 w-96 h-96 bg-venuz-pink opacity-10 rounded-full mix-blend-multiply filter blur-3xl animate-pulse-slow" />
-          <div className="absolute top-0 -right-4 w-96 h-96 bg-venuz-red opacity-10 rounded-full mix-blend-multiply filter blur-3xl animate-pulse-slow animation-delay-2000" />
-          <div className="absolute -bottom-8 left-20 w-96 h-96 bg-venuz-gold opacity-10 rounded-full mix-blend-multiply filter blur-3xl animate-pulse-slow animation-delay-4000" />
-        </div>
+        <VenuzUXProvider
+          config={{
+            geoPromptDelay: 120,      // 2 minutos
+            installPromptDelay: 300,   // 5 minutos
+            premiumPromptDelay: 600,   // 10 minutos
+            trialDurationHours: 48,
+            maxFreeInteractions: 50,
+          }}
+        >
+          {/* Background effects */}
+          <div className="fixed inset-0 z-0 pointer-events-none">
+            <div className="absolute top-0 -left-4 w-96 h-96 bg-venuz-pink opacity-10 rounded-full mix-blend-multiply filter blur-3xl animate-pulse-slow" />
+            <div className="absolute top-0 -right-4 w-96 h-96 bg-venuz-red opacity-10 rounded-full mix-blend-multiply filter blur-3xl animate-pulse-slow animation-delay-2000" />
+            <div className="absolute -bottom-8 left-20 w-96 h-96 bg-venuz-gold opacity-10 rounded-full mix-blend-multiply filter blur-3xl animate-pulse-slow animation-delay-4000" />
+          </div>
 
-        <OnboardingModal />
-
-        {/* Main content */}
-        <div className="relative z-10">
-          {children}
-        </div>
-
-        {/* PWA Install Prompt */}
-        <InstallPrompt />
+          {/* Main content */}
+          <div className="relative z-10">
+            {children}
+          </div>
+        </VenuzUXProvider>
       </body>
     </html>
   )
