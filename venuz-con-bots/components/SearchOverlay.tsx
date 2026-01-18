@@ -97,7 +97,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm"
+                className="fixed inset-0 z-[100] bg-deep-black/95 backdrop-blur-md"
                 onClick={onClose}
             >
                 <div
@@ -106,14 +106,14 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                 >
                     {/* Header */}
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-2xl font-bold text-venuz-pink">
-                            🔍 Búsqueda Inteligente
+                        <h2 className="text-3xl font-display font-black neon-text">
+                            🔍 BÚSQUEDA IA
                         </h2>
                         <button
                             onClick={onClose}
-                            className="text-gray-400 hover:text-white transition-colors"
+                            className="p-2 rounded-full hover:bg-white/10 transition-colors"
                         >
-                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
@@ -121,45 +121,47 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
                     {/* Search Input */}
                     <form onSubmit={handleSearch} className="mb-8">
-                        <div className="relative">
+                        <div className="relative group">
+                            <div className="absolute inset-0 bg-gradient-casino blur-lg opacity-20 group-hover:opacity-30 transition-opacity"></div>
                             <input
                                 ref={inputRef}
                                 type="text"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                placeholder="¿Qué buscas hoy? (ej: lugar romántico, fiesta en la playa)"
-                                className="w-full px-6 py-4 bg-gray-900 border-2 border-venuz-pink/30 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-venuz-pink text-lg"
+                                placeholder="¿Qué buscas hoy? (ej: lugar romántico, fiesta techno)"
+                                className="relative w-full px-6 py-5 bg-white/5 border-2 border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-neon-purple text-xl backdrop-blur-md transition-all"
                                 disabled={loading}
                             />
                             <button
                                 type="submit"
                                 disabled={loading || !query.trim()}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 px-6 py-2 bg-venuz-pink hover:bg-venuz-pink/80 disabled:bg-gray-700 disabled:cursor-not-allowed rounded-xl font-semibold transition-colors"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 btn-casino py-2 px-8 text-sm"
                             >
-                                {loading ? 'Buscando...' : 'Buscar'}
+                                {loading ? '🧠 PENSANDO...' : 'BUSCAR'}
                             </button>
                         </div>
 
-                        {searchTime && (
-                            <p className="text-gray-500 text-sm mt-2">
-                                ✨ Búsqueda completada en {searchTime}ms
+                        {searchTime !== null && (
+                            <p className="text-gray-500 text-xs mt-3 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-electric-cyan animate-pulse"></span>
+                                Inteligencia sincronizada en {searchTime}ms
                             </p>
                         )}
                     </form>
 
                     {/* Results Area */}
-                    <div className="flex-1 overflow-y-auto scrollbar-none">
+                    <div className="flex-1 overflow-y-auto scrollbar-casino pr-2">
                         {/* Loading State */}
                         {loading && (
                             <div className="space-y-4">
                                 {[1, 2, 3].map((i) => (
-                                    <div key={i} className="bg-gray-900 rounded-2xl p-4 animate-pulse">
-                                        <div className="flex gap-4">
-                                            <div className="w-24 h-24 bg-gray-800 rounded-lg" />
-                                            <div className="flex-1 space-y-3">
-                                                <div className="h-6 bg-gray-800 rounded w-3/4" />
-                                                <div className="h-4 bg-gray-800 rounded w-1/2" />
-                                                <div className="h-4 bg-gray-800 rounded w-full" />
+                                    <div key={i} className="glass-effect rounded-2xl p-4 animate-pulse">
+                                        <div className="flex gap-6">
+                                            <div className="w-24 h-24 bg-white/10 rounded-xl" />
+                                            <div className="flex-1 space-y-4">
+                                                <div className="h-6 bg-white/10 rounded w-3/4" />
+                                                <div className="h-4 bg-white/10 rounded w-1/2" />
+                                                <div className="h-4 bg-white/10 rounded w-full" />
                                             </div>
                                         </div>
                                     </div>
@@ -169,76 +171,78 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
                         {/* Error State */}
                         {error && !loading && (
-                            <div className="bg-red-900/30 border border-red-600/30 rounded-2xl p-6 text-center">
-                                <p className="text-red-400">{error}</p>
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-8 text-center">
+                                <p className="text-red-400 font-bold">{error}</p>
                             </div>
                         )}
 
                         {/* Results */}
                         {!loading && results.length > 0 && (
                             <div className="space-y-4">
-                                <p className="text-gray-400 mb-4">
-                                    Encontrados {results.length} resultados
-                                </p>
+                                <div className="flex items-center justify-between mb-4">
+                                    <p className="text-gray-400 text-sm font-medium uppercase tracking-widest">
+                                        RESULTADOS ENCONTRADOS ({results.length})
+                                    </p>
+                                </div>
 
                                 {results.map((result) => (
                                     <motion.a
                                         key={result.id}
                                         href={result.url || '#'}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        initial={{ opacity: 0, y: 20 }}
+                                        initial={{ opacity: 0, y: 15 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className="block bg-gray-900 hover:bg-gray-800 rounded-2xl p-4 transition-colors border border-venuz-pink/20 hover:border-venuz-pink/40"
+                                        whileHover={{ scale: 1.01 }}
+                                        className="block glass-effect hover:bg-white/10 rounded-2xl p-4 transition-all border border-white/5 hover:border-neon-purple/30 group"
                                     >
-                                        <div className="flex gap-4">
+                                        <div className="flex gap-6">
                                             {/* Image */}
-                                            <div className="flex-shrink-0">
+                                            <div className="flex-shrink-0 relative">
+                                                <div className="absolute inset-0 bg-gradient-casino opacity-0 group-hover:opacity-20 blur-md transition-opacity"></div>
                                                 {result.image_url ? (
                                                     <Image
                                                         src={result.image_url}
                                                         alt={result.title}
-                                                        width={96}
-                                                        height={96}
-                                                        className="w-24 h-24 object-cover rounded-lg"
+                                                        width={120}
+                                                        height={120}
+                                                        className="w-24 h-24 object-cover rounded-xl relative z-10"
                                                     />
                                                 ) : (
-                                                    <div className="w-24 h-24 bg-gray-800 rounded-lg flex items-center justify-center">
-                                                        <span className="text-4xl">
-                                                            {result.category === 'clubs' ? '🎉' :
-                                                                result.category === 'restaurants' ? '🍽️' :
-                                                                    result.category === 'events' ? '🎪' : '📍'}
-                                                        </span>
+                                                    <div className="w-24 h-24 bg-white/5 rounded-xl flex items-center justify-center relative z-10">
+                                                        <span className="text-4xl">✨</span>
                                                     </div>
                                                 )}
                                             </div>
 
                                             {/* Content */}
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-start justify-between gap-2 mb-2">
-                                                    <h3 className="font-semibold text-white text-lg line-clamp-1">
+                                                <div className="flex items-start justify-between gap-3 mb-2">
+                                                    <h3 className="font-display font-bold text-white text-xl line-clamp-1 group-hover:text-neon-purple transition-colors">
                                                         {result.title}
                                                     </h3>
-                                                    <span className="flex-shrink-0 px-2 py-1 bg-venuz-pink/20 text-venuz-pink text-xs rounded-full">
-                                                        {Math.round(result.similarity * 100)}% match
-                                                    </span>
+                                                    <div className="flex-shrink-0 bg-gradient-casino/20 border border-neon-purple/30 px-3 py-1 rounded-full">
+                                                        <span className="text-neon-purple font-black text-[10px] tracking-tighter">
+                                                            {Math.round(result.similarity * 100)}% MATCH
+                                                        </span>
+                                                    </div>
                                                 </div>
 
-                                                <p className="text-sm text-gray-400 mb-2 capitalize">
+                                                <p className="text-xs font-black text-electric-cyan mb-2 uppercase tracking-widest">
                                                     {result.category.replace('_', ' ')}
                                                 </p>
 
                                                 {result.description && (
-                                                    <p className="text-sm text-gray-300 line-clamp-2 mb-2">
+                                                    <p className="text-sm text-gray-400 line-clamp-2 mb-3 leading-relaxed">
                                                         {result.description}
                                                     </p>
                                                 )}
 
                                                 {result.location_text && (
-                                                    <p className="text-xs text-gray-500 flex items-center gap-1">
-                                                        <span>📍</span>
-                                                        {result.location_text}
-                                                    </p>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-hot-magenta text-xs">📍</span>
+                                                        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">
+                                                            {result.location_text}
+                                                        </p>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
@@ -249,13 +253,13 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
                         {/* Empty State */}
                         {!loading && !error && results.length === 0 && !query && (
-                            <div className="text-center py-12">
-                                <div className="text-6xl mb-4">🔍</div>
-                                <p className="text-gray-400 text-lg">
-                                    Escribe algo y presiona Enter para buscar
-                                </p>
-                                <p className="text-gray-600 text-sm mt-2">
-                                    Ejemplos: "lugar romántico", "fiesta LGBT", "cena íntima"
+                            <div className="text-center py-20">
+                                <div className="text-7xl mb-6 animate-float">🧠</div>
+                                <h3 className="text-2xl font-display font-black text-white mb-3">
+                                    EL CEREBRO ESTÁ LISTO
+                                </h3>
+                                <p className="text-gray-400 text-lg max-w-sm mx-auto">
+                                    Pregúntame por lugares románticos, fiestas intensas o experiencias VIP en la ciudad.
                                 </p>
                             </div>
                         )}

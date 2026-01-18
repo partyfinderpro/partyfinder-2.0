@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=Righteous&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,153 +6,200 @@
 
 @layer base {
   :root {
-    --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-playfair: 'Playfair Display', Georgia, serif;
+    --neon-purple: #bf00ff;
+    --hot-magenta: #ff006e;
+    --electric-cyan: #00f0ff;
+    --alert-orange: #ff6b00;
+    --deep-black: #0a0a0f;
   }
 
   body {
-    @apply bg-black text-white font-['Inter'] antialiased;
-  }
-
-  /* Snap Scrolling para Feed */
-  .feed-container {
-    scroll-snap-type: y mandatory;
-    overflow-y: scroll;
-    height: 100vh;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Safe Area para notch de móviles */
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom, 1.5rem);
-  }
-
-  .pt-safe {
-    padding-top: env(safe-area-inset-top, 1.5rem);
+    @apply bg-deep-black text-white font-body;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
 @layer components {
-  .venuz-gradient {
-    background: linear-gradient(135deg, #ff1493 0%, #dc143c 50%, #ffd700 100%);
+
+  /* Neon Text Effect */
+  .neon-text {
+    @apply font-display font-black text-transparent bg-clip-text;
+    background-image: linear-gradient(135deg, #bf00ff 0%, #ff006e 50%, #00f0ff 100%);
+    text-shadow:
+      0 0 10px rgba(191, 0, 255, 0.5),
+      0 0 20px rgba(255, 0, 110, 0.3),
+      0 0 30px rgba(0, 240, 255, 0.2);
   }
-  
-  .venuz-card {
-    @apply bg-venuz-charcoal rounded-xl overflow-hidden;
-    box-shadow: 0 10px 40px rgba(255, 20, 147, 0.15);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Glow Button */
+  .btn-casino {
+    @apply relative px-8 py-4 font-accent font-bold text-lg rounded-full;
+    @apply bg-gradient-to-r from-neon-purple via-hot-magenta to-alert-orange;
+    @apply shadow-lg transition-all duration-300;
+    @apply hover:scale-105 hover:shadow-2xl active:scale-95;
+    box-shadow:
+      0 0 20px rgba(191, 0, 255, 0.4),
+      0 0 40px rgba(255, 0, 110, 0.2);
   }
-  
-  .venuz-card:hover {
-    box-shadow: 0 20px 60px rgba(255, 20, 147, 0.3);
-    transform: translateY(-4px);
+
+  .btn-casino:hover {
+    box-shadow:
+      0 0 30px rgba(191, 0, 255, 0.6),
+      0 0 60px rgba(255, 0, 110, 0.4),
+      0 0 90px rgba(255, 107, 0, 0.2);
   }
-  
-  .venuz-button {
-    @apply px-6 py-3 rounded-full font-semibold transition-all duration-300;
-    background: linear-gradient(135deg, #ff1493, #dc143c);
-    box-shadow: 0 4px 15px rgba(255, 20, 147, 0.4);
+
+  /* Card hover effect */
+  .card-casino {
+    @apply relative bg-gray-900/50 backdrop-blur-sm rounded-2xl overflow-hidden;
+    @apply border border-gray-800/50 transition-all duration-300;
+    @apply hover:border-neon-purple/50 hover:-translate-y-2;
+  }
+
+  .card-casino:hover {
+    box-shadow:
+      0 20px 40px rgba(191, 0, 255, 0.2),
+      0 10px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Shimmer loading effect */
+  .shimmer {
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.05) 50%,
+        rgba(255, 255, 255, 0) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* Glass morphism */
+  .glass-effect {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+    @apply shadow-xl;
+  }
+
+  /* Pulse dot (for LIVE indicators) */
+  .pulse-dot {
+    @apply relative inline-block w-2 h-2 rounded-full bg-red-500;
+    animation: pulse-ring 1.5s ease-out infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% {
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+
+    70% {
+      box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+
+    100% {
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+  }
+
+  /* Progress bar glow */
+  .progress-glow {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .progress-glow::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent);
+    animation: shimmer 2s infinite;
   }
 }
 
 @layer utilities {
-  /* Glassmorphism utilities */
-  .glass {
-    @apply backdrop-blur-xl bg-white/10 border border-white/20;
+
+  /* Scrollbar styling */
+  .scrollbar-casino::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
   }
 
-  .glass-strong {
-    @apply backdrop-blur-2xl bg-white/20 border border-white/30;
+  .scrollbar-casino::-webkit-scrollbar-track {
+    @apply bg-gray-900/50;
   }
 
-  /* Text gradients */
-  .text-gradient-gold {
-    @apply bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-200 bg-clip-text text-transparent;
+  .scrollbar-casino::-webkit-scrollbar-thumb {
+    @apply bg-gradient-to-b from-neon-purple to-hot-magenta rounded-full;
   }
 
-  .text-gradient-pink {
-    @apply bg-gradient-to-r from-pink-400 via-rose-400 to-pink-400 bg-clip-text text-transparent;
+  .scrollbar-casino::-webkit-scrollbar-thumb:hover {
+    @apply from-hot-magenta to-alert-orange;
   }
 
-  .text-gradient {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #ff1493, #ffd700);
+  /* Text glow */
+  .text-glow {
+    text-shadow:
+      0 0 10px currentColor,
+      0 0 20px currentColor,
+      0 0 30px currentColor;
   }
 
-  .glow {
-    text-shadow: 0 0 20px rgba(255, 20, 147, 0.5);
-  }
-  
-  .glow-strong {
-    text-shadow: 0 0 30px rgba(255, 20, 147, 0.8),
-                 0 0 60px rgba(255, 20, 147, 0.4);
-  }
-}
-
-/* Loading animations */
-@keyframes shimmer {
-  0% { background-position: -1000px 0; }
-  100% { background-position: 1000px 0; }
-}
-
-.skeleton {
-  @apply bg-venuz-gray;
-  background-image: linear-gradient(
-    90deg,
-    rgba(42, 42, 42, 0) 0%,
-    rgba(255, 20, 147, 0.1) 50%,
-    rgba(42, 42, 42, 0) 100%
-  );
-  background-size: 1000px 100%;
-  animation: shimmer 2s infinite linear;
-}
-
-/* ========================================
-   LEAFLET MAP - TEMA OSCURO VENUZ
-   ======================================== */
-
-/* Tema oscuro para tiles */
-.leaflet-container {
-  background: #000000;
-  font-family: inherit;
-}
-
-.leaflet-tile {
-  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
-}
-
-/* Popups estilizados */
-.leaflet-popup-content-wrapper {
-  background: #1a1a1a;
-  color: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(236, 72, 153, 0.3);
-  border: 1px solid rgba(236, 72, 153, 0.2);
-}
-
-.leaflet-popup-tip {
-  background: #1a1a1a;
-}
-
-.leaflet-popup-close-button {
-  color: #ec4899 !important;
-  font-size: 24px !important;
-}
-
-.leaflet-popup-close-button:hover {
-  color: #f472b6 !important;
-}
-
-/* Ocultar atribución en móvil */
-@media (max-width: 640px) {
-  .leaflet-control-attribution {
-    font-size: 8px;
-    opacity: 0.5;
+  /* No select */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
   }
 }
 
-/* Custom marker styles */
-.custom-marker {
-  background: transparent !important;
-  border: none !important;
+/* Swiper customization */
+.swiper-button-next,
+.swiper-button-prev {
+  @apply text-white bg-black/50 backdrop-blur-sm rounded-full;
+  width: 44px !important;
+  height: 44px !important;
+  transition: all 0.3s ease;
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  @apply bg-neon-purple/80 scale-110;
+}
+
+.swiper-button-next:after,
+.swiper-button-prev:after {
+  font-size: 18px !important;
+  font-weight: bold;
+}
+
+.swiper-pagination-bullet {
+  @apply bg-white/50;
+  width: 10px !important;
+  height: 10px !important;
+}
+
+.swiper-pagination-bullet-active {
+  @apply bg-neon-purple;
+  box-shadow: 0 0 10px rgba(191, 0, 255, 0.8);
+}
+
+/* Custom animations for mobile */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-on-scroll {
+    animation: fade-in 0.6s ease-out;
+  }
+}
+
+/* Prevent layout shift */
+.aspect-video {
+  aspect-ratio: 16 / 9;
+}
+
+.aspect-square {
+  aspect-ratio: 1 / 1;
 }

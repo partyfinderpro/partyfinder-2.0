@@ -8,16 +8,21 @@ interface GeolocationState {
     permissionDenied: boolean;
 }
 
-export const useGeolocation = () => {
+export const useGeolocation = (enabled: boolean = true) => {
     const [state, setState] = useState<GeolocationState>({
         latitude: null,
         longitude: null,
         error: null,
-        loading: true,
+        loading: enabled,
         permissionDenied: false,
     });
 
     useEffect(() => {
+        if (!enabled) {
+            setState(prev => ({ ...prev, loading: false }));
+            return;
+        }
+
         if (!navigator.geolocation) {
             setState({
                 latitude: null,
@@ -28,6 +33,8 @@ export const useGeolocation = () => {
             });
             return;
         }
+
+        setState(prev => ({ ...prev, loading: true }));
 
         navigator.geolocation.getCurrentPosition(
             (position) => {

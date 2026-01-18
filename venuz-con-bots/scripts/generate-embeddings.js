@@ -48,8 +48,7 @@ const combineTextForEmbedding = (row) => {
     const parts = [
         row.title || '',
         row.category || '',
-        row.description || '',
-        row.location_text || ''
+        row.description || ''
     ];
 
     return parts
@@ -89,14 +88,14 @@ async function processContent() {
     console.log('📊 Consultando registros sin embedding...');
     const { data: rows, error: fetchError } = await supabase
         .from('content')
-        .select('id, title, description, category, location_text')
+        .select('id, title, description, category')
         //.is('embedding', null) // COMENTADO PARA FORZAR REGENERACIÓN SI ES NECESARIO OJO
         .is('embedding', null)
         .eq('active', true)
         .order('created_at', { ascending: false });
 
     if (fetchError) {
-        console.error('❌ Error consultando Supabase:', fetchError);
+        console.error('❌ Error consultando Supabase:', fetchError.message || fetchError);
         process.exit(1);
     }
 

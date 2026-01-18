@@ -7,6 +7,7 @@ import { useInteractions } from '@/hooks/useInteractions';
 import { useAuthContext } from '@/context/AuthContext';
 import { LikeButton } from './LikeButton';
 import FavoriteButton from './FavoriteButton';
+import ImageCarousel from './ImageCarousel';
 import clsx from 'clsx';
 
 interface ContentCardProps {
@@ -20,6 +21,7 @@ interface ContentCardProps {
     source?: string | null;
     location?: string;
     tags?: string[] | null;
+    images?: string[];
 
     // Google Places data
     rating?: number;
@@ -42,7 +44,8 @@ export default function ContentCard({ content, isActive }: ContentCardProps) {
     toggleSave
   } = useInteractions(content.id);
 
-  const [imageLoaded, setImageLoaded] = useState(false);
+  /* const [imageLoaded, setImageLoaded] = useState(false); */
+
   const y = useMotionValue(0);
   const opacity = useTransform(y, [-100, 0, 100], [0.5, 1, 0.5]);
 
@@ -64,24 +67,11 @@ export default function ContentCard({ content, isActive }: ContentCardProps) {
         className="absolute inset-0 z-0"
         style={{ y, opacity }}
       >
-        <div className="relative h-full w-full">
-          {!imageLoaded && (
-            <div className="absolute inset-0 bg-gradient-to-br from-venuz-pink/20 via-black to-purple-900/20 animate-pulse" />
-          )}
-
-          <img
-            src={content.image_url || 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?q=80&w=1200'}
+        <div className="relative h-full w-full bg-zinc-900">
+          <ImageCarousel
+            images={content.images?.length ? content.images : (content.image_url ? [content.image_url] : [])}
             alt={content.title}
-            className={clsx(
-              "h-full w-full object-cover transition-opacity duration-700",
-              imageLoaded ? "opacity-100" : "opacity-0"
-            )}
-            onLoad={() => setImageLoaded(true)}
           />
-
-          {/* Gradient Overlays */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent" />
         </div>
       </motion.div>
 

@@ -1,36 +1,52 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import ContentCard from './ContentCard';
+import VenueCard from './VenueCard';
 import MapButton from './MapButton';
+import RadiusSelector from './RadiusSelector';
+import { RADIUS_LEVELS, shouldExpandRadius, formatRadiusDisplay } from '@/lib/geo-expansion';
 import type { Place } from '@/types';
 import type { MapPlace } from './MapView';
 
 const ITEMS_PER_PAGE = 10;
-const DEFAULT_RADIUS_METERS = 20000; // 20km
+const MIN_ITEMS_FOR_EXPANSION = 5;
 
 interface InfiniteFeedProps {
     category?: string;
+    useGeo?: boolean;
 }
 
-export default function InfiniteFeed({ category = 'all' }: InfiniteFeedProps) {
+export default function InfiniteFeed({ category = 'all', useGeo = false }: InfiniteFeedProps) {
+    const router = useRouter();
     const [places, setPlaces] = useState<Place[]>([]);
     const [loading, setLoading] = useState(true);
     const [hasMore, setHasMore] = useState(true);
     const [offset, setOffset] = useState(0);
     const [error, setError] = useState<string | null>(null);
+    const [mounted, setMounted] = useState(false);
 
-    const { latitude, longitude, error: geoError, loading: geoLoading, permissionDenied } = useGeolocation();
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
-    const fetchNearbyPlaces = useCallback(async (lat: number, lng: number, currentOffset: number) => {
+    // Nuevo: Estado de radio dinámico
+    const [radiusIndex, setRadiusIndex] = useState(2); // Empieza en 5km
+    const [currentRadius, setCurrentRadius] = useState(RADIUS_LEVELS[2]);
+    const [autoExpanded, setAutoExpanded] = useState(false);
+
+    const { latitude, longitude, error: geoError, loading: geoLoading, permissionDenied } = useGeolocation(useGeo);
+
+    const fetchNearbyPlaces = useCallback(async (lat: number, lng: number, currentOffset: number, radius: number) => {
         try {
             const { data, error } = await supabase
                 .rpc('get_nearby_places', {
                     user_lat: lat,
                     user_long: lng,
-                    radius_meters: DEFAULT_RADIUS_METERS,
+                    radius_meters: radius,
                     filter_category: category === 'all' ? null : category
                 })
                 .range(currentOffset, currentOffset + ITEMS_PER_PAGE - 1);
@@ -41,7 +57,7 @@ export default function InfiniteFeed({ category = 'all' }: InfiniteFeedProps) {
             console.error('Error fetching nearby places:', err);
             throw err;
         }
-    }, [category]); // Depende de la categoría
+    }, [category]);
 
     const fetchRegularPlaces = useCallback(async (currentOffset: number) => {
         try {
@@ -81,7 +97,7 @@ export default function InfiniteFeed({ category = 'all' }: InfiniteFeedProps) {
 
                 if (latitude && longitude) {
                     console.log(`🌍 [VENUZ] Geo-búsqueda (${category}): ${latitude}, ${longitude}`);
-                    data = await fetchNearbyPlaces(latitude, longitude, 0);
+                    data = await fetchNearbyPlaces(latitude, longitude, 0, RADIUS_LEVELS[radiusIndex]);
                 } else {
                     console.log(`📅 [VENUZ] Búsqueda normal (${category})`);
                     data = await fetchRegularPlaces(0);
@@ -109,7 +125,7 @@ export default function InfiniteFeed({ category = 'all' }: InfiniteFeedProps) {
         try {
             let data: Place[];
             if (latitude && longitude) {
-                data = await fetchNearbyPlaces(latitude, longitude, offset);
+                data = await fetchNearbyPlaces(latitude, longitude, offset, RADIUS_LEVELS[radiusIndex]);
             } else {
                 data = await fetchRegularPlaces(offset);
             }
@@ -181,18 +197,30 @@ export default function InfiniteFeed({ category = 'all' }: InfiniteFeedProps) {
         <div className="pb-20 w-full">
             {/* Banner Geo Feedback */}
             {latitude && longitude && (
-                <div className="bg-venuz-pink/5 border-b border-venuz-pink/10 p-2 text-center backdrop-blur-sm sticky top-0 z-40 mb-4 mx-4 rounded-b-xl">
-                    <p className="text-venuz-pink text-[10px] font-bold tracking-widest uppercase flex items-center justify-center gap-2">
-                        <span>📡</span> Radar activo: {(DEFAULT_RADIUS_METERS / 1000).toFixed(0)}km
+                <div className="bg-neon-purple/5 border-b border-neon-purple/10 p-2 text-center backdrop-blur-sm sticky top-0 z-40 mb-4 mx-4 rounded-b-xl">
+                    <p className="text-neon-purple text-[10px] font-bold tracking-widest uppercase flex items-center justify-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-electric-cyan animate-pulse"></span>
+                        Radar IA activo: {RADIUS_LEVELS[radiusIndex] / 1000}km
                     </p>
                 </div>
             )}
 
-            <div className="flex flex-col items-center w-full min-h-[50vh]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full min-h-[50vh]">
                 {places.map((place) => (
-                    <div key={place.id} className="w-full snap-start sm:py-4">
-                        <ContentCard content={place} isActive={true} />
-                    </div>
+                    <VenueCard
+                        key={place.id}
+                        id={place.id}
+                        name={place.title}
+                        category={place.category || 'other'}
+                        images={place.images || [place.image_url]}
+                        rating={place.rating}
+                        reviewCount={place.total_ratings}
+                        distance={place.distance}
+                        priceLevel={place.price_level}
+                        isLive={mounted ? (place.active && (place.title.length % 3 === 0)) : false}
+                        activity={mounted ? (place.title.length * 7 % 100) : 50}
+                        onClick={() => router.push(`/details/${place.id}`)}
+                    />
                 ))}
 
                 {places.length === 0 && !loading && (

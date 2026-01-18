@@ -1,9 +1,17 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { Toaster } from 'react-hot-toast';
+import BottomNavigation from "@/components/BottomNavigation";
+import OnboardingModal from '@/components/OnboardingModal';
+import NotificationBell from '@/components/NotificationBell';
+import { AuthProvider } from '@/context/AuthContext';
+import { PreferencesProvider } from '@/context/PreferencesContext';
+import { SpeedInsights } from "@vercel/speed-insights/next"
+import React from 'react';
 
 export const metadata: Metadata = {
-  title: 'VENUZ - Tu Mundo de Entretenimiento Adulto',
-  description: 'Descubre eventos, clubs, servicios y contenido para adultos cerca de ti',
+  title: 'VENUZ - Descubre la Noche',
+  description: 'Los mejores lugares, eventos y experiencias cerca de ti',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -24,21 +32,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#0a0a0a',
-}
-
-import OnboardingModal from '@/components/OnboardingModal';
-import NotificationBell from '@/components/NotificationBell';
-import { AuthProvider } from '@/context/AuthContext';
-import { PreferencesProvider } from '@/context/PreferencesContext';
-import { SpeedInsights } from "@vercel/speed-insights/next"
-
-// Client component for Service Worker registration
-function ServiceWorkerRegistration() {
-  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(console.error);
-  }
-  return null;
+  themeColor: '#0a0a0f',
 }
 
 export default function RootLayout({
@@ -48,28 +42,25 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className="dark">
-      <body className="overflow-x-hidden">
-        {/* Background effects */}
-        <div className="fixed inset-0 z-0 pointer-events-none">
-          <div className="absolute top-0 -left-4 w-96 h-96 bg-venuz-pink opacity-10 rounded-full mix-blend-multiply filter blur-3xl animate-pulse-slow" />
-          <div className="absolute top-0 -right-4 w-96 h-96 bg-venuz-red opacity-10 rounded-full mix-blend-multiply filter blur-3xl animation-delay-2000" />
-          <div className="absolute -bottom-8 left-20 w-96 h-96 bg-venuz-gold opacity-10 rounded-full mix-blend-multiply filter blur-3xl animate-pulse-slow animation-delay-4000" />
-        </div>
-
+      <body className="bg-deep-black text-white font-body overflow-x-hidden scrollbar-casino">
         <AuthProvider>
           <PreferencesProvider>
-            <OnboardingModal />
-
             {/* Global Notification Bell - Fixed Position */}
             <div className="fixed top-4 right-4 z-[100]">
               <NotificationBell />
             </div>
 
             {/* Main content */}
-            <div className="relative z-10">
+            <main className="min-h-screen pb-24 md:pb-0 relative z-10">
               {children}
               <SpeedInsights />
-            </div>
+            </main>
+
+            {/* Bottom Navigation (mobile only) */}
+            <BottomNavigation />
+
+            {/* Toast notifications */}
+            <Toaster position="top-center" reverseOrder={false} />
           </PreferencesProvider>
         </AuthProvider>
       </body>

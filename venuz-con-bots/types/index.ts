@@ -23,4 +23,7 @@ export interface Place {
     rating?: number;
     total_ratings?: number;
     is_open_now?: boolean;
+    images?: string[];
+    price_level?: number;
+    distance?: string;
 }

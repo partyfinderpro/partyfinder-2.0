@@ -1,261 +1,130 @@
 'use client';
 
-import { useState } from 'react';
-import clsx from 'clsx';
+import { useState, useEffect } from 'react';
+import HeroSection from '@/components/HeroSection';
+import VenueCard from '@/components/VenueCard';
+import SkeletonCard from '@/components/ui/SkeletonCard';
+import UserLevel from '@/components/gamification/UserLevel';
+import StreakCounter from '@/components/gamification/StreakCounter';
+import FloatingActionButton from '@/components/ui/FloatingActionButton';
 import InfiniteFeed from '@/components/InfiniteFeed';
-import MegaMenu from '@/components/MegaMenu';
+import { Plus, Filter, Search } from 'lucide-react';
+import { showAchievement } from '@/lib/notifications';
 import SearchOverlay from '@/components/SearchOverlay';
-import {
-  Bell,
-  Search,
-  TrendingUp,
-  MapPin,
-  Heart,
-  Star,
-  Menu,
-  Zap,
-  ChevronRight,
-  User,
-  Settings,
-  HelpCircle,
-  BarChart3
-} from 'lucide-react';
-
-interface ContentItem {
-  id: string;
-  title: string;
-  description: string | null;
-  image_url: string | null;
-  video_url: string | null;
-  category: string | null;
-  source: string | null;
-  lat: number | null;
-  lng: number | null;
-  rating?: number;
-  total_ratings?: number;
-  is_open_now?: boolean;
-}
 
 export default function Home() {
+  const [loading, setLoading] = useState(true);
+  const [userXP, setUserXP] = useState(250);
+  const [streak, setStreak] = useState(3);
   const [filter, setFilter] = useState('all');
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [useGeo, setUseGeo] = useState(false);
 
-  const navItems = [
-    { id: 'all', name: 'Inicio', icon: TrendingUp },
-    { id: 'trending', name: 'Tendencias', icon: Zap },
-    { id: 'nearby', name: 'Cerca de mí', icon: MapPin },
-    { id: 'favorites', name: 'Favoritos', icon: Star },
-  ];
+  useEffect(() => {
+    // Simular carga inicial
+    const timer = setTimeout(() => {
+      setLoading(false);
 
-  const categories = [
-    { id: 'all', name: 'Todo', icon: '🌟' },
-    { id: 'club', name: 'Clubs', icon: '🎉' },
-    { id: 'evento', name: 'Eventos', icon: '🎊' },
-    { id: 'concierto', name: 'Conciertos', icon: '🎸' },
-    { id: 'bar', name: 'Bares', icon: '🍺' },
-    { id: 'show', name: 'Shows', icon: '🎭' },
-    { id: 'feria', name: 'Ferias', icon: '🎪' },
-    { id: 'tabledance', name: 'Table Dance', icon: '💃' },
-    { id: 'escort', name: 'Acompañantes', icon: '💋' },
-    { id: 'masaje', name: 'Masajes', icon: '💆' },
-    { id: 'restaurante', name: 'Restaurantes', icon: '🍽️' },
-    { id: 'beach', name: 'Beach Clubs', icon: '🏖️' },
-    { id: 'hotel', name: 'Hoteles', icon: '🏨' },
-  ];
+      // Mostrar achievement de ejemplo
+      const achievementTimer = setTimeout(() => {
+        showAchievement(
+          '¡Sistema de IA Activo!',
+          'Has activado el cerebro de VENUZ',
+          50,
+          'award'
+        );
+      }, 2000);
+      return () => clearTimeout(achievementTimer);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
-    <div className="h-screen bg-black overflow-hidden flex flex-col">
-      {/* Header Superior - Desktop & Mobile */}
-      <header className="h-20 flex items-center justify-between px-6 border-b border-white/5 bg-black/50 backdrop-blur-md z-[60]">
-        <div className="flex items-center gap-8">
-          <h1 className="text-3xl font-display font-bold text-gradient glow-strong cursor-pointer">
-            VENUZ
-          </h1>
-          <div className="hidden lg:flex items-center gap-2 text-gray-400 text-sm hover:text-white transition-colors cursor-pointer">
-            <MapPin className="w-4 h-4 text-venuz-pink" />
-            <span>Puerto Vallarta, Jalisco</span>
+    <div className="min-h-screen bg-deep-black">
+      {/* Hero Section */}
+      <HeroSection onNearbyClick={() => setUseGeo(true)} />
+
+      {/* User Stats Bar */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+          <UserLevel currentXP={userXP} />
+          <div className="flex items-center justify-center md:justify-end">
+            <StreakCounter days={streak} />
           </div>
         </div>
-
-        <div className="flex items-center gap-6">
-          <button className="flex items-center gap-2 text-gray-400 hover:text-venuz-pink transition-colors group">
-            <Bell className="w-5 h-5 group-hover:animate-bounce" />
-            <span className="text-sm font-medium">Notificaciones</span>
-          </button>
-
-          <button className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-venuz-pink to-venuz-red text-white font-bold text-sm shadow-glow-pink hover:scale-105 transition-all">
-            <span>🔥</span>
-            <span>Destacados</span>
-          </button>
-
-          <button
-            onClick={() => setIsMenuOpen(true)}
-            className="lg:hidden p-2 text-white bg-venuz-pink/20 rounded-xl"
-          >
-            <Menu className="w-6 h-6 text-venuz-pink" />
-          </button>
-        </div>
-      </header>
-
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar Izquierda - EXCLUSIVA DESKTOP */}
-        <aside className="hidden lg:flex flex-col w-[280px] border-r border-white/5 bg-black p-6 gap-8 overflow-y-auto">
-          <div className="space-y-1">
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl bg-venuz-pink/10 text-venuz-pink border border-venuz-pink/20 group">
-              <TrendingUp className="w-5 h-5" />
-              <span className="font-bold">Inicio</span>
-            </button>
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group">
-              <Zap className="w-5 h-5" />
-              <span className="font-medium">Tendencias</span>
-            </button>
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group">
-              <MapPin className="w-5 h-5" />
-              <span className="font-medium">Cerca de mí</span>
-            </button>
-            <button className="w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition-all group">
-              <Star className="w-5 h-5" />
-              <span className="font-medium">Favoritos</span>
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="text-xs font-black text-venuz-pink uppercase tracking-[0.2em] px-4">
-              CATEGORÍAS
-            </h3>
-            <div className="space-y-1">
-              {categories.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setFilter(cat.id)}
-                  className={clsx(
-                    "w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all group",
-                    filter === cat.id ? "bg-venuz-pink/10 text-venuz-pink" : "text-gray-400 hover:text-white hover:bg-white/5"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg">{cat.icon}</span>
-                    <span className="text-sm font-medium">{cat.name}</span>
-                  </div>
-                  {filter === cat.id && <ChevronRight className="w-4 h-4" />}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-auto pt-6 border-t border-white/5 space-y-1">
-            <button className="w-full flex items-center gap-3 px-4 py-2 text-gray-500 hover:text-white text-sm transition-colors">
-              <User className="w-4 h-4" /> Mi Perfil
-            </button>
-            <button className="w-full flex items-center gap-3 px-4 py-2 text-gray-500 hover:text-white text-sm transition-colors">
-              <Settings className="w-4 h-4" /> Ajustes
-            </button>
-          </div>
-        </aside>
-
-        {/* Feed Principal - Responsive */}
-        <main className="flex-1 relative bg-black overflow-hidden flex flex-col items-center">
-          <div className="w-full max-w-[500px] lg:max-w-none h-full feed-container scrollbar-none overflow-y-auto">
-            {/* Componente Inteligente de Feed */}
-            <InfiniteFeed category={filter} />
-          </div>
-
-          {/* Navigation Mobile pill - EXTRA LARGE FOR ACCESSIBILITY */}
-          <nav className="lg:hidden absolute bottom-10 left-1/2 -translate-x-1/2 z-[60] w-full px-6 flex justify-center">
-            <button
-              onClick={() => setIsMenuOpen(true)}
-              className="bg-venuz-pink text-white px-10 py-5 rounded-2xl flex items-center gap-4 shadow-[0_20px_50px_rgba(255,20,147,0.4)] hover:scale-105 active:scale-95 transition-all font-black text-xl uppercase tracking-tighter"
-            >
-              <Menu className="w-8 h-8" />
-              <span>Explorar Categorías</span>
-            </button>
-          </nav>
-        </main>
-
-        {/* Sidebar Derecha - PUBLICIDAD & ESTADÍSTICAS */}
-        <aside className="hidden xl:flex flex-col w-[350px] border-l border-white/5 bg-black p-6 gap-8 overflow-y-auto">
-          {/* Espacio Publicitario Gradient Box */}
-          <div className="relative aspect-video rounded-3xl overflow-hidden bg-gradient-to-br from-venuz-pink via-red-500 to-amber-400 p-8 flex flex-col justify-center">
-            <div className="flex items-center gap-2 mb-2">
-              <Bell className="w-5 h-5 text-white/80" />
-              <h4 className="text-white font-black text-xl tracking-tight">ESPACIO PUBLICITARIO</h4>
-            </div>
-            <p className="text-white/90 text-sm font-medium">Promociona tu negocio aquí</p>
-
-            {/* Minimal decoration */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-white/20 blur-[60px] rounded-full pointer-events-none" />
-          </div>
-
-          <div className="space-y-6">
-            <h3 className="text-xs font-black text-venuz-pink uppercase tracking-[0.2em] px-2 flex items-center gap-2">
-              📊 ESTADÍSTICAS HOY
-            </h3>
-            <div className="space-y-4 px-2">
-              <div className="flex items-center justify-between group">
-                <span className="text-gray-400 text-sm font-medium">Eventos totales</span>
-                <span className="text-xl font-bold text-venuz-gold">0</span>
-              </div>
-              <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-venuz-red animate-pulse" />
-                  <span className="text-gray-400 text-sm font-medium">En vivo</span>
-                </div>
-                <span className="text-xl font-bold text-venuz-gold">0</span>
-              </div>
-              <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-venuz-gold" />
-                  <span className="text-gray-400 text-sm font-medium">Destacados</span>
-                </div>
-                <span className="text-xl font-bold text-venuz-gold">0</span>
-              </div>
-              <div className="flex items-center justify-between group">
-                <div className="flex items-center gap-2">
-                  <Search className="w-4 h-4 text-gray-500" />
-                  <span className="text-gray-400 text-sm font-medium">Vistas totales</span>
-                </div>
-                <span className="text-xl font-bold text-venuz-gold">0</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Banner Premium Bottom */}
-          <div className="mt-auto group cursor-pointer">
-            <div className="venuz-card p-6 border border-white/5 group-hover:border-venuz-pink/30 hover:bg-white/5 transition-all">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-venuz-pink/10 text-venuz-pink">
-                  <Star className="w-5 h-5 fill-current" />
-                </div>
-                <h5 className="font-black text-lg tracking-tight">BANNER PREMIUM</h5>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500 font-bold">$200 USD/mes</span>
-                <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-white group-hover:translate-x-1 transition-all" />
-              </div>
-            </div>
-          </div>
-        </aside>
       </div>
 
-      {/* MEGA MENU MOBILE OVERLAY */}
-      <MegaMenu
-        isOpen={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
-        onSelectCategory={(id) => setFilter(id)}
-        currentCategory={filter}
+      {/* Main Content Feed */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+          <div>
+            <h2 className="text-4xl font-display font-black text-white mb-2 tracking-tight">
+              DESCUBRE <span className="text-neon-purple text-glow">LO NUEVO</span>
+            </h2>
+            <p className="text-gray-400 font-medium">
+              Explora las experiencias más exclusivas de la ciudad
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <button
+              onClick={() => setUseGeo(true)}
+              className="flex-1 md:flex-none glass-effect px-6 py-3 rounded-2xl hover:bg-white/10 transition-all flex items-center justify-center gap-2 border-white/5 font-bold"
+            >
+              <Filter className="w-5 h-5 text-electric-cyan" />
+              <span>Cerca de ti</span>
+            </button>
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="flex-1 md:flex-none btn-casino px-6 py-3 text-sm flex items-center justify-center gap-2"
+            >
+              <Search className="w-5 h-5" />
+              <span>Búsqueda IA</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Categories / Filter Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-6 scrollbar-none no-select">
+          {['all', 'escort', 'club', 'bar', 'evento'].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setFilter(cat)}
+              className={cn(
+                "px-6 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all border",
+                filter === cat
+                  ? "bg-neon-purple border-neon-purple text-white shadow-[0_0_15px_rgba(191,0,255,0.5)]"
+                  : "bg-white/5 border-white/10 text-gray-400 hover:bg-white/10"
+              )}
+            >
+              {cat === 'all' ? 'TODO' : cat.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        {/* Unified Feed */}
+        <div className="relative">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <SkeletonCard count={6} />
+            </div>
+          ) : (
+            <InfiniteFeed category={filter} useGeo={useGeo} />
+          )}
+        </div>
+      </div>
+
+      {/* Floating Action Button */}
+      <FloatingActionButton
+        icon={Plus}
+        label="Publicar"
+        onClick={() => console.log('Add clicked')}
+        position="bottom-right"
+        className="hidden md:flex shadow-2xl"
       />
 
-      {/* 🔍 BOTÓN FLOTANTE DE BÚSQUEDA AI */}
-      <button
-        onClick={() => setSearchOpen(true)}
-        className="fixed bottom-24 right-6 z-50 bg-gradient-to-r from-venuz-pink to-venuz-red text-white p-4 rounded-full shadow-[0_10px_40px_rgba(255,20,147,0.5)] transition-transform hover:scale-110 active:scale-95"
-        aria-label="Buscar con IA"
-      >
-        <Search className="w-6 h-6" />
-      </button>
-
-      {/* 🧠 BÚSQUEDA SEMÁNTICA OVERLAY */}
+      {/* Semantic Search Overlay */}
       <SearchOverlay
         isOpen={searchOpen}
         onClose={() => setSearchOpen(false)}
@@ -263,3 +132,5 @@ export default function Home() {
     </div>
   );
 }
+
+import { cn } from '@/lib/utils';
