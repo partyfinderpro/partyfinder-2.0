@@ -1,26 +1,32 @@
-name: Auto Scraper VENUZ
+name: VENUZ Auto Scraper Pipeline
 
 on:
   schedule:
-    - cron: '0 */6 * * *'
-  workflow_dispatch:
+    - cron: '0 */6 * * *'  # Cada 6 horas
+  workflow_dispatch:  # Manual trigger
 
 jobs:
-  scrape-telegram:
+  scrape-and-enrich:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
       
       - name: Install dependencies
         run: npm ci
       
-      - name: Run Full Automation Cycle (Scrape -> Curate -> Enrich)
+      - name: Install Playwright for Facebook scraper
+        run: npx playwright install chromium
+      
+      - name: 🚀 VENUZ AUTOMATION CYCLE
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
@@ -34,22 +40,59 @@ jobs:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
         run: |
           echo "🚀 STARTING VENUZ AUTOMATION CYCLE"
+          echo "=================================="
           
-          echo "🤖 1. Scraping OpenStreetMap (Massive Data)..."
-          node scripts/openstreetmap-scraper.js || echo "⚠️ OSM Scraper failed but continuing..."
-
-          echo "🤖 1.5. Scraping Telegram..."
+          echo ""
+          echo "📡 Step 1: Scraping Telegram..."
           node bots/telegram-scraper.js || echo "⚠️ Telegram Scraper failed but continuing..."
           
-          echo "🤖 1.6. Scraping Facebook (Fiestas Patronales)..."
-
-          npx playwright install chromium
+          echo ""
+          echo "📘 Step 2: Scraping Facebook Events..."
           node bots/facebook-events-scraper.js "Fiestas patronales" "Puerto Vallarta" || echo "⚠️ Facebook Scraper failed but continuing..."
+          node bots/facebook-events-scraper.js "Conciertos" "Puerto Vallarta" || echo "⚠️ Facebook Conciertos failed but continuing..."
           
-          echo "✨ 2. Curating with Gemini AI..."
+          echo ""
+          echo "🗺️ Step 3: Scraping OpenStreetMap..."
+          node scripts/openstreetmap-scraper.js || echo "⚠️ OSM Scraper failed but continuing..."
+          
+          echo ""
+          echo "✨ Step 4: Curating with Gemini AI..."
           node scripts/autonomous-curator-gemini.js || echo "⚠️ Gemini Curator failed but continuing..."
           
-          echo "⭐ 3. Enriching with Google Places..."
-          node scripts/enrich-with-google-places.js || echo "⚠️ Google Enrichment failed but continuing..."
+          echo ""
+          echo "⭐ Step 5: Enriching with Google Places..."
+          node scripts/enrich-with-google-places.js || echo "⚠️ Google Places Enrichment failed but continuing..."
           
-          echo "🏁 CYCLE COMPLETE"
+          echo ""
+          echo "=================================="
+          echo "🏁 VENUZ AUTOMATION CYCLE COMPLETE"
+          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+  # Optional: Run Google Places scraper separately (uses more API quota)
+  google-places-scraper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.event_name == 'workflow_dispatch'  # Solo manual
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: 🗺️ Run Google Places Scraper
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+        run: |
+          echo "🗺️ Running Google Places Scraper..."
+          node scripts/google-places-scraper.js || echo "⚠️ Google Places Scraper failed"
+          echo "✅ Done"

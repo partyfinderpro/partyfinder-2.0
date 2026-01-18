@@ -1,181 +1,188 @@
+// components/NotificationBell.tsx
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNotifications } from '@/hooks/useNotifications';
-import Link from 'next/link';
 
-export default function NotificationBell() {
-    const { notifications, unreadCount, markAsRead, markAllAsRead, loading } = useNotifications();
+interface Notification {
+    id: string;
+    title: string;
+    message: string;
+    type: 'info' | 'success' | 'warning';
+    read: boolean;
+    created_at: string;
+    content_id?: string;
+}
+
+export function NotificationBell() {
+    const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+    const [unreadCount, setUnreadCount] = useState(0);
 
-    // Cerrar dropdown al hacer clic fuera
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
+        loadNotifications();
+        const unsubscribe = subscribeToNotifications();
+        return () => { unsubscribe?.(); };
+    }, []);
 
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
+    const loadNotifications = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isOpen]);
+        const { data } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(20);
 
-    const getNotificationIcon = (type: string) => {
-        switch (type) {
-            case 'favorite': return '❤️';
-            case 'new_content': return '✨';
-            case 'event_reminder': return '🔔';
-            case 'system': return '⚙️';
-            default: return '📬';
+        if (data) {
+            setNotifications(data);
+            setUnreadCount(data.filter(n => !n.read).length);
         }
     };
 
-    const formatTimeAgo = (dateString: string) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    const subscribeToNotifications = () => {
+        const channel = supabase
+            .channel('notifications')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'notifications',
+                },
+                (payload) => {
+                    setNotifications(prev => [payload.new as Notification, ...prev]);
+                    setUnreadCount(prev => prev + 1);
+                }
+            )
+            .subscribe();
 
-        if (seconds < 60) return 'Hace un momento';
-        if (seconds < 3600) return `Hace ${Math.floor(seconds / 60)}m`;
-        if (seconds < 86400) return `Hace ${Math.floor(seconds / 3600)}h`;
-        if (seconds < 604800) return `Hace ${Math.floor(seconds / 86400)}d`;
-        return date.toLocaleDateString();
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    };
+
+    const markAsRead = async (notificationId: string) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        await supabase
+            .from('notifications')
+            .update({ read: true })
+            .eq('id', notificationId);
+
+        setNotifications(prev =>
+            prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+        );
+        setUnreadCount(prev => Math.max(0, prev - 1));
+    };
+
+    const markAllAsRead = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        await supabase
+            .from('notifications')
+            .update({ read: true })
+            .eq('user_id', user.id)
+            .eq('read', false);
+
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        setUnreadCount(0);
     };
 
     return (
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative">
             {/* Bell Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 text-gray-400 hover:text-white transition-colors"
-                aria-label="Notificaciones"
+                className="relative p-2 hover:bg-white/10 rounded-full transition-colors"
             >
-                <motion.div
-                    animate={unreadCount > 0 ? {
-                        rotate: [0, -20, 20, -20, 20, 0],
-                    } : {}}
-                    transition={{ duration: 0.5, repeat: unreadCount > 0 ? Infinity : 0, repeatDelay: 5 }}
-                >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                </motion.div>
+                <Bell className="w-6 h-6 text-white" />
 
-                {/* Badge */}
-                <AnimatePresence>
-                    {unreadCount > 0 && (
-                        <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            exit={{ scale: 0 }}
-                            className="absolute -top-1 -right-1 bg-pink-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
-                        >
+                {unreadCount > 0 && (
+                    <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -top-1 -right-1 bg-venuz-pink rounded-full w-5 h-5 flex items-center justify-center"
+                    >
+                        <span className="text-xs text-white font-bold">
                             {unreadCount > 9 ? '9+' : unreadCount}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                        </span>
+                    </motion.div>
+                )}
             </button>
 
             {/* Dropdown */}
             <AnimatePresence>
                 {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute right-0 mt-2 w-80 sm:w-96 bg-gray-900 rounded-2xl shadow-2xl border border-pink-500/30 overflow-hidden z-[100]"
-                    >
-                        {/* Header */}
-                        <div className="bg-gradient-to-r from-pink-600 to-purple-600 px-4 py-3 flex items-center justify-between">
-                            <h3 className="text-white font-semibold">Notificaciones</h3>
-                            {unreadCount > 0 && (
-                                <button
-                                    onClick={markAllAsRead}
-                                    className="text-xs text-pink-100 hover:text-white transition-colors"
-                                >
-                                    Marcar todas como leídas
-                                </button>
-                            )}
-                        </div>
+                    <>
+                        {/* Backdrop */}
+                        <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setIsOpen(false)}
+                        />
 
-                        {/* List */}
-                        <div className="max-h-96 overflow-y-auto">
-                            {loading ? (
-                                <div className="p-8 text-center">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-pink-500 mx-auto"></div>
-                                </div>
-                            ) : notifications.length === 0 ? (
-                                <div className="p-8 text-center">
-                                    <div className="text-4xl mb-2">📭</div>
-                                    <p className="text-gray-400">No tienes notificaciones</p>
-                                </div>
-                            ) : (
-                                <div className="divide-y divide-gray-800">
-                                    {notifications.slice(0, 10).map((notif) => (
-                                        <motion.div
-                                            key={notif.id}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            className={`
-                        p-4 cursor-pointer transition-colors
-                        ${notif.read ? 'bg-gray-900' : 'bg-gray-800/50'}
-                        hover:bg-gray-800
-                      `}
-                                            onClick={() => {
-                                                if (!notif.read) {
-                                                    markAsRead(notif.id);
-                                                }
-                                                setIsOpen(false);
-                                            }}
+                        <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute right-0 mt-2 w-80 md:w-96 max-h-[500px] overflow-y-auto bg-black/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-2xl z-50"
+                        >
+                            {/* Header */}
+                            <div className="sticky top-0 bg-black/95 p-4 border-b border-white/10 flex items-center justify-between">
+                                <h3 className="font-bold text-white">Notificaciones</h3>
+                                {unreadCount > 0 && (
+                                    <button
+                                        onClick={markAllAsRead}
+                                        className="text-xs text-venuz-pink hover:underline"
+                                    >
+                                        Marcar todas como leídas
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Notifications List */}
+                            <div className="divide-y divide-white/10">
+                                {notifications.length === 0 ? (
+                                    <div className="p-8 text-center text-white/50">
+                                        No tienes notificaciones
+                                    </div>
+                                ) : (
+                                    notifications.map((notification) => (
+                                        <div
+                                            key={notification.id}
+                                            onClick={() => markAsRead(notification.id)}
+                                            className={`p-4 hover:bg-white/5 cursor-pointer transition-colors ${!notification.read ? 'bg-venuz-pink/10' : ''
+                                                }`}
                                         >
-                                            <div className="flex gap-3">
-                                                <div className="flex-shrink-0 text-2xl">
-                                                    {getNotificationIcon(notif.type)}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-white font-semibold text-sm mb-1">
-                                                        {notif.title}
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="flex-1">
+                                                    <h4 className="font-semibold text-white mb-1">
+                                                        {notification.title}
+                                                    </h4>
+                                                    <p className="text-sm text-white/70">
+                                                        {notification.message}
                                                     </p>
-                                                    <p className="text-gray-400 text-xs line-clamp-2 mb-2">
-                                                        {notif.message}
-                                                    </p>
-                                                    <p className="text-gray-500 text-xs">
-                                                        {formatTimeAgo(notif.created_at)}
+                                                    <p className="text-xs text-white/50 mt-2">
+                                                        {new Date(notification.created_at).toLocaleString('es-MX')}
                                                     </p>
                                                 </div>
-                                                {!notif.read && (
-                                                    <div className="flex-shrink-0">
-                                                        <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
-                                                    </div>
+
+                                                {!notification.read && (
+                                                    <div className="w-2 h-2 bg-venuz-pink rounded-full mt-2" />
                                                 )}
                                             </div>
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Footer */}
-                        {notifications.length > 0 && (
-                            <div className="bg-gray-800 px-4 py-3 text-center border-t border-gray-700">
-                                <Link
-                                    href="/notifications"
-                                    className="text-sm text-pink-400 hover:text-pink-300 transition-colors"
-                                    onClick={() => setIsOpen(false)}
-                                >
-                                    Ver todas las notificaciones
-                                </Link>
+                                        </div>
+                                    ))
+                                )}
                             </div>
-                        )}
-                    </motion.div>
+                        </motion.div>
+                    </>
                 )}
             </AnimatePresence>
         </div>

@@ -23,7 +23,9 @@ interface MapButtonProps {
 
 export default function MapButton({ places, onPlaceClick }: MapButtonProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const { latitude, longitude } = useGeolocation();
+    const { coordinates } = useGeolocation();
+    const latitude = coordinates?.lat;
+    const longitude = coordinates?.lng;
 
     return (
         <>

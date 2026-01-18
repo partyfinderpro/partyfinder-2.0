@@ -1,0 +1,73 @@
+# ============================================
+# VENUZ - Escort Scraper Workflow
+# ============================================
+# Ejecuta cada 6 horas para mantener contenido fresco
+# También se puede ejecutar manualmente
+# ============================================
+
+name: Escort Scraper
+
+on:
+  schedule:
+    # Cada 6 horas: 00:00, 06:00, 12:00, 18:00 UTC
+    - cron: '0 */6 * * *'
+  
+  # Permitir ejecución manual
+  workflow_dispatch:
+    inputs:
+      site:
+        description: 'Sitio específico (all, locanto, skokka, mileroticos)'
+        required: false
+        default: 'all'
+
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: |
+          npm ci || npm install
+          npm install puppeteer @supabase/supabase-js
+
+      - name: 🌐 Install Chromium dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libnss3 \
+            libatk-bridge2.0-0 \
+            libdrm2 \
+            libxkbcommon0 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxrandr2 \
+            libgbm1 \
+            libasound2 \
+            libpangocairo-1.0-0 \
+            libgtk-3-0
+
+      - name: 🔍 Run Escort Scraper
+        run: node bots/escort-scraper.js
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: 📊 Report Results
+        if: always()
+        run: |
+          echo "✅ Escort scraper completed at $(date)"
+          echo "Check Supabase for new content"
