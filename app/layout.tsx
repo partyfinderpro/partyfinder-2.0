@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import AuthProvider from "@/components/AuthProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -164,8 +165,10 @@ export default function RootLayout({
         <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
       <body className={`${inter.className} bg-black text-white antialiased`}>
-        {children}
-        <PWAInstallPrompt />
+        <AuthProvider>
+          {children}
+          <PWAInstallPrompt />
+        </AuthProvider>
       </body>
     </html>
   );
