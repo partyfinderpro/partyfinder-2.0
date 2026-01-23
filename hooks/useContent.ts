@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { getRecommendedContent } from '@/lib/recommendations';
+import { useSessionContext } from '@supabase/auth-helpers-react';
 
 // ============================================
 // VENUZ - Hook para obtener contenido de Supabase
@@ -79,52 +81,13 @@ const FALLBACK_CONTENT: ContentItem[] = [
         is_premium: true,
         views: 3421,
         likes: 567,
-    },
-    {
-        id: "3",
-        title: "Tributo a Queen - Teatro Vallarta",
-        description: "Espectáculo musical con la banda Bohemian Symphony",
-        image_url: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80",
-        category: "concierto",
-        location: "Centro",
-        distance_km: 2.5,
-        is_verified: true,
-        is_open_now: false,
-        views: 892,
-        likes: 145,
-    },
-    {
-        id: "4",
-        title: "CamSoda Live - Valentina",
-        description: "En vivo ahora - Show especial de viernes",
-        image_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80",
-        category: "live",
-        affiliate_url: "https://www.camsoda.com/?refId=venuz",
-        affiliate_source: "camsoda",
-        is_verified: true,
-        is_premium: true,
-        views: 5678,
-        likes: 1234,
-        viewers_now: 847,
-    },
-    {
-        id: "5",
-        title: "La Cantina del Pancho",
-        description: "Mezcales artesanales y coctelería mexicana",
-        image_url: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=800&q=80",
-        category: "bar",
-        location: "5 de Diciembre",
-        distance_km: 1.8,
-        is_verified: true,
-        is_open_now: true,
-        open_until: "2:00 AM",
-        views: 445,
-        likes: 89,
-    },
+    }
 ];
 
 export function useContent(options: UseContentOptions = {}): UseContentReturn {
     const { category, limit = 20, offset: initialOffset = 0 } = options;
+    const { session } = useSessionContext();
+    const userId = session?.user?.id;
 
     const [content, setContent] = useState<ContentItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -133,85 +96,66 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
     const [offset, setOffset] = useState(initialOffset);
     const [totalCount, setTotalCount] = useState(0);
 
-    // Fetch content from Supabase
+    // Fetch content (usando el algoritmo de recomendaciones si no hay categoría específica)
     const fetchContent = useCallback(async (currentOffset: number, append: boolean = false) => {
         setIsLoading(true);
         setError(null);
 
         try {
-            // Build query
-            let query = supabase
-                .from('content')
-                .select('*', { count: 'exact' })
-                .order('created_at', { ascending: false })
-                .range(currentOffset, currentOffset + limit - 1);
+            let data: ContentItem[] = [];
+            let count = 0;
 
-            // Filter by category if specified
             if (category) {
-                query = query.eq('category', category);
-            }
+                // Si hay categoría, usar filtro normal
+                const { data: catData, error: fetchError, count: total } = await supabase
+                    .from('content')
+                    .select('*', { count: 'exact' })
+                    .eq('category', category)
+                    .order('created_at', { ascending: false })
+                    .range(currentOffset, currentOffset + limit - 1);
 
-            const { data, error: fetchError, count } = await query;
-
-            if (fetchError) {
-                throw fetchError;
+                if (fetchError) throw fetchError;
+                data = catData as ContentItem[];
+                count = total || 0;
+            } else {
+                // Si es el feed principal, usar algoritmo de recomendaciones de Grok
+                data = await getRecommendedContent(userId, limit);
+                count = data.length; // En recomendaciones el total es el devuelto por la función
             }
 
             // Check if we got data
             if (data && data.length > 0) {
-                const formattedData = data.map((item: Record<string, unknown>) => ({
-                    ...item,
-                    // Ensure proper typing
-                    affiliate_source: item.affiliate_source as ContentItem['affiliate_source'],
-                })) as ContentItem[];
-
                 if (append) {
-                    setContent(prev => [...prev, ...formattedData]);
+                    setContent(prev => [...prev, ...data]);
                 } else {
-                    setContent(formattedData);
+                    setContent(data);
                 }
 
-                setTotalCount(count || 0);
+                setTotalCount(count);
                 setHasMore(data.length === limit);
-            } else {
-                // No data in Supabase, use fallback
-                console.log('[VENUZ] No data in Supabase, using fallback content');
-
-                if (!append) {
-                    // Filter fallback by category if needed
-                    const filteredFallback = category
-                        ? FALLBACK_CONTENT.filter(item => item.category === category)
-                        : FALLBACK_CONTENT;
-
-                    setContent(filteredFallback);
-                    setTotalCount(filteredFallback.length);
-                }
+            } else if (!append) {
+                // Fallback a los datos mock si nada funciona
+                setContent(FALLBACK_CONTENT);
+                setTotalCount(FALLBACK_CONTENT.length);
                 setHasMore(false);
             }
         } catch (err) {
             console.error('[VENUZ] Error fetching content:', err);
             setError('Error al cargar contenido');
-
-            // Use fallback on error
             if (!append) {
-                const filteredFallback = category
-                    ? FALLBACK_CONTENT.filter(item => item.category === category)
-                    : FALLBACK_CONTENT;
-
-                setContent(filteredFallback);
-                setTotalCount(filteredFallback.length);
+                setContent(FALLBACK_CONTENT);
+                setHasMore(false);
             }
-            setHasMore(false);
         } finally {
             setIsLoading(false);
         }
-    }, [category, limit]);
+    }, [category, limit, userId]);
 
     // Initial fetch
     useEffect(() => {
         setOffset(0);
         fetchContent(0, false);
-    }, [category, fetchContent]);
+    }, [category, fetchContent, userId]); // Re-fetch si cambia el usuario para personalizar
 
     // Load more
     const loadMore = useCallback(async () => {
@@ -263,12 +207,6 @@ export function useContentItem(id: string) {
             } catch (err) {
                 console.error('[VENUZ] Error fetching item:', err);
                 setError('Error al cargar contenido');
-
-                // Try to find in fallback
-                const fallbackItem = FALLBACK_CONTENT.find(item => item.id === id);
-                if (fallbackItem) {
-                    setItem(fallbackItem);
-                }
             } finally {
                 setIsLoading(false);
             }
