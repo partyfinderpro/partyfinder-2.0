@@ -248,11 +248,9 @@ export default function ContentCard({
   };
 
   const handleClick = () => {
-    if (content.affiliate_url) {
-      window.open(content.affiliate_url, "_blank", "noopener,noreferrer");
-    } else {
-      onClick?.(content.id);
-    }
+    // Siempre llamar onClick para abrir el modal interstitial
+    // El modal se encargará de mostrar el warning y abrir el affiliate
+    onClick?.(content.id);
   };
 
   return (

@@ -8,14 +8,15 @@ import ContentCard from './ContentCard'
 interface ContentItem {
   id: string
   title: string
-  description: string | null
-  image_url: string | null
-  video_url: string | null
+  description?: string
+  image_url?: string
+  video_url?: string
   source_url: string
-  source_site: string | null
-  type: string | null
-  tags: string[] | null
+  source_site?: string
+  type?: string
+  tags?: string[]
   category_id: string
+  category: string // Added for ContentCard compatibility
   region_id: string
   views: number
   featured: boolean
@@ -25,10 +26,10 @@ export default function InfiniteFeed() {
   const [content, setContent] = useState<ContentItem[]>([])
   const [loading, setLoading] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [userLocation, setUserLocation] = useState<{lat: number, lon: number} | null>(null)
+  const [userLocation, setUserLocation] = useState<{ lat: number, lon: number } | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
-  
+
   // Get user location
   useEffect(() => {
     if ('geolocation' in navigator) {
@@ -50,12 +51,12 @@ export default function InfiniteFeed() {
       setUserLocation({ lat: 20.6597, lon: -103.3496 })
     }
   }, [])
-  
+
   // Fetch content based on location
   const fetchContent = useCallback(async () => {
     try {
       setLoading(true)
-      
+
       // Fetch content from Supabase
       const { data, error } = await supabase
         .from('content')
@@ -67,14 +68,26 @@ export default function InfiniteFeed() {
         .eq('active', true)
         .order('scraped_at', { ascending: false })
         .limit(50)
-      
+
       if (error) throw error
-      
+
       if (data) {
+        // Transform data to match ContentCard expected type
+        const formattedData = data.map((item: any) => ({
+          ...item,
+          category: item.categories?.name || 'General',
+          description: item.description || undefined,
+          image_url: item.image_url || undefined,
+          video_url: item.video_url || undefined,
+          source_site: item.source_site || undefined,
+          type: item.type || undefined,
+          tags: item.tags || undefined
+        }))
+
         // Sort by distance if we have user location
-        let sortedContent = data
+        let sortedContent = formattedData
         if (userLocation) {
-          sortedContent = data.sort((a: any, b: any) => {
+          sortedContent = formattedData.sort((a: any, b: any) => {
             const distA = calculateDistance(
               userLocation.lat,
               userLocation.lon,
@@ -90,7 +103,7 @@ export default function InfiniteFeed() {
             return distA - distB
           })
         }
-        
+
         setContent(sortedContent as ContentItem[])
       }
     } catch (error) {
@@ -99,13 +112,13 @@ export default function InfiniteFeed() {
       setLoading(false)
     }
   }, [userLocation])
-  
+
   useEffect(() => {
     if (userLocation) {
       fetchContent()
     }
   }, [userLocation, fetchContent])
-  
+
   // Calculate distance between two coordinates (Haversine formula)
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371 // Earth's radius in km
@@ -118,7 +131,7 @@ export default function InfiniteFeed() {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
     return R * c
   }
-  
+
   // Intersection observer for view tracking
   useEffect(() => {
     observerRef.current = new IntersectionObserver(
@@ -127,7 +140,7 @@ export default function InfiniteFeed() {
           if (entry.isIntersecting) {
             const index = parseInt(entry.target.getAttribute('data-index') || '0')
             setCurrentIndex(index)
-            
+
             // Track view
             const contentId = entry.target.getAttribute('data-id')
             if (contentId) {
@@ -138,14 +151,14 @@ export default function InfiniteFeed() {
       },
       { threshold: 0.7 }
     )
-    
+
     return () => {
       if (observerRef.current) {
         observerRef.current.disconnect()
       }
     }
   }, [])
-  
+
   const trackView = async (contentId: string) => {
     try {
       // Increment view count
@@ -153,7 +166,7 @@ export default function InfiniteFeed() {
         .from('content')
         .update({ views: supabase.rpc('increment', { row_id: contentId }) })
         .eq('id', contentId)
-      
+
       // Track interaction
       await supabase
         .from('interactions')
@@ -166,7 +179,7 @@ export default function InfiniteFeed() {
       console.error('Error tracking view:', error)
     }
   }
-  
+
   if (loading && content.length === 0) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -177,9 +190,9 @@ export default function InfiniteFeed() {
       </div>
     )
   }
-  
+
   return (
-    <div 
+    <div
       ref={containerRef}
       className="h-screen overflow-y-scroll snap-scroll bg-venuz-black"
     >
@@ -204,7 +217,7 @@ export default function InfiniteFeed() {
           </motion.div>
         ))}
       </AnimatePresence>
-      
+
       {/* Load more trigger */}
       {content.length > 0 && (
         <div className="h-20 flex items-center justify-center">

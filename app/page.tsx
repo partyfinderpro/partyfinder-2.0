@@ -4,7 +4,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
 import ContentCard from "@/components/ContentCard";
+import ContentPreviewModal from "@/components/ContentPreviewModal";
 import MegaMenu from "@/components/MegaMenu";
+import { useContent, ContentItem } from "@/hooks/useContent";
 import {
   ConcertIcon,
   BarIcon,
@@ -14,7 +16,7 @@ import {
   LiveIcon,
   getCategoryIcon,
 } from "@/components/icons/CategoryIcons";
-import { Filter, SlidersHorizontal, MapPin, Sparkles } from "lucide-react";
+import { Filter, SlidersHorizontal, MapPin, Sparkles, Loader2 } from "lucide-react";
 
 // ============================================
 // VENUZ - Página Principal con TODOS los FIXES
@@ -23,31 +25,10 @@ import { Filter, SlidersHorizontal, MapPin, Sparkles } from "lucide-react";
 // FIX #2: ContentCard con soporte de video y afiliados ✅
 // FIX #3: Iconos SVG premium en lugar de emojis ✅
 // FIX #4: Video player lazy loading implementado ✅
+// FIX #5: Conectado a Supabase ✅
 // ============================================
 
-// Tipos
-interface ContentItem {
-  id: string;
-  title: string;
-  description?: string;
-  image_url?: string;
-  video_url?: string;
-  thumbnail_url?: string;
-  category: string;
-  subcategory?: string;
-  location?: string;
-  distance_km?: number;
-  rating?: number;
-  is_verified?: boolean;
-  is_premium?: boolean;
-  is_open_now?: boolean;
-  open_until?: string;
-  affiliate_url?: string;
-  affiliate_source?: "camsoda" | "stripchat" | "chaturbate" | "other";
-  views?: number;
-  likes?: number;
-  created_at?: string;
-}
+// Tipos - ContentItem viene del hook useContent
 
 interface Category {
   id: string;
@@ -67,88 +48,31 @@ const CATEGORIES: Category[] = [
   { id: "live", name: "En Vivo", description: "Streams y cams" },
 ];
 
-// Mock data para demostración
-const MOCK_CONTENT: ContentItem[] = [
-  {
-    id: "1",
-    title: "Noche Latina @ Club Mandala",
-    description: "La mejor fiesta latina de Puerto Vallarta con DJ internacional",
-    image_url: "https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=800&q=80",
-    category: "club",
-    location: "Zona Romántica",
-    distance_km: 1.2,
-    is_verified: true,
-    is_open_now: true,
-    open_until: "4:00 AM",
-    views: 1523,
-    likes: 234,
-  },
-  {
-    id: "2",
-    title: "Sofia - Modelo Premium",
-    description: "Servicio VIP disponible 24/7. Fotos verificadas.",
-    image_url: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80",
-    category: "escort",
-    location: "Hotel Zone",
-    distance_km: 0.8,
-    is_verified: true,
-    is_premium: true,
-    views: 3421,
-    likes: 567,
-  },
-  {
-    id: "3",
-    title: "Tributo a Queen - Teatro Vallarta",
-    description: "Espectáculo musical con la banda Bohemian Symphony",
-    image_url: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80",
-    category: "concierto",
-    location: "Centro",
-    distance_km: 2.5,
-    is_verified: true,
-    is_open_now: false,
-    views: 892,
-    likes: 145,
-  },
-  {
-    id: "4",
-    title: "CamSoda Live - Valentina",
-    description: "En vivo ahora - Show especial de viernes",
-    image_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80",
-    video_url: "https://example.com/stream.mp4", // Placeholder
-    category: "live",
-    affiliate_url: "https://camsoda.com/ref/venuz",
-    affiliate_source: "camsoda",
-    is_verified: true,
-    is_premium: true,
-    views: 5678,
-    likes: 1234,
-  },
-  {
-    id: "5",
-    title: "La Cantina del Pancho",
-    description: "Mezcales artesanales y coctelería mexicana",
-    image_url: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=800&q=80",
-    category: "bar",
-    location: "5 de Diciembre",
-    distance_km: 1.8,
-    is_verified: true,
-    is_open_now: true,
-    open_until: "2:00 AM",
-    views: 445,
-    likes: 89,
-  },
-];
+// Mock data movido a hooks/useContent.ts como fallback
 
 export default function Home() {
-  // State
-  const [content, setContent] = useState<ContentItem[]>(MOCK_CONTENT);
+  // Supabase content hook
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const {
+    content,
+    isLoading,
+    error,
+    hasMore,
+    loadMore,
+    refresh,
+    totalCount
+  } = useContent({ category: selectedCategory || undefined });
+
+  // UI State
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [notificationCount, setNotificationCount] = useState(5);
   const [ageVerified, setAgeVerified] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+
+  // Modal state para interstitial
+  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Refs
   const feedRef = useRef<HTMLDivElement>(null);
@@ -180,10 +104,8 @@ export default function Home() {
     }
   }
 
-  // Filtrar contenido por categoría
-  const filteredContent = selectedCategory
-    ? content.filter(item => item.category === selectedCategory)
-    : content;
+  // El contenido ya viene filtrado del hook useContent
+  const filteredContent = content;
 
   // Intersection Observer para detectar card activo
   useEffect(() => {
@@ -210,13 +132,9 @@ export default function Home() {
 
   // Handlers
   const handleLike = useCallback((id: string) => {
-    setContent(prev =>
-      prev.map(item =>
-        item.id === id
-          ? { ...item, likes: (item.likes || 0) + 1 }
-          : item
-      )
-    );
+    // TODO: Integrar con Supabase para guardar likes
+    console.log('[VENUZ] Like:', id);
+    // Por ahora solo logueamos, la integración real vendrá después
   }, []);
 
   const handleShare = useCallback((id: string) => {
@@ -228,6 +146,32 @@ export default function Home() {
         url: window.location.href,
       }).catch(console.error);
     }
+  }, [content]);
+
+  // Handler para abrir el modal interstitial
+  const handleContentClick = useCallback((id: string) => {
+    const item = content.find(c => c.id === id);
+    if (item) {
+      setSelectedContent(item);
+      setIsModalOpen(true);
+    }
+  }, [content]);
+
+  // Handler para cerrar el modal
+  const handleCloseModal = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedContent(null);
+  }, []);
+
+  // Obtener contenido relacionado para el modal
+  const getRelatedContent = useCallback((currentItem: ContentItem | null) => {
+    if (!currentItem) return [];
+    return content
+      .filter(item =>
+        item.id !== currentItem.id &&
+        (item.category === currentItem.category || item.affiliate_source === currentItem.affiliate_source)
+      )
+      .slice(0, 5);
   }, [content]);
 
   const handleCategorySelect = (categoryId: string) => {
@@ -432,7 +376,7 @@ export default function Home() {
                       isActive={activeIndex === index}
                       onLike={handleLike}
                       onShare={handleShare}
-                      onClick={(id) => console.log("Navigate to:", id)}
+                      onClick={handleContentClick}
                     />
                   </motion.div>
                 ))}
@@ -480,6 +424,16 @@ export default function Home() {
           scrollbar-width: none;
         }
       `}</style>
+
+      {/* Content Preview Modal (Interstitial) */}
+      <ContentPreviewModal
+        content={selectedContent}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onLike={handleLike}
+        onShare={handleShare}
+        relatedContent={getRelatedContent(selectedContent)}
+      />
     </div>
   );
 }
