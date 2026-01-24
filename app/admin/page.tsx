@@ -46,13 +46,20 @@ export default function AdminPage() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) { setIsAdmin(false); setLoading(false); return; }
 
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', session.user.id)
-                .single();
+            let role = 'user';
 
-            if (profile?.role === 'admin' || session.user.email?.includes('admin')) {
+            try {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', session.user.id)
+                    .single();
+                if (profile) role = profile.role;
+            } catch (e) {
+                console.log('Error checking profiles, trying users...');
+            }
+
+            if (role === 'admin' || session.user.email?.includes('admin')) {
                 setIsAdmin(true);
                 await Promise.all([loadContent(), loadStats(), loadAdvancedStats()]);
             } else {
