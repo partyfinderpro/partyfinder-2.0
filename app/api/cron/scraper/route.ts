@@ -1,64 +1,53 @@
 // app/api/cron/scraper/route.ts
-// Endpoint para Vercel Cron Jobs
-// Ejecuta scrapers de forma segura
+// Motor de automatización de VENUZ
 
 import { NextRequest, NextResponse } from 'next/server';
+import { runApifyActor } from '@/lib/apify';
 
-// Configuración de Vercel para timeout extendido
-export const maxDuration = 300; // 5 minutos máximo (solo en plan Pro)
+export const maxDuration = 300;
 
 export async function GET(request: NextRequest) {
-    console.log('[VENUZ CRON] Scraper triggered at', new Date().toISOString());
-
-    // Verificar autorización
     const authHeader = request.headers.get('authorization');
     const isVercelCron = authHeader === `Bearer ${process.env.CRON_SECRET}`;
     const isManualTrigger = request.nextUrl.searchParams.get('key') === process.env.SCRAPER_API_KEY;
 
     if (!isVercelCron && !isManualTrigger) {
-        console.warn('[VENUZ CRON] Unauthorized attempt');
-        return NextResponse.json(
-            { error: 'Unauthorized' },
-            { status: 401 }
-        );
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     try {
-        const startTime = Date.now();
+        console.log('[VENUZ CRON] Iniciando ciclo de scraping...');
 
-        // NOTA: Los scrapers usan CommonJS y no son compatibles con el build de Next.js
-        // Por ahora, este endpoint solo registra la intención de ejecutar
-        // Los scrapers deben ejecutarse manualmente: node scripts/scraper.js
+        // Lista de actores de Apify a disparar (Sugerencia basándonos en la Fase 2)
+        const actors = [
+            process.env.APIFY_ACTOR_WATCHER, // Ejemplo: Scraper de alertas
+            process.env.APIFY_ACTOR_HUNTER,  // Ejemplo: Scraper de locales
+            process.env.APIFY_ACTOR_SEDUCER  // Ejemplo: Scraper de modelos
+        ].filter(Boolean);
 
-        // En el futuro, cuando migremos los scrapers a ESM, descomentar:
-        // const { runOmniScraper } = await import('@/scripts/scraper');
-        // await runOmniScraper();
+        const results = [];
 
-        // Por ahora, registrar que el cron se ejecutó correctamente
-        console.log('[VENUZ CRON] Cron job executed successfully');
-        console.log('[VENUZ CRON] To run scrapers manually: node scripts/scraper.js');
-
-        const duration = (Date.now() - startTime) / 1000;
+        if (actors.length > 0) {
+            for (const actorId of actors) {
+                const run = await runApifyActor(actorId as string);
+                results.push({ actorId, status: run ? 'started' : 'failed', runId: run?.id });
+            }
+        }
 
         return NextResponse.json({
             success: true,
-            message: 'Cron job executed. Scrapers must be run manually.',
-            manual_command: 'node scripts/scraper.js',
-            duration: `${duration}s`,
             timestamp: new Date().toISOString(),
+            actors_triggered: results,
+            message: actors.length === 0
+                ? 'No hay actores de Apify configurados. Define APIFY_ACTOR_... en Vercel.'
+                : 'Scrapers iniciados en Apify.'
         });
 
     } catch (error: any) {
-        console.error('[VENUZ CRON] Error:', error.message);
-
-        return NextResponse.json({
-            success: false,
-            error: error.message,
-        }, { status: 500 });
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
 
-// También soportar POST para compatibilidad
 export async function POST(request: NextRequest) {
     return GET(request);
 }
