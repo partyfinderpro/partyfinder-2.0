@@ -1,14 +1,42 @@
 // middleware.ts
 // Seguridad + Protección de rutas con Supabase Auth
 
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-    // Crear cliente de Supabase para auth
-    const res = NextResponse.next();
-    const supabase = createMiddlewareClient({ req: request, res });
+    let response = NextResponse.next({
+        request: {
+            headers: request.headers,
+        },
+    });
+
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) {
+                    return request.cookies.get(name)?.value;
+                },
+                set(name: string, value: string, options: CookieOptions) {
+                    request.cookies.set({ name, value, ...options });
+                    response = NextResponse.next({
+                        request: { headers: request.headers },
+                    });
+                    response.cookies.set({ name, value, ...options });
+                },
+                remove(name: string, options: CookieOptions) {
+                    request.cookies.set({ name, value: '', ...options });
+                    response = NextResponse.next({
+                        request: { headers: request.headers },
+                    });
+                    response.cookies.set({ name, value: '', ...options });
+                },
+            },
+        }
+    );
 
     // Verificar sesión
     const { data: { session } } = await supabase.auth.getSession();
@@ -43,18 +71,9 @@ export async function middleware(request: NextRequest) {
         .replace(/\s{2,}/g, ' ')
         .trim();
 
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set('x-nonce', nonce);
-    requestHeaders.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
-
-    const response = NextResponse.next({
-        request: {
-            headers: requestHeaders,
-        },
-    });
-
     // Security Headers
     response.headers.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
+    response.headers.set('x-nonce', nonce);
     response.headers.set('X-DNS-Prefetch-Control', 'on');
     response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
     response.headers.set('X-Frame-Options', 'DENY');

@@ -44,7 +44,7 @@ interface ContentItem {
 
 interface ContentCardProps {
   content: ContentItem;
-  isActive: boolean;
+  isActive?: boolean;
   onLike?: (id: string) => void;
   onShare?: (id: string) => void;
   onClick?: (id: string) => void;
@@ -218,7 +218,7 @@ function VideoPlayer({
 // Componente principal ContentCard
 export default function ContentCard({
   content,
-  isActive,
+  isActive = false,
   onLike,
   onShare,
   onClick,

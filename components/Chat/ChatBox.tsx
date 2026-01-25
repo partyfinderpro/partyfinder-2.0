@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
+import { useSupabaseClient, useUser } from '@/components/AuthProvider';
 import { useEffect, useState, useRef } from 'react';
 import { Send, X, MessageSquare, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -136,8 +136,8 @@ export default function ChatBox({ receiverId, receiverName = "Chat VENUZ" }: { r
                                 messages.map(msg => (
                                     <div key={msg.id} className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}>
                                         <div className={`max-w-[80%] px-4 py-2 rounded-2xl text-sm ${msg.sender_id === user?.id
-                                                ? 'bg-pink-500 text-white rounded-tr-none'
-                                                : 'bg-white/10 text-white/90 rounded-tl-none'
+                                            ? 'bg-pink-500 text-white rounded-tr-none'
+                                            : 'bg-white/10 text-white/90 rounded-tl-none'
                                             }`}>
                                             {msg.content}
                                         </div>

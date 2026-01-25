@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,19 +16,25 @@ import {
   LiveIcon,
   getCategoryIcon,
 } from "@/components/icons/CategoryIcons";
-import { Filter, SlidersHorizontal, MapPin, Sparkles, Loader2 } from "lucide-react";
+import { 
+  Filter, 
+  SlidersHorizontal, 
+  MapPin, 
+  Sparkles, 
+  Loader2,
+  Home,
+  Flame,
+  Star,
+  TrendingUp,
+  Eye,
+  Heart
+} from "lucide-react";
 
 // ============================================
-// VENUZ - Página Principal con TODOS los FIXES
+// VENUZ - PÃ¡gina Principal HÃBRIDA
+// Desktop: Layout Neon/Casino 3 columnas
+// Mobile: Layout TikTok scroll infinito
 // ============================================
-// FIX #1: Header con espaciado dinámico ✅
-// FIX #2: ContentCard con soporte de video y afiliados ✅
-// FIX #3: Iconos SVG premium en lugar de emojis ✅
-// FIX #4: Video player lazy loading implementado ✅
-// FIX #5: Conectado a Supabase ✅
-// ============================================
-
-// Tipos - ContentItem viene del hook useContent
 
 interface Category {
   id: string;
@@ -37,20 +43,32 @@ interface Category {
   isTemporary?: boolean;
 }
 
-// Categorías con iconos premium (FIX #3)
+// CategorÃ­as con iconos premium
 const CATEGORIES: Category[] = [
-  { id: "concierto", name: "Conciertos", description: "Música en vivo", isTemporary: true },
+  { id: "concierto", name: "Conciertos", description: "MÃºsica en vivo", isTemporary: true },
   { id: "evento", name: "Eventos", description: "Fiestas y reuniones", isTemporary: true },
-  { id: "bar", name: "Bares", description: "Nightlife estática" },
+  { id: "bar", name: "Bares", description: "Nightlife estÃ¡tica" },
   { id: "club", name: "Clubs", description: "Discotecas y antros" },
-  { id: "escort", name: "Escorts", description: "Acompañantes verificadas" },
+  { id: "escort", name: "Escorts", description: "AcompaÃ±antes verificadas" },
   { id: "modelo", name: "Modelos", description: "Modelos profesionales" },
   { id: "live", name: "En Vivo", description: "Streams y cams" },
+  { id: "tabledance", name: "Table Dance", description: "Shows en vivo" },
+  { id: "masaje", name: "Masajes", description: "Spa y relajaciÃ³n" },
+  { id: "restaurante", name: "Restaurantes", description: "GastronomÃ­a" },
+  { id: "beach", name: "Beach Clubs", description: "Playa y fiesta" },
 ];
 
-// Mock data movido a hooks/useContent.ts como fallback
+// Trending tags para sidebar
+const TRENDING_TAGS = [
+  '#VallartaNights',
+  '#ZonaRomantica', 
+  '#PVClubs',
+  '#NightlifePV',
+  '#VallartaParty',
+  '#MexicoNocturno'
+];
 
-export default function Home() {
+export default function HomePage() {
   // Supabase content hook
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const {
@@ -69,6 +87,7 @@ export default function Home() {
   const [notificationCount, setNotificationCount] = useState(5);
   const [ageVerified, setAgeVerified] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [activeMenu, setActiveMenu] = useState('inicio');
 
   // Modal state para interstitial
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
@@ -79,17 +98,14 @@ export default function Home() {
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
-    // Check if user already verified age
     const verified = localStorage.getItem('venuz_age_verified')
     if (verified === 'true') {
       setAgeVerified(true)
       setShowSplash(false)
     } else {
-      // Show splash for 2 seconds
       setTimeout(() => setShowSplash(false), 2000)
     }
 
-    // Generate anonymous user ID if doesn't exist
     if (!localStorage.getItem('venuz_user_id')) {
       localStorage.setItem('venuz_user_id', `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
     }
@@ -104,7 +120,6 @@ export default function Home() {
     }
   }
 
-  // El contenido ya viene filtrado del hook useContent
   const filteredContent = content;
 
   // Intersection Observer para detectar card activo
@@ -132,9 +147,7 @@ export default function Home() {
 
   // Handlers
   const handleLike = useCallback((id: string) => {
-    // TODO: Integrar con Supabase para guardar likes
     console.log('[VENUZ] Like:', id);
-    // Por ahora solo logueamos, la integración real vendrá después
   }, []);
 
   const handleShare = useCallback((id: string) => {
@@ -148,7 +161,6 @@ export default function Home() {
     }
   }, [content]);
 
-  // Handler para abrir el modal interstitial
   const handleContentClick = useCallback((id: string) => {
     const item = content.find(c => c.id === id);
     if (item) {
@@ -157,13 +169,11 @@ export default function Home() {
     }
   }, [content]);
 
-  // Handler para cerrar el modal
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     setSelectedContent(null);
   }, []);
 
-  // Obtener contenido relacionado para el modal
   const getRelatedContent = useCallback((currentItem: ContentItem | null) => {
     if (!currentItem) return [];
     return content
@@ -177,10 +187,20 @@ export default function Home() {
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
     setActiveIndex(0);
-    // Scroll to top
     feedRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Calcular estadÃ­sticas
+  const stats = {
+    total: content.length,
+    live: content.filter(c => c.category === 'live').length,
+    featured: content.filter(c => c.is_premium).length,
+    views: content.reduce((acc, c) => acc + (c.views || 0), 0)
+  };
+
+  // ==========================================
+  // SPLASH SCREEN
+  // ==========================================
   if (showSplash) {
     return (
       <div className="h-screen flex items-center justify-center bg-black">
@@ -190,10 +210,10 @@ export default function Home() {
           transition={{ duration: 0.5 }}
           className="text-center"
         >
-          <h1 className="text-7xl md:text-9xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-400 mb-4">
+          <h1 className="text-7xl md:text-9xl font-display font-bold text-gradient glow-strong mb-4">
             VENUZ
           </h1>
-          <p className="text-pink-500 text-xl md:text-2xl font-semibold">
+          <p className="text-venuz-pink text-xl md:text-2xl font-semibold">
             Tu mundo de entretenimiento
           </p>
         </motion.div>
@@ -201,6 +221,9 @@ export default function Home() {
     )
   }
 
+  // ==========================================
+  // AGE VERIFICATION
+  // ==========================================
   if (!ageVerified) {
     return (
       <div className="h-screen flex items-center justify-center bg-black p-6">
@@ -209,39 +232,33 @@ export default function Home() {
           animate={{ scale: 1, opacity: 1 }}
           className="max-w-md w-full"
         >
-          <div className="venuz-card p-8 text-center bg-white/5 rounded-3xl border border-white/10">
-            <div className="text-6xl mb-6">🔞</div>
-
-            <h1 className="text-4xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-rose-400 to-amber-400 mb-4">
+          <div className="venuz-card p-8 text-center">
+            <div className="text-6xl mb-6">ðŸ”ž</div>
+            <h1 className="text-4xl font-display font-bold text-gradient mb-4">
               VENUZ
             </h1>
-
             <h2 className="text-2xl font-semibold text-white mb-4">
-              Verificación de Edad
+              VerificaciÃ³n de Edad
             </h2>
-
             <p className="text-white/70 mb-8">
-              Este sitio contiene contenido para adultos. Debes tener al menos 18 años para continuar.
+              Este sitio contiene contenido para adultos. Debes tener al menos 18 aÃ±os para continuar.
             </p>
-
             <div className="space-y-3">
               <button
                 onClick={() => handleAgeVerification(true)}
-                className="w-full bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold py-4 rounded-xl hover:scale-105 transition-transform"
+                className="w-full venuz-button"
               >
-                Soy mayor de 18 años
+                Soy mayor de 18 aÃ±os
               </button>
-
               <button
                 onClick={() => handleAgeVerification(false)}
-                className="w-full px-6 py-3 rounded-xl font-semibold bg-white/10 text-white/70 hover:bg-white/20 transition-all"
+                className="w-full px-6 py-3 rounded-xl font-semibold bg-venuz-gray text-white/70 hover:bg-venuz-gray/80 transition-all"
               >
-                Soy menor de 18 años
+                Soy menor de 18 aÃ±os
               </button>
             </div>
-
             <p className="text-xs text-white/40 mt-6">
-              Al continuar, aceptas que eres mayor de edad según las leyes de tu país.
+              Al continuar, aceptas que eres mayor de edad segÃºn las leyes de tu paÃ­s.
             </p>
           </div>
         </motion.div>
@@ -249,172 +266,499 @@ export default function Home() {
     )
   }
 
+  // ==========================================
+  // MAIN LAYOUT - RESPONSIVE HÃBRIDO
+  // ==========================================
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Background Effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-pink-500/20 rounded-full blur-[128px]" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-[128px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-500/10 rounded-full blur-[150px]" />
-      </div>
-
-      {/* Header - FIX #1 Aplicado */}
-      <Header
-        notificationCount={notificationCount}
-        onMenuClick={() => setShowFilters(true)}
-        onNotificationClick={() => setNotificationCount(0)}
-        onHighlightsClick={() => handleCategorySelect("destacado")}
-        currentLocation="Puerto Vallarta, JAL"
-      />
-
-      {/* Main Content */}
-      <main className="relative pt-20 sm:pt-24 pb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-          {/* Filters Bar */}
-          <div className="flex items-center gap-4 mb-6 overflow-x-auto pb-2 scrollbar-hide">
-            {/* MegaMenu - FIX #3 Aplicado */}
-            <MegaMenu
-              categories={CATEGORIES}
-              selectedCategory={selectedCategory}
-              onSelectCategory={handleCategorySelect}
-            />
-
-            {/* Quick Filter Chips - Con iconos premium */}
-            <div className="flex items-center gap-2">
-              {CATEGORIES.slice(0, 4).map((cat) => {
-                const Icon = getCategoryIcon(cat.id);
-                const isActive = selectedCategory === cat.id;
-
-                return (
-                  <motion.button
-                    key={cat.id}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleCategorySelect(isActive ? "" : cat.id)}
-                    className={`
-                      flex items-center gap-2
-                      px-4 py-2 rounded-full
-                      text-sm font-medium
-                      whitespace-nowrap
-                      transition-all duration-300
-                      ${isActive
-                        ? "bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30"
-                        : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/10"
-                      }
-                    `}
-                  >
-                    <Icon size={18} />
-                    {cat.name}
-                  </motion.button>
-                );
-              })}
-
-              {/* More Filters */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowFilters(true)}
-                className="
-                  flex items-center gap-2
-                  px-4 py-2 rounded-full
-                  bg-white/5 text-white/70
-                  hover:bg-white/10 hover:text-white
-                  border border-white/10
-                  transition-colors
-                "
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-                Filtros
-              </motion.button>
+    <div className="min-h-screen bg-black">
+      {/* ====================================
+          HEADER - Visible en todas las pantallas
+          ==================================== */}
+      <header className="sticky top-0 z-50 bg-venuz-charcoal/95 border-b border-venuz-pink/20 backdrop-blur-xl">
+        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 lg:gap-8">
+              <h1 className="text-2xl lg:text-3xl font-display font-bold text-gradient glow-strong">
+                VENUZ
+              </h1>
+              <span className="hidden md:flex items-center gap-1 text-sm text-gray-400">
+                <MapPin className="w-4 h-4 text-venuz-pink" />
+                Puerto Vallarta, Jalisco
+              </span>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-4">
+              <button className="hidden md:flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-white transition rounded-lg hover:bg-venuz-gray">
+                ðŸ”” Notificaciones
+                {notificationCount > 0 && (
+                  <span className="px-2 py-0.5 bg-venuz-pink text-white text-xs rounded-full">
+                    {notificationCount}
+                  </span>
+                )}
+              </button>
+              <button className="venuz-button text-sm flex items-center gap-2">
+                <Flame className="w-4 h-4" />
+                <span className="hidden sm:inline">Destacados</span>
+              </button>
             </div>
           </div>
-
-          {/* Content Feed - TikTok Style */}
-          <div
-            ref={feedRef}
-            className="
-              relative
-              h-[calc(100vh-180px)]
-              overflow-y-auto
-              snap-y snap-mandatory
-              scrollbar-hide
-              rounded-3xl
-            "
-          >
-            {filteredContent.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <div className="w-24 h-24 mb-6 rounded-full bg-white/5 flex items-center justify-center">
-                  <Sparkles className="w-12 h-12 text-pink-400" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-2">
-                  No hay contenido disponible
-                </h3>
-                <p className="text-white/50 max-w-xs">
-                  Intenta seleccionar otra categoría o ajusta los filtros
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-6 pb-6">
-                {filteredContent.map((item, index) => (
-                  <motion.div
-                    key={item.id}
-                    data-index={index}
-                    ref={(el) => {
-                      if (el && observerRef.current) {
-                        observerRef.current.observe(el);
-                      }
-                    }}
-                    className="snap-center"
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    {/* ContentCard - FIX #2 y #4 Aplicados */}
-                    <ContentCard
-                      content={item}
-                      isActive={activeIndex === index}
-                      onLike={handleLike}
-                      onShare={handleShare}
-                      onClick={handleContentClick}
-                    />
-                  </motion.div>
-                ))}
-
-                {/* Load More Indicator */}
-                {isLoading && (
-                  <div className="flex justify-center py-8">
-                    <div className="w-8 h-8 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Feed Progress Indicator */}
-          <div className="fixed right-4 top-1/2 -translate-x-1/2 z-40 hidden lg:flex flex-col gap-2">
-            {filteredContent.map((_, index) => (
-              <motion.button
-                key={index}
-                onClick={() => {
-                  const cards = feedRef.current?.querySelectorAll("[data-index]");
-                  cards?.[index]?.scrollIntoView({ behavior: "smooth", block: "center" });
-                }}
-                className={`
-                  w-2 h-8 rounded-full
-                  transition-all duration-300
-                  ${activeIndex === index
-                    ? "bg-gradient-to-b from-pink-500 to-rose-500 scale-110"
-                    : "bg-white/20 hover:bg-white/40"
-                  }
-                `}
-              />
-            ))}
-          </div>
         </div>
-      </main>
+      </header>
 
-      {/* Hide scrollbar utility */}
+      {/* ====================================
+          MAIN CONTENT AREA
+          ==================================== */}
+      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-12 gap-6">
+          
+          {/* ====================================
+              SIDEBAR IZQUIERDO - Solo Desktop (lg+)
+              MenÃº + CategorÃ­as (Estilo Casino/Neon)
+              ==================================== */}
+          <aside className="hidden lg:block col-span-2 xl:col-span-2">
+            <div className="sticky top-24 space-y-4">
+              
+              {/* MenÃº Principal */}
+              <div className="venuz-card p-4">
+                <div className="space-y-2">
+                  <button 
+                    onClick={() => setActiveMenu('inicio')}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${
+                      activeMenu === 'inicio' 
+                        ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30' 
+                        : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
+                    }`}
+                  >
+                    <Home className="w-4 h-4" />
+                    Inicio
+                  </button>
+                  <button 
+                    onClick={() => setActiveMenu('tendencias')}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${
+                      activeMenu === 'tendencias' 
+                        ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30' 
+                        : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
+                    }`}
+                  >
+                    <Flame className="w-4 h-4 text-orange-400" />
+                    Tendencias
+                  </button>
+                  <button 
+                    onClick={() => setActiveMenu('cerca')}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${
+                      activeMenu === 'cerca' 
+                        ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30' 
+                        : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
+                    }`}
+                  >
+                    <MapPin className="w-4 h-4 text-blue-400" />
+                    Cerca de mÃ­
+                  </button>
+                  <button 
+                    onClick={() => setActiveMenu('favoritos')}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${
+                      activeMenu === 'favoritos' 
+                        ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30' 
+                        : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
+                    }`}
+                  >
+                    <Star className="w-4 h-4 text-yellow-400" />
+                    Favoritos
+                  </button>
+                </div>
+              </div>
+
+              {/* CategorÃ­as */}
+              <div className="venuz-card p-4">
+                <h3 className="text-sm font-semibold mb-3 text-gradient flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  CATEGORÃAS
+                </h3>
+                <div className="space-y-1 max-h-[400px] overflow-y-auto scrollbar-thin">
+                  <button
+                    onClick={() => handleCategorySelect('')}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition text-xs flex items-center gap-2 ${
+                      selectedCategory === ''
+                        ? 'bg-venuz-pink text-white font-semibold'
+                        : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
+                    }`}
+                  >
+                    <span>ðŸŒŸ</span>
+                    Todo
+                  </button>
+                  {CATEGORIES.map(cat => {
+                    const Icon = getCategoryIcon(cat.id);
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => handleCategorySelect(cat.id)}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition text-xs flex items-center gap-2 ${
+                          selectedCategory === cat.id
+                            ? 'bg-venuz-pink text-white font-semibold'
+                            : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
+                        }`}
+                      >
+                        <Icon size={14} />
+                        {cat.name}
+                        {cat.isTemporary && (
+                          <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
+                            Live
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* ====================================
+              FEED PRINCIPAL - Centro
+              Desktop: col-span-7
+              Mobile: col-span-12 (full width)
+              ==================================== */}
+          <main className="col-span-12 lg:col-span-7 xl:col-span-7">
+            
+            {/* Filtros mÃ³viles - Solo visible en mÃ³vil */}
+            <div className="lg:hidden mb-4 overflow-x-auto scrollbar-hide">
+              <div className="flex gap-2 pb-2">
+                <button
+                  onClick={() => handleCategorySelect('')}
+                  className={`px-4 py-2 rounded-full text-xs whitespace-nowrap transition flex items-center gap-2 ${
+                    selectedCategory === ''
+                      ? 'bg-venuz-pink text-white'
+                      : 'bg-venuz-gray text-gray-400'
+                  }`}
+                >
+                  ðŸŒŸ Todo
+                </button>
+                {CATEGORIES.slice(0, 5).map(cat => {
+                  const Icon = getCategoryIcon(cat.id);
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => handleCategorySelect(cat.id)}
+                      className={`px-4 py-2 rounded-full text-xs whitespace-nowrap transition flex items-center gap-2 ${
+                        selectedCategory === cat.id
+                          ? 'bg-venuz-pink text-white'
+                          : 'bg-venuz-gray text-gray-400'
+                      }`}
+                    >
+                      <Icon size={14} />
+                      {cat.name}
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setShowFilters(true)}
+                  className="px-4 py-2 rounded-full text-xs whitespace-nowrap bg-venuz-gray text-gray-400 flex items-center gap-2"
+                >
+                  <SlidersHorizontal className="w-3 h-3" />
+                  MÃ¡s
+                </button>
+              </div>
+            </div>
+
+            {/* Feed de contenido */}
+            <div
+              ref={feedRef}
+              className="
+                relative
+                lg:h-auto
+                h-[calc(100vh-180px)]
+                overflow-y-auto
+                snap-y snap-mandatory lg:snap-none
+                scrollbar-hide
+                lg:space-y-6
+              "
+            >
+              {isLoading && content.length === 0 ? (
+                <div className="space-y-6">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="venuz-card h-[500px] skeleton" />
+                  ))}
+                </div>
+              ) : filteredContent.length === 0 ? (
+                <div className="text-center py-20 venuz-card">
+                  <Sparkles className="w-16 h-16 text-venuz-pink mx-auto mb-4" />
+                  <p className="text-2xl text-gray-500 mb-4">
+                    No hay contenido en esta categorÃ­a
+                  </p>
+                  <button 
+                    onClick={() => handleCategorySelect('')}
+                    className="venuz-button"
+                  >
+                    Ver todo
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {filteredContent.map((item, index) => (
+                    <motion.article 
+                      key={item.id} 
+                      data-index={index}
+                      ref={(el) => {
+                        if (el && observerRef.current) {
+                          observerRef.current.observe(el);
+                        }
+                      }}
+                      className="venuz-card group overflow-hidden snap-center lg:snap-align-none"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      {/* ====================================
+                          CARD DESKTOP - Imagen grande con info overlay
+                          ==================================== */}
+                      <div className="hidden lg:block">
+                        <div className="relative h-[450px] xl:h-[500px] overflow-hidden">
+                          <img
+                            src={item.image_url || 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=1200&q=80'}
+                            alt={item.title}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                          
+                          {/* Badges superiores */}
+                          <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
+                            {item.is_premium && (
+                              <span className="px-3 py-1.5 bg-venuz-gold text-black text-xs font-bold rounded-full flex items-center gap-1">
+                                <Star className="w-3 h-3" />
+                                DESTACADO
+                              </span>
+                            )}
+                            <span className="px-3 py-1 bg-venuz-pink text-white text-xs font-bold rounded-full uppercase">
+                              {item.category}
+                            </span>
+                            {item.is_verified && (
+                              <span className="px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full">
+                                âœ“ Verificado
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Info en la parte inferior */}
+                          <div className="absolute bottom-0 left-0 right-0 p-6">
+                            <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white">
+                              {item.title}
+                            </h2>
+                            <p className="text-gray-200 text-sm md:text-base mb-4 line-clamp-2">
+                              {item.description}
+                            </p>
+                            
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4 text-sm text-gray-300">
+                                <span className="flex items-center gap-1">
+                                  <Eye className="w-4 h-4" />
+                                  {(item.views || 0).toLocaleString()}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Heart className="w-4 h-4 text-venuz-pink" />
+                                  {(item.likes || 0).toLocaleString()}
+                                </span>
+                                {item.location && (
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="w-4 h-4" />
+                                    {item.location}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              <button 
+                                onClick={() => handleContentClick(item.id)}
+                                className="venuz-button text-sm"
+                              >
+                                Ver mÃ¡s â†’
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Acciones rÃ¡pidas */}
+                        <div className="p-4 bg-venuz-charcoal border-t border-venuz-gray flex items-center justify-between">
+                          <div className="flex gap-4">
+                            <button 
+                              onClick={() => handleLike(item.id)}
+                              className="text-gray-400 hover:text-venuz-pink transition flex items-center gap-2"
+                            >
+                              <Heart className="w-5 h-5" />
+                              Me gusta
+                            </button>
+                            <button className="text-gray-400 hover:text-venuz-gold transition flex items-center gap-2">
+                              <Star className="w-5 h-5" />
+                              Guardar
+                            </button>
+                            <button 
+                              onClick={() => handleShare(item.id)}
+                              className="text-gray-400 hover:text-blue-400 transition flex items-center gap-2"
+                            >
+                              ðŸ“¤ Compartir
+                            </button>
+                          </div>
+                          <button className="text-gray-400 hover:text-white transition text-sm flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            CÃ³mo llegar
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* ====================================
+                          CARD MOBILE - Estilo TikTok
+                          ==================================== */}
+                      <div className="lg:hidden">
+                        <ContentCard
+                          content={item}
+                          isActive={activeIndex === index}
+                          onLike={handleLike}
+                          onShare={handleShare}
+                          onClick={handleContentClick}
+                        />
+                      </div>
+                    </motion.article>
+                  ))}
+
+                  {/* Load More */}
+                  {isLoading && (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="w-8 h-8 text-venuz-pink animate-spin" />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Feed Progress Indicator - Solo mÃ³vil */}
+            <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40 lg:hidden flex flex-col gap-2">
+              {filteredContent.slice(0, 8).map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    const cards = feedRef.current?.querySelectorAll("[data-index]");
+                    cards?.[index]?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }}
+                  className={`
+                    w-2 h-6 rounded-full transition-all duration-300
+                    ${activeIndex === index
+                      ? "bg-gradient-to-b from-venuz-pink to-venuz-red scale-110"
+                      : "bg-white/20 hover:bg-white/40"
+                    }
+                  `}
+                />
+              ))}
+            </div>
+          </main>
+
+          {/* ====================================
+              SIDEBAR DERECHO - Solo Desktop (xl+)
+              Publicidad + Stats + Trending
+              ==================================== */}
+          <aside className="hidden xl:block col-span-3">
+            <div className="sticky top-24 space-y-4">
+              
+              {/* Banner publicitario 1 */}
+              <div className="venuz-card h-[250px] bg-gradient-to-br from-venuz-pink to-venuz-gold flex items-center justify-center overflow-hidden relative">
+                <div className="absolute inset-0 bg-black/20" />
+                <div className="text-center p-4 relative z-10">
+                  <p className="text-white font-bold text-lg mb-2">
+                    ðŸ“¢ ESPACIO PUBLICITARIO
+                  </p>
+                  <p className="text-white/80 text-sm mb-4">
+                    Promociona tu negocio aquÃ­
+                  </p>
+                  <button className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-full text-white text-sm transition">
+                    Contratar ahora
+                  </button>
+                </div>
+              </div>
+
+              {/* EstadÃ­sticas */}
+              <div className="venuz-card p-4">
+                <h3 className="text-sm font-semibold mb-3 text-venuz-pink flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  ESTADÃSTICAS HOY
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400">Eventos totales</span>
+                    <span className="font-bold text-venuz-gold">{stats.total}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                      En vivo
+                    </span>
+                    <span className="font-bold text-red-500">{stats.live}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400 flex items-center gap-1">
+                      <Star className="w-3 h-3 text-yellow-400" />
+                      Destacados
+                    </span>
+                    <span className="font-bold text-venuz-gold">{stats.featured}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400 flex items-center gap-1">
+                      <Eye className="w-3 h-3" />
+                      Vistas totales
+                    </span>
+                    <span className="font-bold text-venuz-gold">
+                      {stats.views.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Banner publicitario 2 */}
+              <div className="venuz-card h-[200px] bg-venuz-charcoal border-2 border-venuz-pink/30 flex items-center justify-center">
+                <div className="text-center p-4">
+                  <p className="text-venuz-pink font-bold mb-2 flex items-center justify-center gap-2">
+                    <Sparkles className="w-5 h-5" />
+                    BANNER PREMIUM
+                  </p>
+                  <p className="text-gray-400 text-xs mb-3">
+                    Mayor visibilidad
+                  </p>
+                  <p className="text-venuz-gold font-bold">
+                    $200 USD/mes
+                  </p>
+                </div>
+              </div>
+
+              {/* Trending hashtags */}
+              <div className="venuz-card p-4">
+                <h3 className="text-sm font-semibold mb-3 text-venuz-pink flex items-center gap-2">
+                  <Flame className="w-4 h-4" />
+                  TRENDING
+                </h3>
+                <div className="space-y-2 text-xs">
+                  {TRENDING_TAGS.map((tag, i) => (
+                    <div 
+                      key={tag} 
+                      className="flex items-center justify-between text-gray-400 hover:text-venuz-pink cursor-pointer transition group"
+                    >
+                      <span className="group-hover:translate-x-1 transition-transform">{tag}</span>
+                      <span className="text-venuz-gold">{Math.floor(Math.random() * 1000) + 100}+</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* CTA Final */}
+              <div className="venuz-card p-4 bg-gradient-to-br from-venuz-charcoal to-venuz-gray">
+                <p className="text-sm text-gray-400 mb-3">
+                  Â¿Tienes un negocio de entretenimiento?
+                </p>
+                <button className="w-full venuz-button text-sm">
+                  Registra tu negocio
+                </button>
+              </div>
+            </div>
+          </aside>
+
+        </div>
+      </div>
+
+      {/* Global Styles */}
       <style jsx global>{`
         .scrollbar-hide::-webkit-scrollbar {
           display: none;
@@ -423,9 +767,63 @@ export default function Home() {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
+        .scrollbar-thin::-webkit-scrollbar {
+          width: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+          background: #1a1a1a;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+          background: linear-gradient(to bottom, #ff1493, #dc143c);
+          border-radius: 10px;
+        }
+        .text-gradient {
+          background: linear-gradient(135deg, #ff1493, #ffd700);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        .glow-strong {
+          text-shadow: 0 0 30px rgba(255, 20, 147, 0.8),
+                       0 0 60px rgba(255, 20, 147, 0.4);
+        }
+        .venuz-card {
+          background: rgba(26, 26, 26, 0.8);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 20, 147, 0.1);
+          border-radius: 16px;
+          box-shadow: 0 10px 40px rgba(255, 20, 147, 0.1);
+          transition: all 0.3s ease;
+        }
+        .venuz-card:hover {
+          border-color: rgba(255, 20, 147, 0.3);
+          box-shadow: 0 20px 60px rgba(255, 20, 147, 0.2);
+        }
+        .venuz-button {
+          background: linear-gradient(135deg, #ff1493, #dc143c);
+          color: white;
+          padding: 0.75rem 1.5rem;
+          border-radius: 9999px;
+          font-weight: 600;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 15px rgba(255, 20, 147, 0.4);
+        }
+        .venuz-button:hover {
+          box-shadow: 0 6px 25px rgba(255, 20, 147, 0.6);
+          transform: translateY(-2px);
+        }
+        .skeleton {
+          background: linear-gradient(90deg, #2a2a2a 0%, rgba(255, 20, 147, 0.1) 50%, #2a2a2a 100%);
+          background-size: 1000px 100%;
+          animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+          0% { background-position: -1000px 0; }
+          100% { background-position: 1000px 0; }
+        }
       `}</style>
 
-      {/* Content Preview Modal (Interstitial) */}
+      {/* Content Preview Modal */}
       <ContentPreviewModal
         content={selectedContent}
         isOpen={isModalOpen}
@@ -437,3 +835,4 @@ export default function Home() {
     </div>
   );
 }
+

@@ -4,7 +4,7 @@
 
 'use client';
 
-import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react';
+import { useSupabaseClient, useUser } from '@/components/AuthProvider';
 import { useEffect, useState } from 'react';
 import ContentCard from '@/components/ContentCard';
 import { User, Heart, Settings, LogOut, Loader2 } from 'lucide-react';
@@ -27,7 +27,7 @@ export default function ProfilePage() {
                 const { data: likes } = await supabase
                     .from('interactions')
                     .select('content_id')
-                    .eq('user_id', user.id)
+                    .eq('user_id', user!.id)
                     .eq('type', 'like');
 
                 if (likes?.length) {

@@ -75,7 +75,7 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
 
             subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+                applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
             });
         }
 
@@ -139,7 +139,6 @@ export async function showLocalNotification(
     await registration.showNotification(title, {
         icon: '/icons/icon-192x192.png',
         badge: '/icons/icon-72x72.png',
-        vibrate: [200, 100, 200],
         ...options,
     });
 }

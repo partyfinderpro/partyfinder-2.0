@@ -2,13 +2,17 @@
 // Endpoint para guardar suscripciones push
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export async function POST(req: NextRequest) {
     try {
         const subscription = await req.json();
-        const supabase = createRouteHandlerClient({ cookies });
+        const supabase = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            { cookies: { get: (name) => cookies().get(name)?.value } }
+        );
 
         const { data: { user } } = await supabase.auth.getUser();
 

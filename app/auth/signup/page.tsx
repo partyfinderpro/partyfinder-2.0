@@ -1,7 +1,7 @@
 // app/auth/signup/page.tsx
 'use client';
 
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
+import { useSupabaseClient } from '@/components/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { motion } from 'framer-motion';

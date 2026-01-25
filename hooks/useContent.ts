@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getRecommendedContent } from '@/lib/recommendations';
-import { useSessionContext } from '@supabase/auth-helpers-react';
+import { useSession } from '@/components/AuthProvider';
 
 // ============================================
 // VENUZ - Hook para obtener contenido de Supabase
@@ -86,7 +86,7 @@ const FALLBACK_CONTENT: ContentItem[] = [
 
 export function useContent(options: UseContentOptions = {}): UseContentReturn {
     const { category, limit = 20, offset: initialOffset = 0 } = options;
-    const { session } = useSessionContext();
+    const session = useSession();
     const userId = session?.user?.id;
 
     const [content, setContent] = useState<ContentItem[]>([]);
@@ -119,7 +119,7 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
                 count = total || 0;
             } else {
                 // Si es el feed principal, usar algoritmo de recomendaciones de Grok
-                data = await getRecommendedContent(userId, limit);
+                data = await getRecommendedContent(userId, limit) as ContentItem[];
                 count = data.length; // En recomendaciones el total es el devuelto por la función
             }
 

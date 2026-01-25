@@ -1,16 +1,16 @@
-// app/admin/upload/page.tsx
+﻿// app/admin/upload/page.tsx
 // Sistema de subida de contenido para modelos y locales
-// Código de Grok
+// CÃ³digo de Grok
 
 'use client';
 
-import { useSupabaseClient } from '@supabase/auth-helpers-react';
+import { createBrowserClient } from '@supabase/ssr';
 import { useState, useRef } from 'react';
 import { Upload, X, Check, Image as ImageIcon, Film, Loader2, MapPin, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function UploadPage() {
-    const supabase = useSupabaseClient();
+    const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('escort');
@@ -51,12 +51,12 @@ export default function UploadPage() {
             const filePath = `content/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('content-media') // Asegúrate de crear este bucket en el dashboard de Supabase
+                .from('content-media') // AsegÃºrate de crear este bucket en el dashboard de Supabase
                 .upload(filePath, file);
 
             if (uploadError) throw uploadError;
 
-            // 2. Obtener URL pública
+            // 2. Obtener URL pÃºblica
             const { data: { publicUrl } } = supabase.storage
                 .from('content-media')
                 .getPublicUrl(filePath);
@@ -146,7 +146,7 @@ export default function UploadPage() {
                     {/* Columna Derecha: Datos */}
                     <div className="space-y-8 bg-white/5 backdrop-blur-xl p-8 rounded-[40px] border border-white/10">
                         <div>
-                            <label className="text-sm font-medium text-white/50 mb-3 block">Título de la publicación</label>
+                            <label className="text-sm font-medium text-white/50 mb-3 block">TÃ­tulo de la publicaciÃ³n</label>
                             <input
                                 type="text"
                                 value={title}
@@ -158,7 +158,7 @@ export default function UploadPage() {
                         </div>
 
                         <div>
-                            <label className="text-sm font-medium text-white/50 mb-3 block">Descripción / Detalles</label>
+                            <label className="text-sm font-medium text-white/50 mb-3 block">DescripciÃ³n / Detalles</label>
                             <textarea
                                 value={description}
                                 onChange={e => setDescription(e.target.value)}
@@ -171,7 +171,7 @@ export default function UploadPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="text-sm font-medium text-white/50 mb-3 block flex items-center gap-2">
-                                    <Tag className="w-4 h-4" /> Categoría
+                                    <Tag className="w-4 h-4" /> CategorÃ­a
                                 </label>
                                 <select
                                     value={category}
@@ -193,7 +193,7 @@ export default function UploadPage() {
                                     <option value="CDMX">CDMX</option>
                                     <option value="Puerto Vallarta">Puerto Vallarta</option>
                                     <option value="Guadalajara">Guadalajara</option>
-                                    <option value="Cancún">Cancún</option>
+                                    <option value="CancÃºn">CancÃºn</option>
                                 </select>
                             </div>
                         </div>
@@ -211,7 +211,7 @@ export default function UploadPage() {
                             ) : success ? (
                                 <>
                                     <Check className="w-6 h-6" />
-                                    ¡Publicado con éxito!
+                                    Â¡Publicado con Ã©xito!
                                 </>
                             ) : (
                                 <>
@@ -226,3 +226,7 @@ export default function UploadPage() {
         </div>
     );
 }
+
+
+
+
