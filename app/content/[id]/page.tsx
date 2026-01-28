@@ -7,6 +7,16 @@ import { notFound } from 'next/navigation';
 import { MapPin, Heart, Eye, Share2, ShieldCheck, ChevronLeft, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
+// Helper para sanitizar URLs de imágenes problemáticas
+const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=1200&q=80';
+const sanitizeImageUrl = (url: string | null | undefined): string => {
+    if (!url) return DEFAULT_IMAGE;
+    if (url.includes('googleapis.com') || url.includes('googleusercontent.com') || url.includes('google.com/maps')) {
+        return DEFAULT_IMAGE;
+    }
+    return url;
+};
+
 export async function generateMetadata({ params }: { params: { id: string } }) {
     const { data } = await supabase.from('content').select('title,description,image_url').eq('id', params.id).single();
 
@@ -55,11 +65,11 @@ export default async function ContentDetailPage({ params }: { params: { id: stri
                                     src={content.video_url}
                                     controls
                                     className="w-full h-full object-cover"
-                                    poster={content.image_url}
+                                    poster={sanitizeImageUrl(content.image_url)}
                                 />
                             ) : (
                                 <img
-                                    src={content.image_url || 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=1200&q=80'}
+                                    src={sanitizeImageUrl(content.image_url)}
                                     alt={content.title}
                                     className="w-full h-full object-cover"
                                 />

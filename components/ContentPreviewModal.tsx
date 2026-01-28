@@ -20,6 +20,8 @@ import {
     Users,
     ThumbsUp,
 } from 'lucide-react';
+import { useInteractions } from '@/hooks/useInteractions';
+import { useSession } from '@/components/AuthProvider';
 
 // ============================================
 // VENUZ - Content Preview Modal (Interstitial)
@@ -108,25 +110,36 @@ export default function ContentPreViewModal({
     relatedContent = [],
 }: ContentPreviewModalProps) {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [isLiked, setIsLiked] = useState(false);
     const [showExitWarning, setShowExitWarning] = useState(false);
     const [imageError, setImageError] = useState(false);
+
+    const session = useSession();
+    const {
+        liked,
+        likesCount,
+        toggleLike,
+        registerView
+    } = useInteractions({
+        contentId: content?.id || '',
+        userId: session?.user?.id,
+        initialLikes: content?.likes || 0
+    });
 
     // Reset state cuando cambia el contenido
     useEffect(() => {
         if (content) {
             setCurrentImageIndex(0);
-            setIsLiked(false);
             setShowExitWarning(false);
             setImageError(false);
 
-            // Log de vista del modal
+            // Log de vista del modal y registro en DB
+            registerView();
             logEvent('modal_view', content.id, {
                 category: content.category,
                 affiliate_source: content.affiliate_source,
             });
         }
-    }, [content?.id]);
+    }, [content?.id, registerView]);
 
     // Cerrar con ESC
     useEffect(() => {
@@ -159,9 +172,9 @@ export default function ContentPreViewModal({
     const isAffiliate = Boolean(content.affiliate_url);
 
     const handleLike = () => {
-        setIsLiked(!isLiked);
+        toggleLike();
         onLike?.(content.id);
-        logEvent('like', content.id, { liked: !isLiked });
+        logEvent('like', content.id, { liked: !liked });
     };
 
     const handleShare = () => {
@@ -277,8 +290,8 @@ export default function ContentPreViewModal({
                                                         key={idx}
                                                         onClick={() => setCurrentImageIndex(idx)}
                                                         className={`w-2 h-2 rounded-full transition-all ${idx === currentImageIndex
-                                                                ? 'bg-white w-6'
-                                                                : 'bg-white/50 hover:bg-white/80'
+                                                            ? 'bg-white w-6'
+                                                            : 'bg-white/50 hover:bg-white/80'
                                                             }`}
                                                     />
                                                 ))}
@@ -371,7 +384,6 @@ export default function ContentPreViewModal({
                                         )}
                                     </div>
 
-                                    {/* Stats */}
                                     <div className="flex gap-6 mb-6 py-4 border-y border-white/10">
                                         <div className="text-center">
                                             <div className="text-2xl font-bold text-white">
@@ -383,7 +395,7 @@ export default function ContentPreViewModal({
                                         </div>
                                         <div className="text-center">
                                             <div className="text-2xl font-bold text-white">
-                                                {(content.likes || 0).toLocaleString()}
+                                                {likesCount.toLocaleString()}
                                             </div>
                                             <div className="text-xs text-white/50 flex items-center justify-center gap-1">
                                                 <ThumbsUp className="w-3 h-3" /> Likes
@@ -416,13 +428,13 @@ export default function ContentPreViewModal({
                                                 whileHover={{ scale: 1.02 }}
                                                 whileTap={{ scale: 0.98 }}
                                                 onClick={handleLike}
-                                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all ${isLiked
-                                                        ? 'bg-pink-500 text-white'
-                                                        : 'bg-white/10 text-white hover:bg-white/20'
+                                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all ${liked
+                                                    ? 'bg-pink-500 text-white'
+                                                    : 'bg-white/10 text-white hover:bg-white/20'
                                                     }`}
                                             >
-                                                <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                                                {isLiked ? 'Guardado' : 'Guardar'}
+                                                <Heart className={`w-5 h-5 ${liked ? 'fill-current' : ''}`} />
+                                                {liked ? 'Guardado' : 'Guardar'}
                                             </motion.button>
 
                                             <motion.button

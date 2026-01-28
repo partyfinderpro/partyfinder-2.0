@@ -60,18 +60,16 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  
+
   // Compresión
   compress: true,
-  
-  // Optimización de imágenes
+
+  // Optimización de imágenes - Permitir cualquier dominio externo
   images: {
+    // SOLUCIÓN: Deshabilitar validación estricta de dominios
+    unoptimized: true,
     remotePatterns: [
-      { protocol: "https", hostname: "images.unsplash.com" },
-      { protocol: "https", hostname: "*.supabase.co" },
-      { protocol: "https", hostname: "*.camsoda.com" },
-      { protocol: "https", hostname: "*.stripchat.com" },
-      { protocol: "https", hostname: "*.chaturbate.com" },
+      { protocol: "https", hostname: "**" }, // Permitir cualquier dominio HTTPS
     ],
     // Formatos modernos
     formats: ["image/avif", "image/webp"],

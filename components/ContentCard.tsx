@@ -17,6 +17,7 @@ import {
   Sparkles,
   Eye,
 } from "lucide-react";
+import { useInteractions } from "@/hooks/useInteractions";
 
 // Interfaces
 interface ContentItem {
@@ -61,23 +62,34 @@ const CATEGORY_PLACEHOLDERS: Record<string, string> = {
   default: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800&q=80",
 };
 
-// FIX #2: Manejo robusto de imágenes de afiliados (CamSoda, etc.)
+// FIX #2: Manejo robusto de imágenes de afiliados y externos
+const PROBLEMATIC_DOMAINS = [
+  "camsoda.com",
+  "stripchat.com",
+  "chaturbate.com",
+  "maps.googleapis.com",
+  "googleapis.com",
+  "googleusercontent.com"
+];
+
 const getProxiedImageUrl = (url: string, source?: string): string => {
   if (!url) return CATEGORY_PLACEHOLDERS.default;
 
-  // Si es una URL de afiliado conocido, usar proxy o placeholder
-  const affiliateDomains = ["camsoda.com", "stripchat.com", "chaturbate.com"];
-  const isAffiliate = affiliateDomains.some(domain => url.includes(domain));
-
-  if (isAffiliate) {
-    // Opción 1: Usar un servicio de proxy de imágenes
-    // return `https://images.weserv.nl/?url=${encodeURIComponent(url)}&default=${encodeURIComponent(CATEGORY_PLACEHOLDERS.modelo)}`;
-
-    // Opción 2: Intentar cargar directamente con fallback robusto
-    return url;
+  // Si es cualquier URL de Google (Maps, Places, etc), usar placeholder
+  if (url.includes("googleapis.com") || url.includes("googleusercontent.com") || url.includes("google.com")) {
+    console.log('[ContentCard] Replaced Google URL with placeholder:', url.substring(0, 50));
+    return CATEGORY_PLACEHOLDERS.default;
   }
 
   return url;
+};
+
+// Helper para determinar si usar unoptimized
+const shouldUseUnoptimized = (url: string): boolean => {
+  if (!url) return false;
+  // Si ya es un placeholder de Unsplash, no necesita unoptimized
+  if (url.includes("unsplash.com")) return false;
+  return PROBLEMATIC_DOMAINS.some(domain => url.includes(domain));
 };
 
 // Componente de Video con Lazy Loading
@@ -223,9 +235,24 @@ export default function ContentCard({
   onShare,
   onClick,
 }: ContentCardProps) {
+  const {
+    liked,
+    likesCount,
+    toggleLike,
+    registerView
+  } = useInteractions({
+    contentId: content.id,
+    initialLikes: content.likes || 0
+  });
+
   const [imageError, setImageError] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [localLikes, setLocalLikes] = useState(content.likes || 0);
+
+  // Registrar vista cuando el card está activo (Persistence)
+  useEffect(() => {
+    if (isActive) {
+      registerView();
+    }
+  }, [isActive, registerView]);
 
   const hasVideo = Boolean(content.video_url);
   const isAffiliate = Boolean(content.affiliate_url);
@@ -237,8 +264,7 @@ export default function ContentCard({
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsLiked(!isLiked);
-    setLocalLikes(prev => isLiked ? prev - 1 : prev + 1);
+    toggleLike();
     onLike?.(content.id);
   };
 
@@ -286,10 +312,7 @@ export default function ContentCard({
             className="object-cover transition-transform duration-700 group-hover:scale-105"
             onError={() => setImageError(true)}
             priority={isActive}
-            // FIX #2: Headers para afiliados
-            {...(isAffiliate && {
-              unoptimized: true,
-            })}
+            unoptimized={shouldUseUnoptimized(displayImage) || isAffiliate}
           />
         )}
       </div>
@@ -419,17 +442,17 @@ export default function ContentCard({
               flex items-center gap-2
               px-4 py-2.5 rounded-xl
               transition-all duration-300
-              ${isLiked
+              ${liked
                 ? "bg-pink-500 text-white"
                 : "bg-white/10 backdrop-blur-sm text-white/80 hover:bg-white/20"
               }
             `}
           >
             <Heart
-              className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`}
+              className={`w-5 h-5 ${liked ? "fill-current" : ""}`}
             />
             <span className="text-sm font-semibold">
-              {localLikes.toLocaleString()}
+              {likesCount.toLocaleString()}
             </span>
           </motion.button>
 

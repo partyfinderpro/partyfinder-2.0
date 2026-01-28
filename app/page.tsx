@@ -14,13 +14,14 @@ import {
   EscortIcon,
   PartyIcon,
   LiveIcon,
-  getCategoryIcon,
+  getCategoryIcon
 } from "@/components/icons/CategoryIcons";
-import { 
-  Filter, 
-  SlidersHorizontal, 
-  MapPin, 
-  Sparkles, 
+import { useDevice } from "@/hooks/useDevice";
+import {
+  Filter,
+  SlidersHorizontal,
+  MapPin,
+  Sparkles,
   Loader2,
   Home,
   Flame,
@@ -31,7 +32,7 @@ import {
 } from "lucide-react";
 
 // ============================================
-// VENUZ - PÃ¡gina Principal HÃBRIDA
+// VENUZ - Página Principal HÍBRIDA
 // Desktop: Layout Neon/Casino 3 columnas
 // Mobile: Layout TikTok scroll infinito
 // ============================================
@@ -43,30 +44,40 @@ interface Category {
   isTemporary?: boolean;
 }
 
-// CategorÃ­as con iconos premium
+// Categorías con iconos premium
 const CATEGORIES: Category[] = [
-  { id: "concierto", name: "Conciertos", description: "MÃºsica en vivo", isTemporary: true },
+  { id: "concierto", name: "Conciertos", description: "Música en vivo", isTemporary: true },
   { id: "evento", name: "Eventos", description: "Fiestas y reuniones", isTemporary: true },
-  { id: "bar", name: "Bares", description: "Nightlife estÃ¡tica" },
+  { id: "bar", name: "Bares", description: "Nightlife estática" },
   { id: "club", name: "Clubs", description: "Discotecas y antros" },
-  { id: "escort", name: "Escorts", description: "AcompaÃ±antes verificadas" },
+  { id: "escort", name: "Escorts", description: "Acompañantes verificadas" },
   { id: "modelo", name: "Modelos", description: "Modelos profesionales" },
   { id: "live", name: "En Vivo", description: "Streams y cams" },
   { id: "tabledance", name: "Table Dance", description: "Shows en vivo" },
-  { id: "masaje", name: "Masajes", description: "Spa y relajaciÃ³n" },
-  { id: "restaurante", name: "Restaurantes", description: "GastronomÃ­a" },
+  { id: "masaje", name: "Masajes", description: "Spa y relajación" },
+  { id: "restaurante", name: "Restaurantes", description: "Gastronomía" },
   { id: "beach", name: "Beach Clubs", description: "Playa y fiesta" },
 ];
 
 // Trending tags para sidebar
 const TRENDING_TAGS = [
   '#VallartaNights',
-  '#ZonaRomantica', 
+  '#ZonaRomantica',
   '#PVClubs',
   '#NightlifePV',
   '#VallartaParty',
   '#MexicoNocturno'
 ];
+
+// Helper para sanitizar URLs de imágenes problemáticas
+const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=1200&q=80';
+const sanitizeImageUrl = (url: string | null | undefined): string => {
+  if (!url) return DEFAULT_IMAGE;
+  if (url.includes('googleapis.com') || url.includes('googleusercontent.com') || url.includes('google.com/maps')) {
+    return DEFAULT_IMAGE;
+  }
+  return url;
+};
 
 export default function HomePage() {
   // Supabase content hook
@@ -80,6 +91,9 @@ export default function HomePage() {
     refresh,
     totalCount
   } = useContent({ category: selectedCategory || undefined });
+
+  // Centralized Device Detection
+  const { isMobile, isDesktop } = useDevice();
 
   // UI State
   const [activeIndex, setActiveIndex] = useState(0);
@@ -190,7 +204,7 @@ export default function HomePage() {
     feedRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Calcular estadÃ­sticas
+  // Calcular estadísticas
   const stats = {
     total: content.length,
     live: content.filter(c => c.category === 'live').length,
@@ -233,32 +247,32 @@ export default function HomePage() {
           className="max-w-md w-full"
         >
           <div className="venuz-card p-8 text-center">
-            <div className="text-6xl mb-6">ðŸ”ž</div>
+            <div className="text-6xl mb-6">🔞</div>
             <h1 className="text-4xl font-display font-bold text-gradient mb-4">
               VENUZ
             </h1>
             <h2 className="text-2xl font-semibold text-white mb-4">
-              VerificaciÃ³n de Edad
+              Verificación de Edad
             </h2>
             <p className="text-white/70 mb-8">
-              Este sitio contiene contenido para adultos. Debes tener al menos 18 aÃ±os para continuar.
+              Este sitio contiene contenido para adultos. Debes tener al menos 18 años para continuar.
             </p>
             <div className="space-y-3">
               <button
                 onClick={() => handleAgeVerification(true)}
                 className="w-full venuz-button"
               >
-                Soy mayor de 18 aÃ±os
+                Soy mayor de 18 años
               </button>
               <button
                 onClick={() => handleAgeVerification(false)}
                 className="w-full px-6 py-3 rounded-xl font-semibold bg-venuz-gray text-white/70 hover:bg-venuz-gray/80 transition-all"
               >
-                Soy menor de 18 aÃ±os
+                Soy menor de 18 años
               </button>
             </div>
             <p className="text-xs text-white/40 mt-6">
-              Al continuar, aceptas que eres mayor de edad segÃºn las leyes de tu paÃ­s.
+              Al continuar, aceptas que eres mayor de edad según las leyes de tu país.
             </p>
           </div>
         </motion.div>
@@ -274,12 +288,12 @@ export default function HomePage() {
       {/* ====================================
           HEADER - Visible en todas las pantallas
           ==================================== */}
-      <header className="sticky top-0 z-50 bg-venuz-charcoal/95 border-b border-venuz-pink/20 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 bg-red-600 border-b border-venuz-pink/20 backdrop-blur-xl">
         <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 lg:gap-8">
               <h1 className="text-2xl lg:text-3xl font-display font-bold text-gradient glow-strong">
-                VENUZ
+                VENUZ <span className="text-[10px] bg-white text-black px-1 rounded ml-2">DEPLOY_V2</span>
               </h1>
               <span className="hidden md:flex items-center gap-1 text-sm text-gray-400">
                 <MapPin className="w-4 h-4 text-venuz-pink" />
@@ -288,7 +302,7 @@ export default function HomePage() {
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
               <button className="hidden md:flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-white transition rounded-lg hover:bg-venuz-gray">
-                ðŸ”” Notificaciones
+                🔔 Notificaciones
                 {notificationCount > 0 && (
                   <span className="px-2 py-0.5 bg-venuz-pink text-white text-xs rounded-full">
                     {notificationCount}
@@ -309,57 +323,53 @@ export default function HomePage() {
           ==================================== */}
       <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-12 gap-6">
-          
+
           {/* ====================================
               SIDEBAR IZQUIERDO - Solo Desktop (lg+)
               MenÃº + CategorÃ­as (Estilo Casino/Neon)
               ==================================== */}
           <aside className="hidden lg:block col-span-2 xl:col-span-2">
             <div className="sticky top-24 space-y-4">
-              
+
               {/* MenÃº Principal */}
               <div className="venuz-card p-4">
                 <div className="space-y-2">
-                  <button 
+                  <button
                     onClick={() => setActiveMenu('inicio')}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${
-                      activeMenu === 'inicio' 
-                        ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30' 
-                        : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
-                    }`}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${activeMenu === 'inicio'
+                      ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30'
+                      : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
+                      }`}
                   >
                     <Home className="w-4 h-4" />
                     Inicio
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveMenu('tendencias')}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${
-                      activeMenu === 'tendencias' 
-                        ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30' 
-                        : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
-                    }`}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${activeMenu === 'tendencias'
+                      ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30'
+                      : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
+                      }`}
                   >
                     <Flame className="w-4 h-4 text-orange-400" />
                     Tendencias
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveMenu('cerca')}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${
-                      activeMenu === 'cerca' 
-                        ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30' 
-                        : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
-                    }`}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${activeMenu === 'cerca'
+                      ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30'
+                      : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
+                      }`}
                   >
                     <MapPin className="w-4 h-4 text-blue-400" />
-                    Cerca de mÃ­
+                    Cerca de mí
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveMenu('favoritos')}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${
-                      activeMenu === 'favoritos' 
-                        ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30' 
-                        : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
-                    }`}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${activeMenu === 'favoritos'
+                      ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30'
+                      : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
+                      }`}
                   >
                     <Star className="w-4 h-4 text-yellow-400" />
                     Favoritos
@@ -367,22 +377,21 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* CategorÃ­as */}
+              {/* Categorías */}
               <div className="venuz-card p-4">
                 <h3 className="text-sm font-semibold mb-3 text-gradient flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
-                  CATEGORÃAS
+                  CATEGORÍAS
                 </h3>
                 <div className="space-y-1 max-h-[400px] overflow-y-auto scrollbar-thin">
                   <button
                     onClick={() => handleCategorySelect('')}
-                    className={`w-full text-left px-3 py-2 rounded-lg transition text-xs flex items-center gap-2 ${
-                      selectedCategory === ''
-                        ? 'bg-venuz-pink text-white font-semibold'
-                        : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
-                    }`}
+                    className={`w-full text-left px-3 py-2 rounded-lg transition text-xs flex items-center gap-2 ${selectedCategory === ''
+                      ? 'bg-venuz-pink text-white font-semibold'
+                      : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
+                      }`}
                   >
-                    <span>ðŸŒŸ</span>
+                    <span>🌟</span>
                     Todo
                   </button>
                   {CATEGORIES.map(cat => {
@@ -391,11 +400,10 @@ export default function HomePage() {
                       <button
                         key={cat.id}
                         onClick={() => handleCategorySelect(cat.id)}
-                        className={`w-full text-left px-3 py-2 rounded-lg transition text-xs flex items-center gap-2 ${
-                          selectedCategory === cat.id
-                            ? 'bg-venuz-pink text-white font-semibold'
-                            : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
-                        }`}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition text-xs flex items-center gap-2 ${selectedCategory === cat.id
+                          ? 'bg-venuz-pink text-white font-semibold'
+                          : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
+                          }`}
                       >
                         <Icon size={14} />
                         {cat.name}
@@ -418,19 +426,18 @@ export default function HomePage() {
               Mobile: col-span-12 (full width)
               ==================================== */}
           <main className="col-span-12 lg:col-span-7 xl:col-span-7">
-            
-            {/* Filtros mÃ³viles - Solo visible en mÃ³vil */}
+
+            {/* Filtros móviles - Solo visible en móvil */}
             <div className="lg:hidden mb-4 overflow-x-auto scrollbar-hide">
               <div className="flex gap-2 pb-2">
                 <button
                   onClick={() => handleCategorySelect('')}
-                  className={`px-4 py-2 rounded-full text-xs whitespace-nowrap transition flex items-center gap-2 ${
-                    selectedCategory === ''
-                      ? 'bg-venuz-pink text-white'
-                      : 'bg-venuz-gray text-gray-400'
-                  }`}
+                  className={`px-4 py-2 rounded-full text-xs whitespace-nowrap transition flex items-center gap-2 ${selectedCategory === ''
+                    ? 'bg-venuz-pink text-white'
+                    : 'bg-venuz-gray text-gray-400'
+                    }`}
                 >
-                  ðŸŒŸ Todo
+                  🌟 Todo
                 </button>
                 {CATEGORIES.slice(0, 5).map(cat => {
                   const Icon = getCategoryIcon(cat.id);
@@ -438,11 +445,10 @@ export default function HomePage() {
                     <button
                       key={cat.id}
                       onClick={() => handleCategorySelect(cat.id)}
-                      className={`px-4 py-2 rounded-full text-xs whitespace-nowrap transition flex items-center gap-2 ${
-                        selectedCategory === cat.id
-                          ? 'bg-venuz-pink text-white'
-                          : 'bg-venuz-gray text-gray-400'
-                      }`}
+                      className={`px-4 py-2 rounded-full text-xs whitespace-nowrap transition flex items-center gap-2 ${selectedCategory === cat.id
+                        ? 'bg-venuz-pink text-white'
+                        : 'bg-venuz-gray text-gray-400'
+                        }`}
                     >
                       <Icon size={14} />
                       {cat.name}
@@ -454,7 +460,7 @@ export default function HomePage() {
                   className="px-4 py-2 rounded-full text-xs whitespace-nowrap bg-venuz-gray text-gray-400 flex items-center gap-2"
                 >
                   <SlidersHorizontal className="w-3 h-3" />
-                  MÃ¡s
+                  Más
                 </button>
               </div>
             </div>
@@ -482,9 +488,9 @@ export default function HomePage() {
                 <div className="text-center py-20 venuz-card">
                   <Sparkles className="w-16 h-16 text-venuz-pink mx-auto mb-4" />
                   <p className="text-2xl text-gray-500 mb-4">
-                    No hay contenido en esta categorÃ­a
+                    No hay contenido en esta categoría
                   </p>
-                  <button 
+                  <button
                     onClick={() => handleCategorySelect('')}
                     className="venuz-button"
                   >
@@ -494,8 +500,8 @@ export default function HomePage() {
               ) : (
                 <div className="space-y-6">
                   {filteredContent.map((item, index) => (
-                    <motion.article 
-                      key={item.id} 
+                    <motion.article
+                      key={item.id}
                       data-index={index}
                       ref={(el) => {
                         if (el && observerRef.current) {
@@ -513,12 +519,12 @@ export default function HomePage() {
                       <div className="hidden lg:block">
                         <div className="relative h-[450px] xl:h-[500px] overflow-hidden">
                           <img
-                            src={item.image_url || 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=1200&q=80'}
+                            src={sanitizeImageUrl(item.image_url)}
                             alt={item.title}
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-                          
+
                           {/* Badges superiores */}
                           <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
                             {item.is_premium && (
@@ -532,7 +538,7 @@ export default function HomePage() {
                             </span>
                             {item.is_verified && (
                               <span className="px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full">
-                                âœ“ Verificado
+                                ✓ Verificado
                               </span>
                             )}
                           </div>
@@ -545,7 +551,7 @@ export default function HomePage() {
                             <p className="text-gray-200 text-sm md:text-base mb-4 line-clamp-2">
                               {item.description}
                             </p>
-                            
+
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4 text-sm text-gray-300">
                                 <span className="flex items-center gap-1">
@@ -563,21 +569,21 @@ export default function HomePage() {
                                   </span>
                                 )}
                               </div>
-                              
-                              <button 
+
+                              <button
                                 onClick={() => handleContentClick(item.id)}
                                 className="venuz-button text-sm"
                               >
-                                Ver mÃ¡s â†’
+                                Ver más →
                               </button>
                             </div>
                           </div>
                         </div>
 
-                        {/* Acciones rÃ¡pidas */}
+                        {/* Acciones rápidas */}
                         <div className="p-4 bg-venuz-charcoal border-t border-venuz-gray flex items-center justify-between">
                           <div className="flex gap-4">
-                            <button 
+                            <button
                               onClick={() => handleLike(item.id)}
                               className="text-gray-400 hover:text-venuz-pink transition flex items-center gap-2"
                             >
@@ -588,16 +594,16 @@ export default function HomePage() {
                               <Star className="w-5 h-5" />
                               Guardar
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleShare(item.id)}
                               className="text-gray-400 hover:text-blue-400 transition flex items-center gap-2"
                             >
-                              ðŸ“¤ Compartir
+                              📤 Compartir
                             </button>
                           </div>
                           <button className="text-gray-400 hover:text-white transition text-sm flex items-center gap-2">
                             <MapPin className="w-4 h-4" />
-                            CÃ³mo llegar
+                            Cómo llegar
                           </button>
                         </div>
                       </div>
@@ -627,7 +633,7 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* Feed Progress Indicator - Solo mÃ³vil */}
+            {/* Feed Progress Indicator - Solo móvil */}
             <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40 lg:hidden flex flex-col gap-2">
               {filteredContent.slice(0, 8).map((_, index) => (
                 <button
@@ -654,16 +660,16 @@ export default function HomePage() {
               ==================================== */}
           <aside className="hidden xl:block col-span-3">
             <div className="sticky top-24 space-y-4">
-              
+
               {/* Banner publicitario 1 */}
               <div className="venuz-card h-[250px] bg-gradient-to-br from-venuz-pink to-venuz-gold flex items-center justify-center overflow-hidden relative">
                 <div className="absolute inset-0 bg-black/20" />
                 <div className="text-center p-4 relative z-10">
                   <p className="text-white font-bold text-lg mb-2">
-                    ðŸ“¢ ESPACIO PUBLICITARIO
+                    📢 ESPACIO PUBLICITARIO
                   </p>
                   <p className="text-white/80 text-sm mb-4">
-                    Promociona tu negocio aquÃ­
+                    Promociona tu negocio aquí
                   </p>
                   <button className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-full text-white text-sm transition">
                     Contratar ahora
@@ -671,11 +677,11 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* EstadÃ­sticas */}
+              {/* Estadísticas */}
               <div className="venuz-card p-4">
                 <h3 className="text-sm font-semibold mb-3 text-venuz-pink flex items-center gap-2">
                   <TrendingUp className="w-4 h-4" />
-                  ESTADÃSTICAS HOY
+                  ESTADÍSTICAS HOY
                 </h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between items-center">
@@ -732,8 +738,8 @@ export default function HomePage() {
                 </h3>
                 <div className="space-y-2 text-xs">
                   {TRENDING_TAGS.map((tag, i) => (
-                    <div 
-                      key={tag} 
+                    <div
+                      key={tag}
                       className="flex items-center justify-between text-gray-400 hover:text-venuz-pink cursor-pointer transition group"
                     >
                       <span className="group-hover:translate-x-1 transition-transform">{tag}</span>
@@ -746,7 +752,7 @@ export default function HomePage() {
               {/* CTA Final */}
               <div className="venuz-card p-4 bg-gradient-to-br from-venuz-charcoal to-venuz-gray">
                 <p className="text-sm text-gray-400 mb-3">
-                  Â¿Tienes un negocio de entretenimiento?
+                  ¿Tienes un negocio de entretenimiento?
                 </p>
                 <button className="w-full venuz-button text-sm">
                   Registra tu negocio
@@ -757,71 +763,6 @@ export default function HomePage() {
 
         </div>
       </div>
-
-      {/* Global Styles */}
-      <style jsx global>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-thin::-webkit-scrollbar {
-          width: 4px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-track {
-          background: #1a1a1a;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-          background: linear-gradient(to bottom, #ff1493, #dc143c);
-          border-radius: 10px;
-        }
-        .text-gradient {
-          background: linear-gradient(135deg, #ff1493, #ffd700);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-        .glow-strong {
-          text-shadow: 0 0 30px rgba(255, 20, 147, 0.8),
-                       0 0 60px rgba(255, 20, 147, 0.4);
-        }
-        .venuz-card {
-          background: rgba(26, 26, 26, 0.8);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 20, 147, 0.1);
-          border-radius: 16px;
-          box-shadow: 0 10px 40px rgba(255, 20, 147, 0.1);
-          transition: all 0.3s ease;
-        }
-        .venuz-card:hover {
-          border-color: rgba(255, 20, 147, 0.3);
-          box-shadow: 0 20px 60px rgba(255, 20, 147, 0.2);
-        }
-        .venuz-button {
-          background: linear-gradient(135deg, #ff1493, #dc143c);
-          color: white;
-          padding: 0.75rem 1.5rem;
-          border-radius: 9999px;
-          font-weight: 600;
-          transition: all 0.3s ease;
-          box-shadow: 0 4px 15px rgba(255, 20, 147, 0.4);
-        }
-        .venuz-button:hover {
-          box-shadow: 0 6px 25px rgba(255, 20, 147, 0.6);
-          transform: translateY(-2px);
-        }
-        .skeleton {
-          background: linear-gradient(90deg, #2a2a2a 0%, rgba(255, 20, 147, 0.1) 50%, #2a2a2a 100%);
-          background-size: 1000px 100%;
-          animation: shimmer 2s infinite linear;
-        }
-        @keyframes shimmer {
-          0% { background-position: -1000px 0; }
-          100% { background-position: 1000px 0; }
-        }
-      `}</style>
 
       {/* Content Preview Modal */}
       <ContentPreviewModal

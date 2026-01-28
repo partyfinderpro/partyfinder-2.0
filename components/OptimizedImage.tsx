@@ -17,7 +17,7 @@ interface OptimizedImageProps {
 }
 
 // Placeholder blur genérico (gris oscuro para VENUZ)
-const BLUR_DATA_URL = 
+const BLUR_DATA_URL =
   "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBEQACEQA=";
 
 // Fallback por categoría
@@ -60,10 +60,19 @@ export function OptimizedImage({
     }
   };
 
-  // URL final (con fallback si hay error)
-  const imageSrc = error 
+  // Filtrar URLs problemáticas de Google
+  const sanitizeUrl = (url: string): string => {
+    if (!url) return CATEGORY_FALLBACKS.default;
+    if (url.includes("googleapis.com") || url.includes("googleusercontent.com") || url.includes("google.com/maps")) {
+      return CATEGORY_FALLBACKS.default;
+    }
+    return url;
+  };
+
+  // URL final (con fallback si hay error o URL problemática)
+  const imageSrc = error
     ? (fallbackSrc || CATEGORY_FALLBACKS.default)
-    : src;
+    : sanitizeUrl(src);
 
   // Determinar sizes responsivos si no se proporcionan
   const defaultSizes = sizes || "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw";
