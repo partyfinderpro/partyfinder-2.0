@@ -288,7 +288,7 @@ export default function HomePage() {
       {/* ====================================
           HEADER - Visible en todas las pantallas
           ==================================== */}
-      <header className="sticky top-0 z-50 bg-red-600 border-b border-venuz-pink/20 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 bg-venuz-charcoal/95 border-b border-venuz-pink/20 backdrop-blur-xl">
         <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 lg:gap-8">
