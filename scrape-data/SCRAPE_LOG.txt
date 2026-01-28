@@ -1,0 +1,43 @@
+2026-01-28 15:34:35,349 - INFO - Iniciando proceso de scraping...
+2026-01-28 15:34:35,350 - INFO - ℹ️ Primer run - Iniciando desde cero
+2026-01-28 15:34:35,350 - INFO - Iniciando scrape de Webcams en PornDude...
+2026-01-28 15:34:35,350 - INFO - Requesting: https://theporndude.com/en/live-sex-cams
+2026-01-28 15:34:36,753 - INFO - Retrying with: https://theporndude.com/live-sex-cams
+2026-01-28 15:34:37,615 - ERROR - ❌ Error HTTP 404 al acceder a https://theporndude.com/live-sex-cams
+2026-01-28 15:34:37,618 - WARNING - No se obtuvieron datos de Webcams PornDude
+2026-01-28 15:34:37,619 - INFO - Iniciando scrape de CamSoda...
+2026-01-28 15:34:37,620 - INFO - ✅ CamSoda: 20 registros generados
+2026-01-28 15:34:37,623 - INFO - 💾 20 registros guardados en camsoda_sample.json
+2026-01-28 15:34:37,628 - INFO - Archivo final guardado: C:\Users\pablo\Downloads\VENUZ-Complete-App\venuz-app\scrape-data\FINAL_DATA.json
+2026-01-28 15:34:40,768 - INFO - Conectando a Supabase: https://jbrmziwosyeructvlvrq.supabase.co
+2026-01-28 15:34:43,115 - INFO - HTTP Request: POST https://jbrmziwosyeructvlvrq.supabase.co/rest/v1/content?columns=%22affiliate_source%22%2C%22affiliate_url%22%2C%22category%22%2C%22location%22%2C%22rating%22%2C%22is_premium%22%2C%22likes%22%2C%22views%22%2C%22title%22%2C%22is_verified%22%2C%22latitude%22%2C%22description%22%2C%22longitude%22%2C%22active%22%2C%22image_url%22 "HTTP/2 400 Bad Request"
+2026-01-28 15:34:43,116 - ERROR - ❌ Error insertando batch 0: {'message': 'null value in column "source_url" of relation "content" violates not-null constraint', 'code': '23502', 'hint': None, 'details': 'Failing row contains (75d9596a-db82-4118-82c7-6deba8441d63, CamSoda Model 1, Live show happening now in couple category., https://images.unsplash.com/photo-1500000000000?w=800, null, null, null, null, null, null, null, 0, f, t, 0, 2026-01-28 21:34:42.487689, 2026-01-28 21:34:42.487689, null, webcam, null, null, null, null, 4.8, null, null, null, t, null, null, https://www.camsoda.com/model-0, camsoda, t, null, f, 0, null, Online, null, 0.00000000, 0.00000000, null, 2026-01-28 21:34:42.487689).'}
+2026-01-28 15:35:17,520 - INFO - Iniciando proceso de scraping...
+2026-01-28 15:35:17,521 - INFO - ℹ️ Primer run - Iniciando desde cero
+2026-01-28 15:35:17,521 - INFO - Iniciando scrape de Webcams en PornDude...
+2026-01-28 15:35:17,521 - INFO - Requesting: https://theporndude.com/en/live-cams
+2026-01-28 15:35:18,729 - INFO - Retrying with: https://theporndude.com/es/mejores-sitios-cam
+2026-01-28 15:35:19,784 - ERROR - ❌ Error HTTP 404 al acceder a https://theporndude.com/es/mejores-sitios-cam
+2026-01-28 15:35:19,787 - WARNING - No se obtuvieron datos de Webcams PornDude
+2026-01-28 15:35:19,787 - INFO - Iniciando scrape de CamSoda...
+2026-01-28 15:35:19,787 - INFO - ✅ CamSoda: 20 registros generados
+2026-01-28 15:35:19,790 - INFO - 💾 20 registros guardados en camsoda_sample.json
+2026-01-28 15:35:19,793 - INFO - Archivo final guardado: C:\Users\pablo\Downloads\VENUZ-Complete-App\venuz-app\scrape-data\FINAL_DATA.json
+2026-01-28 15:35:22,052 - INFO - Conectando a Supabase: https://jbrmziwosyeructvlvrq.supabase.co
+2026-01-28 15:35:26,208 - INFO - HTTP Request: POST https://jbrmziwosyeructvlvrq.supabase.co/rest/v1/content?columns=%22description%22%2C%22likes%22%2C%22source_url%22%2C%22latitude%22%2C%22is_premium%22%2C%22longitude%22%2C%22affiliate_url%22%2C%22title%22%2C%22image_url%22%2C%22affiliate_source%22%2C%22category%22%2C%22active%22%2C%22location%22%2C%22rating%22%2C%22views%22%2C%22is_verified%22 "HTTP/2 201 Created"
+2026-01-28 15:35:27,693 - INFO - ✅ Batch 1: Insertados 20 registros.
+2026-01-28 15:35:59,614 - INFO - Iniciando proceso de scraping...
+2026-01-28 15:35:59,614 - INFO - ℹ️ Primer run - Iniciando desde cero
+2026-01-28 15:35:59,614 - INFO - Iniciando scrape de Webcams en PornDude...
+2026-01-28 15:35:59,614 - INFO - Requesting Home: https://theporndude.com
+2026-01-28 15:36:01,299 - INFO - Link de webcams encontrado: https://theporndude.com/top-sex-cam-sites
+2026-01-28 15:36:02,423 - INFO - Encontrados 0 enlaces candidatos.
+2026-01-28 15:36:02,424 - INFO - ✅ PornDude webcams: 0 registros extraídos
+2026-01-28 15:36:02,427 - WARNING - No se obtuvieron datos de Webcams PornDude
+2026-01-28 15:36:02,427 - INFO - Iniciando scrape de CamSoda...
+2026-01-28 15:36:02,427 - INFO - ✅ CamSoda: 20 registros generados
+2026-01-28 15:36:02,430 - INFO - 💾 20 registros guardados en camsoda_sample.json
+2026-01-28 15:36:02,433 - INFO - Archivo final guardado: C:\Users\pablo\Downloads\VENUZ-Complete-App\venuz-app\scrape-data\FINAL_DATA.json
+2026-01-28 15:36:04,759 - INFO - Conectando a Supabase: https://jbrmziwosyeructvlvrq.supabase.co
+2026-01-28 15:36:06,634 - INFO - HTTP Request: POST https://jbrmziwosyeructvlvrq.supabase.co/rest/v1/content?columns=%22location%22%2C%22description%22%2C%22affiliate_url%22%2C%22category%22%2C%22image_url%22%2C%22active%22%2C%22longitude%22%2C%22is_premium%22%2C%22views%22%2C%22is_verified%22%2C%22latitude%22%2C%22affiliate_source%22%2C%22likes%22%2C%22source_url%22%2C%22rating%22%2C%22title%22 "HTTP/2 409 Conflict"
+2026-01-28 15:36:06,636 - ERROR - ❌ Error insertando batch 0: {'message': 'duplicate key value violates unique constraint "content_source_url_key"', 'code': '23505', 'hint': None, 'details': 'Key (source_url)=(https://www.camsoda.com/model-0) already exists.'}
