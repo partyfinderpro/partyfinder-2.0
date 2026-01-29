@@ -73,10 +73,10 @@ const PROBLEMATIC_DOMAINS = [
   "googleusercontent.com"
 ];
 
-const BAD_PLACEHOLDER = "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800&q=80";
+const BAD_PLACEHOLDER_ID = "1557682250";
 
 const getProxiedImageUrl = (url: string, source?: string): string => {
-  if (!url || url === BAD_PLACEHOLDER) return CATEGORY_PLACEHOLDERS.default;
+  if (!url || url.includes(BAD_PLACEHOLDER_ID)) return CATEGORY_PLACEHOLDERS.default;
   return url;
 };
 

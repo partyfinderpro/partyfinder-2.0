@@ -17,6 +17,7 @@ export type ContentItem = {
     is_verified?: boolean;
     is_premium?: boolean;
     affiliate_source?: string;
+    images?: string[];
 };
 
 interface ScoredContent extends ContentItem {
@@ -29,11 +30,12 @@ interface ScoredContent extends ContentItem {
  */
 export async function getRecommendedContent(userId?: string, limit = 20, offset = 0): Promise<ContentItem[]> {
     // 1. Fetch contenido base (usando range para paginación real)
+    // Aumentamos el pool a 2000 para encontrar las fotos reales entre los 2,201 registros
     const { data: allContent, error } = await supabase
         .from('content')
         .select('*')
         .order('created_at', { ascending: false })
-        .range(offset, offset + limit * 20 - 1); // Tomamos un pool de 20x el límite para asegurar que encontremos contenido con fotos reales entre los 2,201 posts
+        .range(0, 2000);
 
     if (error || !allContent) {
         console.error('[Recommendations] Error fetching content:', error);
@@ -125,9 +127,11 @@ export async function getRecommendedContent(userId?: string, limit = 20, offset 
         // === CALIDAD DE IMAGEN (PENALIZACIÓN DE PLACEHOLDERS) ===
         const BAD_PLACEHOLDER = "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800&q=80";
         if (!item.image_url || item.image_url === BAD_PLACEHOLDER) {
-            score -= 50; // Gran penalización para que los placeholders se vayan al fondo
+            score -= 100; // Penalización masiva para que los placeholders se hundan
+        } else if (item.image_url.includes('google')) {
+            score += 50; // Bonus extra para fotos reales de lugares
         } else {
-            score += 20; // Bonus por tener imagen real
+            score += 20; // Bonus por tener cualquier otra imagen real
         }
 
         // === EXPLORACIÓN ALEATORIA (5% del score) ===

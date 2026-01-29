@@ -72,9 +72,9 @@ const TRENDING_TAGS = [
 
 // Helper para sanitizar URLs de imágenes problemáticas
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800';
-const BAD_PLACEHOLDER = 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800&q=80';
+const BAD_PLACEHOLDER_ID = '1557682250';
 const sanitizeImageUrl = (url: string | null | undefined): string => {
-  if (!url || url === BAD_PLACEHOLDER) return DEFAULT_IMAGE;
+  if (!url || url.includes(BAD_PLACEHOLDER_ID)) return DEFAULT_IMAGE;
   return url;
 };
 
@@ -313,7 +313,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 lg:gap-8">
               <h1 className="text-2xl lg:text-3xl font-display font-bold text-gradient glow-strong">
-                VENUZ <span className="text-[10px] bg-white text-black px-1 rounded ml-2">DEPLOY_V3</span>
+                VENUZ <span className="text-[10px] bg-white text-black px-1 rounded ml-2">DEPLOY_V4</span>
               </h1>
               <span className="hidden md:flex items-center gap-1 text-sm text-gray-400">
                 <MapPin className="w-4 h-4 text-venuz-pink" />
