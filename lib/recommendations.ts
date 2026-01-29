@@ -33,7 +33,7 @@ export async function getRecommendedContent(userId?: string, limit = 20, offset 
         .from('content')
         .select('*')
         .order('created_at', { ascending: false })
-        .range(offset, offset + limit * 5 - 1); // Tomamos un pool de 5x el límite para poder puntuar y filtrar
+        .range(offset, offset + limit * 20 - 1); // Tomamos un pool de 20x el límite para asegurar que encontremos contenido con fotos reales entre los 2,201 posts
 
     if (error || !allContent) {
         console.error('[Recommendations] Error fetching content:', error);
@@ -121,6 +121,14 @@ export async function getRecommendedContent(userId?: string, limit = 20, offset 
         if (item.is_verified) score += 10;
         if (item.is_premium) score += 5;
         if (item.affiliate_source) score += 15; // Contenido monetizable
+
+        // === CALIDAD DE IMAGEN (PENALIZACIÓN DE PLACEHOLDERS) ===
+        const BAD_PLACEHOLDER = "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800&q=80";
+        if (!item.image_url || item.image_url === BAD_PLACEHOLDER) {
+            score -= 50; // Gran penalización para que los placeholders se vayan al fondo
+        } else {
+            score += 20; // Bonus por tener imagen real
+        }
 
         // === EXPLORACIÓN ALEATORIA (5% del score) ===
         score += Math.random() * 15;

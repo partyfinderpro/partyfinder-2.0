@@ -59,7 +59,8 @@ const CATEGORY_PLACEHOLDERS: Record<string, string> = {
   bar: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=800&q=80",
   evento: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80",
   concierto: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80",
-  default: "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800&q=80",
+  webcam: "https://images.unsplash.com/photo-1527613426441-4da1d4b674dd?w=800&q=80",
+  default: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80",
 };
 
 // FIX #2: Manejo robusto de imágenes de afiliados y externos
@@ -72,8 +73,10 @@ const PROBLEMATIC_DOMAINS = [
   "googleusercontent.com"
 ];
 
+const BAD_PLACEHOLDER = "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800&q=80";
+
 const getProxiedImageUrl = (url: string, source?: string): string => {
-  if (!url) return CATEGORY_PLACEHOLDERS.default;
+  if (!url || url === BAD_PLACEHOLDER) return CATEGORY_PLACEHOLDERS.default;
   return url;
 };
 

@@ -71,9 +71,10 @@ const TRENDING_TAGS = [
 ];
 
 // Helper para sanitizar URLs de imágenes problemáticas
-const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=1200&q=80';
+const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800';
+const BAD_PLACEHOLDER = 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800&q=80';
 const sanitizeImageUrl = (url: string | null | undefined): string => {
-  if (!url) return DEFAULT_IMAGE;
+  if (!url || url === BAD_PLACEHOLDER) return DEFAULT_IMAGE;
   return url;
 };
 
@@ -312,7 +313,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 lg:gap-8">
               <h1 className="text-2xl lg:text-3xl font-display font-bold text-gradient glow-strong">
-                VENUZ <span className="text-[10px] bg-white text-black px-1 rounded ml-2">DEPLOY_V2</span>
+                VENUZ <span className="text-[10px] bg-white text-black px-1 rounded ml-2">DEPLOY_V3</span>
               </h1>
               <span className="hidden md:flex items-center gap-1 text-sm text-gray-400">
                 <MapPin className="w-4 h-4 text-venuz-pink" />
