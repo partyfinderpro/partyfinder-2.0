@@ -298,14 +298,12 @@ export default function ContentCard({
             className="w-full h-full"
           />
         ) : (
-          <Image
+          <img
             src={displayImage}
             alt={content.title}
-            fill
-            className="object-cover transition-transform duration-700 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             onError={() => setImageError(true)}
-            priority={isActive}
-            unoptimized={shouldUseUnoptimized(displayImage) || isAffiliate}
+            loading={isActive ? "eager" : "lazy"}
           />
         )}
       </div>

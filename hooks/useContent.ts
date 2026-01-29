@@ -126,10 +126,16 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
 
             // Check if we got data
             if (data && data.length > 0) {
+                // Normalize data: ensure image_url is populated if images exists
+                const normalizedData = data.map(item => ({
+                    ...item,
+                    image_url: item.image_url || (item.images && item.images.length > 0 ? item.images[0] : undefined)
+                }));
+
                 if (append) {
-                    setContent(prev => [...prev, ...data]);
+                    setContent(prev => [...prev, ...normalizedData]);
                 } else {
-                    setContent(data);
+                    setContent(normalizedData);
                 }
 
                 setTotalCount(count);
