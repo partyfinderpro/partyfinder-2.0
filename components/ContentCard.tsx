@@ -74,13 +74,6 @@ const PROBLEMATIC_DOMAINS = [
 
 const getProxiedImageUrl = (url: string, source?: string): string => {
   if (!url) return CATEGORY_PLACEHOLDERS.default;
-
-  // Si es cualquier URL de Google (Maps, Places, etc), usar placeholder
-  if (url.includes("googleapis.com") || url.includes("googleusercontent.com") || url.includes("google.com")) {
-    console.log('[ContentCard] Replaced Google URL with placeholder:', url.substring(0, 50));
-    return CATEGORY_PLACEHOLDERS.default;
-  }
-
   return url;
 };
 

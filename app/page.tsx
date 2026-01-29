@@ -74,9 +74,6 @@ const TRENDING_TAGS = [
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=1200&q=80';
 const sanitizeImageUrl = (url: string | null | undefined): string => {
   if (!url) return DEFAULT_IMAGE;
-  if (url.includes('googleapis.com') || url.includes('googleusercontent.com') || url.includes('google.com/maps')) {
-    return DEFAULT_IMAGE;
-  }
   return url;
 };
 
