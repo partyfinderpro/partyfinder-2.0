@@ -119,8 +119,9 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
                 count = total || 0;
             } else {
                 // Si es el feed principal, usar algoritmo de recomendaciones de Grok
-                data = await getRecommendedContent(userId, limit) as ContentItem[];
-                count = data.length; // En recomendaciones el total es el devuelto por la función
+                const { count: realCount } = await supabase.from('content').select('*', { count: 'exact', head: true });
+                data = await getRecommendedContent(userId, limit, currentOffset) as ContentItem[];
+                count = realCount || data.length;
             }
 
             // Check if we got data
@@ -132,16 +133,18 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
                 }
 
                 setTotalCount(count);
-                setHasMore(data.length === limit);
+                setHasMore(data.length >= limit);
             } else if (!append) {
                 // Fallback a los datos mock si nada funciona
+                console.log('[VENUZ] No se encontraron datos, usando fallback');
                 setContent(FALLBACK_CONTENT);
                 setTotalCount(FALLBACK_CONTENT.length);
                 setHasMore(false);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('[VENUZ] Error fetching content:', err);
-            setError('Error al cargar contenido');
+            const msg = err?.message || JSON.stringify(err);
+            setError(`Error al cargar contenido: ${msg}. URL: ${process.env.NEXT_PUBLIC_SUPABASE_URL ? 'OK' : 'MISSING'}`);
             if (!append) {
                 setContent(FALLBACK_CONTENT);
                 setHasMore(false);

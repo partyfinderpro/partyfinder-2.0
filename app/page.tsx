@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
 import ContentCard from "@/components/ContentCard";
+import Image from "next/image";
 import ContentPreviewModal from "@/components/ContentPreviewModal";
 import MegaMenu from "@/components/MegaMenu";
 import { useContent, ContentItem } from "@/hooks/useContent";
@@ -148,16 +149,37 @@ export default function HomePage() {
         });
       },
       {
-        root: feedRef.current,
+        root: null,
         rootMargin: "-40% 0px -40% 0px",
         threshold: 0.5,
       }
     );
 
+    // Infinite Scroll Observer
+    const infiniteObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading) {
+          console.log('[VENUZ] Loading more content...');
+          loadMore();
+        }
+      },
+      {
+        root: null,
+        threshold: 0.1,
+        rootMargin: '400px'
+      }
+    );
+
+    const trigger = document.getElementById('infinite-trigger');
+    if (trigger) {
+      infiniteObserver.observe(trigger);
+    }
+
     return () => {
       observerRef.current?.disconnect();
+      infiniteObserver.disconnect();
     };
-  }, []);
+  }, [hasMore, isLoading, loadMore]);
 
   // Handlers
   const handleLike = useCallback((id: string) => {
@@ -465,6 +487,14 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* Error Display for Debugging */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm">
+                <p className="font-bold mb-1">⚠️ Error detectado:</p>
+                <p>{error}</p>
+              </div>
+            )}
+
             {/* Feed de contenido */}
             <div
               ref={feedRef}
@@ -517,13 +547,17 @@ export default function HomePage() {
                           CARD DESKTOP - Imagen grande con info overlay
                           ==================================== */}
                       <div className="hidden lg:block">
-                        <div className="relative h-[450px] xl:h-[500px] overflow-hidden">
+                        <div className="relative h-[450px] xl:h-[500px] overflow-hidden bg-venuz-gray rounded-t-3xl">
                           <img
                             src={sanitizeImageUrl(item.image_url)}
                             alt={item.title}
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            loading="lazy"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = DEFAULT_IMAGE;
+                            }}
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
 
                           {/* Badges superiores */}
                           <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
@@ -623,12 +657,18 @@ export default function HomePage() {
                     </motion.article>
                   ))}
 
-                  {/* Load More */}
-                  {isLoading && (
-                    <div className="flex justify-center py-8">
-                      <Loader2 className="w-8 h-8 text-venuz-pink animate-spin" />
-                    </div>
-                  )}
+                  {/* Infinite Scroll Trigger */}
+                  <div id="infinite-trigger" className="h-20 flex items-center justify-center">
+                    {hasMore && (
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2 className="w-8 h-8 text-venuz-pink animate-spin" />
+                        <p className="text-xs text-gray-500">Cargando más experiencias...</p>
+                      </div>
+                    )}
+                    {!hasMore && content.length > 0 && (
+                      <p className="text-gray-500 text-sm">Has llegado al final de la noche 🌙</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

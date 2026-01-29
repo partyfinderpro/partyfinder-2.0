@@ -27,13 +27,13 @@ interface ScoredContent extends ContentItem {
  * Obtiene contenido recomendado personalizado para el usuario
  * Basado en: categorías preferidas, engagement, recencia y exploración
  */
-export async function getRecommendedContent(userId?: string, limit = 50): Promise<ContentItem[]> {
-    // 1. Fetch contenido base (más de lo necesario para ordenar)
+export async function getRecommendedContent(userId?: string, limit = 20, offset = 0): Promise<ContentItem[]> {
+    // 1. Fetch contenido base (usando range para paginación real)
     const { data: allContent, error } = await supabase
         .from('content')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(200);
+        .range(offset, offset + limit * 5 - 1); // Tomamos un pool de 5x el límite para poder puntuar y filtrar
 
     if (error || !allContent) {
         console.error('[Recommendations] Error fetching content:', error);
