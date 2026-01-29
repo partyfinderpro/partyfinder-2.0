@@ -304,6 +304,7 @@ export default function ContentCard({
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             onError={() => setImageError(true)}
             loading={isActive ? "eager" : "lazy"}
+            referrerPolicy="no-referrer"
           />
         )}
       </div>

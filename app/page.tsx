@@ -553,6 +553,7 @@ export default function HomePage() {
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = DEFAULT_IMAGE;
                             }}
+                            referrerPolicy="no-referrer"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
 
