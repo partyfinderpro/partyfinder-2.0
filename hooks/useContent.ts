@@ -111,6 +111,7 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
                     .from('content')
                     .select('*', { count: 'exact' })
                     .eq('category', category)
+                    .neq('id', '00000000-0000-0000-0000-000000000000') // Cache breaking
                     .order('created_at', { ascending: false })
                     .range(currentOffset, currentOffset + limit - 1);
 

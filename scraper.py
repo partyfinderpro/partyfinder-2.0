@@ -131,6 +131,25 @@ class PornDudeScraper:
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9'
         }
+
+    def resolve_final_url(self, url: str) -> str:
+        """Sigue redirecciones para obtener el dominio real"""
+        if 'theporndude.com' not in url:
+            return url
+        try:
+            logging.info(f"🔗 Resolviendo dominio final para: {url}")
+            # Usamos una petición HEAD rápida para seguir redirecciones
+            # Si falla, probamos GET con stream=True para no descargar el cuerpo
+            response = requests.get(url, headers=self.headers, timeout=10, allow_redirects=True, stream=True)
+            final_url = response.url
+            if 'theporndude.com' not in final_url:
+                from urllib.parse import urlparse
+                parsed = urlparse(final_url)
+                return f"{parsed.scheme}://{parsed.netloc}"
+            return url
+        except Exception as e:
+            logging.warning(f"⚠️ No se pudo resolver URL {url}: {e}")
+            return url
     
     def scrape_webcams(self) -> List[Dict]:
         """Scrape categoría webcams"""
@@ -210,13 +229,14 @@ class PornDudeScraper:
                             link_url = self.base_url + link_url
                             
                     # Si es link interno de redirect, intentar resolverlo o guardarlo así
+                    final_url = self.resolve_final_url(link_url)
                     
                     datos.append({
                         "id": f"pd-cam-{count}",
                         "title": title,
                         "description": desc_text,
                         "image_url": img_src or "https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=800&q=80",
-                        "affiliate_url": link_url,
+                        "affiliate_url": final_url,
                         "affiliate_source": "porndude",
                         "category": "webcam",
                         "location": "Global",

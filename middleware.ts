@@ -57,9 +57,9 @@ export async function middleware(request: NextRequest) {
     default-src 'self';
     script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.supabase.co https://*.vercel-analytics.com;
     style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com;
-    img-src 'self' blob: data: https:;
+    img-src 'self' blob: data: https: https://image.thum.io;
     font-src 'self' data:;
-    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://supabase.co https://ipapi.co https://nominatim.openstreetmap.org https://*.googleapis.com;
+    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://supabase.co https://ipapi.co https://nominatim.openstreetmap.org https://*.googleapis.com https://image.thum.io;
     object-src 'none';
     base-uri 'self';
     form-action 'self';

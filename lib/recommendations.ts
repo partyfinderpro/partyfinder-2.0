@@ -18,6 +18,8 @@ export type ContentItem = {
     is_premium?: boolean;
     affiliate_source?: string;
     images?: string[];
+    video_url?: string;
+    source_url?: string;
 };
 
 interface ScoredContent extends ContentItem {
@@ -34,6 +36,8 @@ export async function getRecommendedContent(userId?: string, limit = 20, offset 
     const { data: allContent, error } = await supabase
         .from('content')
         .select('*')
+        // Cache breaking: agregamos un filtro que no afecta resultados pero cambia el query
+        .neq('id', '00000000-0000-0000-0000-000000000000')
         .order('created_at', { ascending: false })
         .range(0, 2000);
 
@@ -125,13 +129,18 @@ export async function getRecommendedContent(userId?: string, limit = 20, offset 
         if (item.affiliate_source) score += 15; // Contenido monetizable
 
         // === CALIDAD DE IMAGEN (PENALIZACIÓN DE PLACEHOLDERS) ===
-        const BAD_PLACEHOLDER = "https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800&q=80";
-        if (!item.image_url || item.image_url === BAD_PLACEHOLDER) {
+        const BAD_PLACEHOLDER_ID = "1557682250";
+        if (!item.image_url || item.image_url.includes(BAD_PLACEHOLDER_ID)) {
             score -= 100; // Penalización masiva para que los placeholders se hundan
         } else if (item.image_url.includes('google')) {
             score += 50; // Bonus extra para fotos reales de lugares
         } else {
             score += 20; // Bonus por tener cualquier otra imagen real
+        }
+
+        // === BONUS POR VIDEO ===
+        if (item.video_url) {
+            score += 40; // El video es contenido premium/high-engagement
         }
 
         // === EXPLORACIÓN ALEATORIA (5% del score) ===

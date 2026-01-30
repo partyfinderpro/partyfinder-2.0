@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { useInteractions } from '@/hooks/useInteractions';
 import { useSession } from '@/components/AuthProvider';
+import { sanitizeImageUrl } from '@/lib/media';
+import { VideoPlayer } from './ContentCard';
 
 // ============================================
 // VENUZ - Content Preview Modal (Interstitial)
@@ -52,6 +54,7 @@ interface ContentItem {
     created_at?: string;
     tags?: string[];
     viewers_now?: number;
+    source_url?: string;
 }
 
 interface ContentPreviewModalProps {
@@ -164,12 +167,21 @@ export default function ContentPreViewModal({
 
     if (!content) return null;
 
-    const images = content.images || [content.image_url || CATEGORY_PLACEHOLDERS[content.category] || CATEGORY_PLACEHOLDERS.default];
-    const displayImage = imageError
-        ? CATEGORY_PLACEHOLDERS[content.category] || CATEGORY_PLACEHOLDERS.default
-        : images[currentImageIndex];
-
     const isAffiliate = Boolean(content.affiliate_url);
+    const hasVideo = Boolean(content.video_url);
+
+    // Preparar lista de medios (videos + imágenes)
+    const mediaItems: { type: 'image' | 'video', url: string }[] = [];
+    if (hasVideo && content.video_url) {
+        mediaItems.push({ type: 'video', url: content.video_url });
+    }
+
+    const rawImages = content.images || [content.image_url || CATEGORY_PLACEHOLDERS[content.category] || CATEGORY_PLACEHOLDERS.default];
+    rawImages.forEach(img => {
+        mediaItems.push({ type: 'image', url: sanitizeImageUrl(img, content.affiliate_source, content.source_url) });
+    });
+
+    const currentMedia = mediaItems[currentImageIndex];
 
     const handleLike = () => {
         toggleLike();
@@ -191,16 +203,16 @@ export default function ContentPreViewModal({
     };
 
     const handleVisitSite = () => {
-        if (!content.affiliate_url) return;
+        if (!content.id) return;
 
         // Log antes de salir
         logEvent('exit_click', content.id, {
             affiliate_source: content.affiliate_source,
-            affiliate_url: content.affiliate_url,
+            target_id: content.id,
         });
 
-        // Abrir en nueva pestaña
-        window.open(content.affiliate_url, '_blank', 'noopener,noreferrer');
+        // REDIRECT MANAGER: Abrir vía nuestro endpoint de redirección
+        window.open(`/api/go?id=${content.id}`, '_blank', 'noopener,noreferrer');
         setShowExitWarning(false);
     };
 
@@ -211,11 +223,11 @@ export default function ContentPreViewModal({
     };
 
     const nextImage = () => {
-        setCurrentImageIndex((prev) => (prev + 1) % images.length);
+        setCurrentImageIndex((prev) => (prev + 1) % mediaItems.length);
     };
 
     const prevImage = () => {
-        setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+        setCurrentImageIndex((prev) => (prev - 1 + mediaItems.length) % mediaItems.length);
     };
 
     return (
@@ -252,23 +264,30 @@ export default function ContentPreViewModal({
                             {/* Content Grid */}
                             <div className="h-full grid grid-cols-1 lg:grid-cols-2">
 
-                                {/* Left: Image Gallery */}
+                                {/* Left: Media Gallery */}
                                 <div className="relative h-64 sm:h-80 lg:h-full bg-black">
-                                    <Image
-                                        src={displayImage}
-                                        alt={content.title}
-                                        fill
-                                        className="object-cover"
-                                        onError={() => setImageError(true)}
-                                        priority
-                                        unoptimized={isAffiliate}
-                                    />
+                                    {currentMedia.type === 'video' ? (
+                                        <VideoPlayer
+                                            src={currentMedia.url}
+                                            thumbnail={content.thumbnail_url || content.image_url}
+                                            isActive={isOpen}
+                                            className="w-full h-full"
+                                        />
+                                    ) : (
+                                        <img
+                                            src={imageError ? CATEGORY_PLACEHOLDERS.default : currentMedia.url}
+                                            alt={content.title}
+                                            className="w-full h-full object-cover"
+                                            onError={() => setImageError(true)}
+                                            referrerPolicy="no-referrer"
+                                        />
+                                    )}
 
                                     {/* Gradient Overlay */}
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
 
-                                    {/* Image Navigation */}
-                                    {images.length > 1 && (
+                                    {/* Media Navigation */}
+                                    {mediaItems.length > 1 && (
                                         <>
                                             <button
                                                 onClick={prevImage}
@@ -283,9 +302,9 @@ export default function ContentPreViewModal({
                                                 <ChevronRight className="w-6 h-6" />
                                             </button>
 
-                                            {/* Image Dots */}
+                                            {/* Media Dots */}
                                             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                                                {images.map((_, idx) => (
+                                                {mediaItems.map((_, idx) => (
                                                     <button
                                                         key={idx}
                                                         onClick={() => setCurrentImageIndex(idx)}

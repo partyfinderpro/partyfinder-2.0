@@ -1,13 +1,18 @@
 ﻿"use client";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
-import ContentCard from "@/components/ContentCard";
+import ContentCard, { VideoPlayer } from "@/components/ContentCard";
 import Image from "next/image";
 import ContentPreviewModal from "@/components/ContentPreviewModal";
 import MegaMenu from "@/components/MegaMenu";
-import { useContent, ContentItem } from "@/hooks/useContent";
+import { useContent } from "@/hooks/useContent";
+import type { ContentItem } from "@/hooks/useContent";
+import { sanitizeImageUrl } from "@/lib/media";
 import {
   ConcertIcon,
   BarIcon,
@@ -70,13 +75,7 @@ const TRENDING_TAGS = [
   '#MexicoNocturno'
 ];
 
-// Helper para sanitizar URLs de imágenes problemáticas
-const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800';
-const BAD_PLACEHOLDER_ID = '1557682250';
-const sanitizeImageUrl = (url: string | null | undefined): string => {
-  if (!url || url.includes(BAD_PLACEHOLDER_ID)) return DEFAULT_IMAGE;
-  return url;
-};
+// El sanitizeImageUrl ahora se importa de @/lib/media
 
 export default function HomePage() {
   // Supabase content hook
@@ -545,99 +544,142 @@ export default function HomePage() {
                           CARD DESKTOP - Imagen grande con info overlay
                           ==================================== */}
                       <div className="hidden lg:block">
-                        <div className="relative h-[450px] xl:h-[500px] overflow-hidden bg-venuz-gray rounded-t-3xl">
-                          <img
-                            src={sanitizeImageUrl(item.image_url)}
-                            alt={item.title}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                            loading="lazy"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = DEFAULT_IMAGE;
-                            }}
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+                        <motion.div
+                          whileHover={{ y: -10 }}
+                          className="relative h-[450px] xl:h-[500px] overflow-hidden bg-[#121214] rounded-[2.5rem] border border-white/5 shadow-2xl transition-all duration-500"
+                        >
+                          {item.video_url && activeIndex === index ? (
+                            <VideoPlayer
+                              src={item.video_url}
+                              thumbnail={item.thumbnail_url || item.image_url}
+                              isActive={activeIndex === index}
+                              className="w-full h-full"
+                            />
+                          ) : (
+                            <motion.div
+                              className="w-full h-full"
+                              whileHover={{ scale: 1.05 }}
+                              transition={{ duration: 1.5, ease: [0.33, 1, 0.68, 1] }}
+                            >
+                              <img
+                                src={sanitizeImageUrl(item.image_url, item.affiliate_source, item.source_url)}
+                                alt={item.title}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800";
+                                }}
+                                referrerPolicy="no-referrer"
+                              />
+                            </motion.div>
+                          )}
+
+                          {/* Gradient Overlays */}
+                          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#0a0a0b] via-[#0a0a0b]/40 to-transparent z-10" />
+                          <div className="absolute inset-x-0 top-0 h-1/4 bg-gradient-to-b from-black/40 to-transparent z-10" />
 
                           {/* Badges superiores */}
-                          <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
+                          <div className="absolute top-6 left-6 flex gap-3 flex-wrap z-20">
                             {item.is_premium && (
-                              <span className="px-3 py-1.5 bg-venuz-gold text-black text-xs font-bold rounded-full flex items-center gap-1">
-                                <Star className="w-3 h-3" />
-                                DESTACADO
+                              <span className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-600 text-black text-[10px] font-black rounded-full flex items-center gap-1.5 shadow-lg shadow-amber-500/20 uppercase tracking-widest">
+                                <Sparkles className="w-3.5 h-3.5 fill-current" />
+                                VIP
                               </span>
                             )}
-                            <span className="px-3 py-1 bg-venuz-pink text-white text-xs font-bold rounded-full uppercase">
+                            <span className="px-4 py-2 bg-pink-500/90 backdrop-blur-md text-white text-[10px] font-black rounded-full uppercase tracking-widest">
                               {item.category}
                             </span>
                             {item.is_verified && (
-                              <span className="px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full">
-                                ✓ Verificado
+                              <span className="px-4 py-2 bg-blue-500/90 backdrop-blur-md text-white text-[10px] font-black rounded-full flex items-center gap-1.5 uppercase tracking-widest">
+                                <BadgeCheck className="w-3.5 h-3.5" />
+                                Real Verificada
                               </span>
                             )}
                           </div>
 
+                          {/* Real-time Viewers badge */}
+                          {item.viewers_now && (
+                            <div className="absolute top-6 right-6 z-20">
+                              <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 text-white text-[10px] font-black animate-pulse shadow-xl shadow-red-600/20 tracking-widest">
+                                <span className="w-2 h-2 rounded-full bg-white shadow-[0_0_10px_white]" />
+                                LIVE {item.viewers_now.toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+
                           {/* Info en la parte inferior */}
-                          <div className="absolute bottom-0 left-0 right-0 p-6">
-                            <h2 className="text-2xl md:text-3xl font-bold mb-2 text-white">
-                              {item.title}
-                            </h2>
-                            <p className="text-gray-200 text-sm md:text-base mb-4 line-clamp-2">
-                              {item.description}
-                            </p>
+                          <div className="absolute bottom-0 left-0 right-0 p-8 z-20">
+                            <div className="max-w-2xl">
+                              <motion.h2 className="text-4xl md:text-5xl font-bold mb-4 text-white leading-tight group-hover:text-pink-400 transition-colors duration-300">
+                                {item.title}
+                              </motion.h2>
+                              <p className="text-white/60 text-lg mb-6 line-clamp-2 font-medium leading-relaxed">
+                                {item.description}
+                              </p>
 
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4 text-sm text-gray-300">
-                                <span className="flex items-center gap-1">
-                                  <Eye className="w-4 h-4" />
-                                  {(item.views || 0).toLocaleString()}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Heart className="w-4 h-4 text-venuz-pink" />
-                                  {(item.likes || 0).toLocaleString()}
-                                </span>
-                                {item.location && (
-                                  <span className="flex items-center gap-1">
-                                    <MapPin className="w-4 h-4" />
-                                    {item.location}
+                              <div className="flex items-center justify-between mt-auto">
+                                <div className="flex items-center gap-6 text-sm font-semibold text-white/40">
+                                  <span className="flex items-center gap-2">
+                                    <Eye className="w-5 h-5 text-pink-500/60" />
+                                    {(item.views || 0).toLocaleString()} vistos
                                   </span>
-                                )}
-                              </div>
+                                  <span className="flex items-center gap-2">
+                                    <Heart className="w-5 h-5 text-pink-500/60" />
+                                    {(item.likes || 0).toLocaleString()}
+                                  </span>
+                                  {item.location && (
+                                    <span className="flex items-center gap-2">
+                                      <MapPin className="w-5 h-5 text-pink-500/60" />
+                                      {item.location}
+                                    </span>
+                                  )}
+                                </div>
 
-                              <button
-                                onClick={() => handleContentClick(item.id)}
-                                className="venuz-button text-sm"
-                              >
-                                Ver más →
-                              </button>
+                                <motion.button
+                                  whileHover={{ scale: 1.05, x: 5 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => handleContentClick(item.id)}
+                                  className="flex items-center gap-3 px-8 py-3 bg-white text-black rounded-full font-bold text-sm tracking-wider hover:bg-pink-500 hover:text-white transition-all duration-300 shadow-xl"
+                                >
+                                  Explorar Perfil
+                                  <span className="text-xl">→</span>
+                                </motion.button>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        </motion.div>
 
-                        {/* Acciones rápidas */}
-                        <div className="p-4 bg-venuz-charcoal border-t border-venuz-gray flex items-center justify-between">
-                          <div className="flex gap-4">
+                        {/* Quick Actions (Barra inferior separada) */}
+                        <div className="mt-4 px-6 py-4 bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-[1.5rem] flex items-center justify-between">
+                          <div className="flex gap-8">
                             <button
                               onClick={() => handleLike(item.id)}
-                              className="text-gray-400 hover:text-venuz-pink transition flex items-center gap-2"
+                              className="text-white/30 hover:text-pink-500 transition-all duration-300 flex items-center gap-2.5 font-bold text-xs uppercase tracking-widest"
                             >
                               <Heart className="w-5 h-5" />
-                              Me gusta
-                            </button>
-                            <button className="text-gray-400 hover:text-venuz-gold transition flex items-center gap-2">
-                              <Star className="w-5 h-5" />
-                              Guardar
+                              Favorito
                             </button>
                             <button
                               onClick={() => handleShare(item.id)}
-                              className="text-gray-400 hover:text-blue-400 transition flex items-center gap-2"
+                              className="text-white/30 hover:text-blue-400 transition-all duration-300 flex items-center gap-2.5 font-bold text-xs uppercase tracking-widest"
                             >
-                              📤 Compartir
+                              <Share2 className="w- 5 h-5" />
+                              Compartir
                             </button>
                           </div>
-                          <button className="text-gray-400 hover:text-white transition text-sm flex items-center gap-2">
-                            <MapPin className="w-4 h-4" />
-                            Cómo llegar
-                          </button>
+
+                          {item.affiliate_url && (
+                            <motion.a
+                              href={`/api/go?id=${item.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              whileHover={{ scale: 1.05 }}
+                              className="flex items-center gap-2.5 px-6 py-2 bg-gradient-to-r from-pink-500 to-rose-600 rounded-full text-white font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-pink-500/20"
+                            >
+                              Entrar Live
+                              <ExternalLink className="w-4 h-4" />
+                            </motion.a>
+                          )}
                         </div>
                       </div>
 
