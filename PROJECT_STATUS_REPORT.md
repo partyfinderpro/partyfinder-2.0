@@ -1,58 +1,55 @@
 # 📊 VENUZ Project Status Report & Handoff
 
-**Date:** January 22, 2026
+**Date:** January 30, 2026
 **Current Deployment:** `https://venuz-final-auditada.vercel.app`
-**Status:** 🟢 PRODUCTION READY (Baseline + Security V1)
+**Status:** 🔵 DATA RICH & SECURE (2,200+ Items + Redirect Manager)
 
 ---
 
 ## 🚀 Recent Achievements (Completed)
 
-1.  **Infrastructure & Deployment:**
-    *   **Solved Vercel Permission Loop:** Successfully deployed direct from local CLI bypassing the "Team" restriction by creating a new project scope (`venuz-final-auditada`) and avoiding Git integration during deploy.
-    *   **Production Build Fixed:** Resolved TypeScript errors in `InfiniteFeed.tsx` regarding `ContentItem` interface vs Supabase data structure (null vs undefined handling).
+1.  **Massive Data Ingestion:**
+    *   **2,201 Active Records:** The app is no longer a "ghost town". We have a robust feed of content.
+    *   **Advanced Scraper (`scraper.py`):** Successfully resolving external domain redirects (PornDude) and auto-populating categories.
 
-2.  **Security Implementation (The "Shield"):**
-    *   **Middleware Deployed (`middleware.ts`):** Implemented military-grade request headers.
-        *   ✅ **CSP (Content Security Policy):** Strict controls on scripts and frame ancestors.
-        *   ✅ **HSTS:** Forced HTTPS.
-        *   ✅ **Anti-Clickjacking:** `X-Frame-Options: DENY`.
-        *   ✅ **XSS Protection:** Mode block active.
-    *   **Next.js Config:** Backup security headers added in `next.config.js`.
+2.  **Affiliate & Redirect Ecosystem:**
+    *   **Redirect Manager (`/api/go`):** Centralized exit point to track clicks and hide destination URLs.
+    *   **Affiliate Injection:** Automatic injection of partner codes (Stripchat, Camsoda, etc.) based on domain mapping.
+    *   **Image Fallback:** Integrated `thum.io` for automated site screenshots when images are missing or blocked.
+
+3.  **PWA Polish:**
+    *   **Offline Page:** Created a premium `/offline` experience.
+    *   **Store Screenshots:** Generated High-Fidelity mockups for the PWA install prompt.
+
+4.  **Security Implementation:**
+    *   **RLS Policies Hardened:** Supabase policies verified for public read and authenticated mutations.
+    *   **Rate Limiting:** Database-level trigger implemented to prevent interaction spam.
 
 ---
 
 ## 📝 Pending Tasks (The "To-Do" List)
 
-### Priority 1: PWA Transformation (Offline & Installable)
-*   [ ] Install `next-pwa` package.
-*   [ ] Generate `manifest.json` (Name, short_name, icons).
-*   [ ] Add Service Worker for offline caching (critical for club/event usage).
-*   [ ] Add "Add to Home Screen" prompt logic.
+### Priority 1: Traffic Monetization (Rotador)
+* [ ] Implement "Hero Links" Fallback: If a content item doesn't have a specific affiliate, redirect to one of pablo's 10 main links.
+* [ ] Add Traffic Analytics: Simple dashboard to count redirects per platform.
 
-### Priority 2: Backend Security (Supabase Hardening)
-*   [ ] **RLS Policies:** Verify Row Level Security on `content` and `users` tables.
-*   [ ] **Secure Storage:** Create private buckets for model IDs/sensitive docs using Signed URLs.
-*   [ ] **Database Backup Strategy:** continuous backups already enabled on Supabase? (Check plan).
+### Priority 2: UI Interaction Fixes
+* [ ] **Like/Share Wiring:** Connect the UI buttons in `ContentCard.tsx` to the `interactions` table (currently many are UI-only).
+* [ ] **Sub-category Filtering:** Ensure the feed responds to clicks on sub-categories (Couples, Trans, Female).
 
-### Priority 3: Performance & Monitoring
-*   [ ] **Image Optimization:** Ensure LCP (Largest Contentful Paint) is under 2.5s using `next/image` effectively.
-*   [ ] **Sentry Integration:** Set up error tracking to catch crashes in production.
-*   [ ] **Cloudflare Setup:** (External) Configure DNS to proxy through Cloudflare for DDoS protection.
+### Priority 3: Distribution & Performance
+* [ ] **Sentry Integration:** Set up error tracking.
+* [ ] **Cloudflare Setup:** Final DNS proxying.
 
 ---
 
-## 💡 Notes for Assistant (Claude/Antigravity)
+## 💡 Notes for Assistant (Antigravity/Claude)
 
-**Deployment Protocol:**
-Values in `.vercel` folder might be cache-poisoned with the wrong team scope. If `vercel --prod` fails with "Team access denied":
-1.  Run `Remove-Item -Recurse -Force .vercel`
-2.  Run `vercel --prod`
-3.  Select User Scope (NOT Team).
-4.  Link to existing project? NO (unless you are sure).
-5.  Link to Git? NO (Critical to avoid permission checks).
+**Affiliate Logic:**
+All outgoing links SHOULD go through `https://venuz.app/api/go?id={content_id}`. 
+Do NOT link directly to external domains in the frontend.
 
 **Current Codebase State:**
-*   Security headers are enforced in `middleware.ts`.
-*   `next.config.js` is prepped for PWA (commented out).
-*   `components/InfiniteFeed.tsx` has robust type safety for incomplete DB data.
+* `lib/affiliateConfig.ts` is the brain for URL transformation.
+* `scraper.py` is ready for massive runs (check `scrape-data/checkpoint.json`).
+* `app/offline/page.tsx` is the fallback for the Service Worker.

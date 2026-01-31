@@ -133,22 +133,31 @@ class PornDudeScraper:
         }
 
     def resolve_final_url(self, url: str) -> str:
-        """Sigue redirecciones para obtener el dominio real"""
-        if 'theporndude.com' not in url:
+        """Sigue redirecciones para obtener el dominio final real"""
+        if not url or 'theporndude.com' not in url:
             return url
+            
         try:
-            logging.info(f"🔗 Resolviendo dominio final para: {url}")
-            # Usamos una petición HEAD rápida para seguir redirecciones
-            # Si falla, probamos GET con stream=True para no descargar el cuerpo
-            response = requests.get(url, headers=self.headers, timeout=10, allow_redirects=True, stream=True)
-            final_url = response.url
-            if 'theporndude.com' not in final_url:
-                from urllib.parse import urlparse
-                parsed = urlparse(final_url)
+            logging.info(f"🔗 Resolviendo link real: {url}")
+            # Intentar HEAD primero (rápido)
+            r = requests.head(url, headers=self.headers, timeout=10, allow_redirects=True)
+            final_url = r.url
+            
+            # Si el final sigue siendo PornDude, probamos con GET (por si hay meta-refresh)
+            if 'theporndude.com' in final_url:
+                r = requests.get(url, headers=self.headers, timeout=10, allow_redirects=True, stream=True)
+                final_url = r.url
+            
+            from urllib.parse import urlparse
+            parsed = urlparse(final_url)
+            
+            # Si salimos de PornDude, devolvemos el dominio base limpio
+            if 'theporndude.com' not in parsed.netloc:
                 return f"{parsed.scheme}://{parsed.netloc}"
+                
             return url
         except Exception as e:
-            logging.warning(f"⚠️ No se pudo resolver URL {url}: {e}")
+            logging.warning(f"⚠️ Error resolviendo {url}: {e}")
             return url
     
     def scrape_webcams(self) -> List[Dict]:

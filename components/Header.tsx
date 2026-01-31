@@ -10,19 +10,23 @@ interface HeaderProps {
     onMenuClick?: () => void;
     onNotificationClick?: () => void;
     onHighlightsClick?: () => void;
+    onSearch?: (query: string) => void;
+    onCityChange?: (city: string) => void;
 }
 
-const MEXICO_CITIES = ['CDMX', 'Guadalajara', 'Monterrey', 'Cancún', 'Puerto Vallarta', 'Tulum', 'Todas'];
+const MEXICO_CITIES = ['Todas', 'CDMX', 'Guadalajara', 'Monterrey', 'Cancún', 'Puerto Vallarta', 'Tulum'];
 
 export default function Header({
     notificationCount = 0,
     onMenuClick,
     onNotificationClick,
     onHighlightsClick,
+    onSearch,
+    onCityChange,
 }: HeaderProps) {
     const [isScrolled, setIsScrolled] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
-    const [city, setCity] = useState("CDMX");
+    const [city, setCity] = useState("Todas");
     const [showCitySelector, setShowCitySelector] = useState(false);
 
     useEffect(() => {
@@ -32,24 +36,16 @@ export default function Header({
         window.addEventListener("scroll", handleScroll);
 
         // Inicializar ciudad
-        const stored = getStoredCity();
+        const stored = localStorage.getItem('venuz_user_city') || 'Todas';
         setCity(stored);
-
-        // Si es la primera vez (default), intentar detectar automáticamente
-        detectUserCity().then(detected => {
-            setCity(detected);
-            saveUserCity(detected);
-        });
 
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
     const handleCityChange = (newCity: string) => {
         setCity(newCity);
-        saveUserCity(newCity);
         setShowCitySelector(false);
-        // Recargar para filtrar feed
-        window.location.reload();
+        if (onCityChange) onCityChange(newCity);
     };
 
     return (
@@ -175,9 +171,16 @@ export default function Header({
                             <input
                                 type="text"
                                 placeholder="Buscar eventos, lugares, modelos..."
+                                onChange={(e) => onSearch?.(e.target.value)}
                                 className="w-full py-3 pl-12 pr-12 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-white/40 focus:outline-none focus:border-pink-500/50 transition-colors"
                             />
-                            <button onClick={() => setShowSearch(false)} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white">
+                            <button
+                                onClick={() => {
+                                    setShowSearch(false);
+                                    onSearch?.("");
+                                }}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                            >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>

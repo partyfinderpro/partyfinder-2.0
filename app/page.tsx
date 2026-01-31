@@ -1,16 +1,14 @@
 ﻿"use client";
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
 import ContentCard, { VideoPlayer } from "@/components/ContentCard";
+import ContentCardDesktop from "@/components/ContentCardDesktop";
 import Image from "next/image";
 import ContentPreviewModal from "@/components/ContentPreviewModal";
 import MegaMenu from "@/components/MegaMenu";
-import { useContent } from "@/hooks/useContent";
+import { useAdaptiveFeed } from "@/hooks/useAdaptiveFeed";
 import type { ContentItem } from "@/hooks/useContent";
 import { sanitizeImageUrl } from "@/lib/media";
 import {
@@ -52,17 +50,17 @@ interface Category {
 
 // Categorías con iconos premium
 const CATEGORIES: Category[] = [
-  { id: "concierto", name: "Conciertos", description: "Música en vivo", isTemporary: true },
-  { id: "evento", name: "Eventos", description: "Fiestas y reuniones", isTemporary: true },
-  { id: "bar", name: "Bares", description: "Nightlife estática" },
-  { id: "club", name: "Clubs", description: "Discotecas y antros" },
   { id: "escort", name: "Escorts", description: "Acompañantes verificadas" },
-  { id: "modelo", name: "Modelos", description: "Modelos profesionales" },
-  { id: "live", name: "En Vivo", description: "Streams y cams" },
+  { id: "webcam", name: "Webcams", description: "Streams y cams en vivo" },
+  { id: "club", name: "Clubs", description: "Discotecas y antros" },
+  { id: "bar", name: "Bares", description: "Nightlife" },
   { id: "tabledance", name: "Table Dance", description: "Shows en vivo" },
+  { id: "evento", name: "Eventos", description: "Fiestas y reuniones", isTemporary: true },
   { id: "masaje", name: "Masajes", description: "Spa y relajación" },
   { id: "restaurante", name: "Restaurantes", description: "Gastronomía" },
   { id: "beach", name: "Beach Clubs", description: "Playa y fiesta" },
+  { id: "hookup", name: "Hookups", description: "Citas rápidas" },
+  { id: "ai-porn", name: "IA Art", description: "Contenido generado por IA" },
 ];
 
 // Trending tags para sidebar
@@ -78,8 +76,12 @@ const TRENDING_TAGS = [
 // El sanitizeImageUrl ahora se importa de @/lib/media
 
 export default function HomePage() {
-  // Supabase content hook
+  // Filters & State
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [activeMenu, setActiveMenu] = useState('inicio');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCity, setSelectedCity] = useState("Todas");
+
   const {
     content,
     isLoading,
@@ -87,8 +89,18 @@ export default function HomePage() {
     hasMore,
     loadMore,
     refresh,
-    totalCount
-  } = useContent({ category: selectedCategory || undefined });
+    totalCount,
+    // Highway Algorithm extras
+    isHighwayActive,
+    intentScore,
+    abVariant,
+  } = useAdaptiveFeed({
+    category: selectedCategory || undefined,
+    mode: activeMenu,
+    search: searchQuery,
+    city: selectedCity,
+    limit: 20,
+  });
 
   // Centralized Device Detection
   const { isMobile, isDesktop } = useDevice();
@@ -99,7 +111,6 @@ export default function HomePage() {
   const [notificationCount, setNotificationCount] = useState(5);
   const [ageVerified, setAgeVerified] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-  const [activeMenu, setActiveMenu] = useState('inicio');
 
   // Modal state para interstitial
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
@@ -121,6 +132,10 @@ export default function HomePage() {
     if (!localStorage.getItem('venuz_user_id')) {
       localStorage.setItem('venuz_user_id', `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
     }
+
+    // Cargar ciudad guardada
+    const storedCity = localStorage.getItem('venuz_user_city');
+    if (storedCity) setSelectedCity(storedCity);
   }, [])
 
   const handleAgeVerification = (verified: boolean) => {
@@ -176,7 +191,7 @@ export default function HomePage() {
       observerRef.current?.disconnect();
       infiniteObserver.disconnect();
     };
-  }, [hasMore, isLoading, loadMore]);
+  }, [hasMore, isLoading, loadMore, content.length]); // Agregado content.length para re-observar
 
   // Handlers
   const handleLike = useCallback((id: string) => {
@@ -219,8 +234,21 @@ export default function HomePage() {
 
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
+    if (categoryId) setActiveMenu('inicio');
     setActiveIndex(0);
     feedRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCityChange = (city: string) => {
+    setSelectedCity(city);
+    localStorage.setItem('venuz_user_city', city);
+    setActiveIndex(0);
+    feedRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setActiveIndex(0);
   };
 
   // Calcular estadísticas
@@ -300,42 +328,24 @@ export default function HomePage() {
   }
 
   // ==========================================
-  // MAIN LAYOUT - RESPONSIVE HÃBRIDO
+  // MAIN LAYOUT - RESPONSIVE HÃ BRIDO
   // ==========================================
   return (
     <div className="min-h-screen bg-black">
-      {/* ====================================
-          HEADER - Visible en todas las pantallas
-          ==================================== */}
-      <header className="sticky top-0 z-50 bg-venuz-charcoal/95 border-b border-venuz-pink/20 backdrop-blur-xl">
-        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 lg:gap-8">
-              <h1 className="text-2xl lg:text-3xl font-display font-bold text-gradient glow-strong">
-                VENUZ <span className="text-[10px] bg-white text-black px-1 rounded ml-2">DEPLOY_V4</span>
-              </h1>
-              <span className="hidden md:flex items-center gap-1 text-sm text-gray-400">
-                <MapPin className="w-4 h-4 text-venuz-pink" />
-                Puerto Vallarta, Jalisco
-              </span>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-4">
-              <button className="hidden md:flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-white transition rounded-lg hover:bg-venuz-gray">
-                🔔 Notificaciones
-                {notificationCount > 0 && (
-                  <span className="px-2 py-0.5 bg-venuz-pink text-white text-xs rounded-full">
-                    {notificationCount}
-                  </span>
-                )}
-              </button>
-              <button className="venuz-button text-sm flex items-center gap-2">
-                <Flame className="w-4 h-4" />
-                <span className="hidden sm:inline">Destacados</span>
-              </button>
-            </div>
-          </div>
+      <Header
+        notificationCount={notificationCount}
+        onSearch={handleSearch}
+        onCityChange={handleCityChange}
+      />
+
+      {/* Highway Algorithm Debug Indicator - Solo en desarrollo */}
+      {process.env.NODE_ENV === 'development' && isHighwayActive && (
+        <div className="fixed top-20 right-4 z-50 px-3 py-2 bg-gradient-to-r from-venuz-pink/20 to-purple-500/20 backdrop-blur-sm border border-venuz-pink/30 text-white text-xs rounded-lg shadow-lg">
+          <div className="font-bold text-venuz-pink">🛣️ Highway Active</div>
+          <div className="text-gray-300">Variant: {abVariant}</div>
+          <div className="text-gray-300">Intent: {(intentScore * 100).toFixed(0)}%</div>
         </div>
-      </header>
+      )}
 
       {/* ====================================
           MAIN CONTENT AREA
@@ -350,12 +360,15 @@ export default function HomePage() {
           <aside className="hidden lg:block col-span-2 xl:col-span-2">
             <div className="sticky top-24 space-y-4">
 
-              {/* MenÃº Principal */}
+              {/* Menú Principal */}
               <div className="venuz-card p-4">
                 <div className="space-y-2">
                   <button
-                    onClick={() => setActiveMenu('inicio')}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${activeMenu === 'inicio'
+                    onClick={() => {
+                      setActiveMenu('inicio');
+                      setSelectedCategory('');
+                    }}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${activeMenu === 'inicio' && !selectedCategory
                       ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30'
                       : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
                       }`}
@@ -364,7 +377,10 @@ export default function HomePage() {
                     Inicio
                   </button>
                   <button
-                    onClick={() => setActiveMenu('tendencias')}
+                    onClick={() => {
+                      setActiveMenu('tendencias');
+                      setSelectedCategory('');
+                    }}
                     className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${activeMenu === 'tendencias'
                       ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30'
                       : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
@@ -374,7 +390,10 @@ export default function HomePage() {
                     Tendencias
                   </button>
                   <button
-                    onClick={() => setActiveMenu('cerca')}
+                    onClick={() => {
+                      setActiveMenu('cerca');
+                      setSelectedCategory('');
+                    }}
                     className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${activeMenu === 'cerca'
                       ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30'
                       : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
@@ -384,13 +403,16 @@ export default function HomePage() {
                     Cerca de mí
                   </button>
                   <button
-                    onClick={() => setActiveMenu('favoritos')}
+                    onClick={() => {
+                      setActiveMenu('favoritos');
+                      setSelectedCategory('');
+                    }}
                     className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${activeMenu === 'favoritos'
                       ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30'
                       : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
                       }`}
                   >
-                    <Star className="w-4 h-4 text-yellow-400" />
+                    <Heart className="w-4 h-4 text-pink-500" />
                     Favoritos
                   </button>
                 </div>
@@ -541,147 +563,17 @@ export default function HomePage() {
                       transition={{ delay: index * 0.05 }}
                     >
                       {/* ====================================
-                          CARD DESKTOP - Imagen grande con info overlay
+                          CARD DESKTOP
                           ==================================== */}
                       <div className="hidden lg:block">
-                        <motion.div
-                          whileHover={{ y: -10 }}
-                          className="relative h-[450px] xl:h-[500px] overflow-hidden bg-[#121214] rounded-[2.5rem] border border-white/5 shadow-2xl transition-all duration-500"
-                        >
-                          {item.video_url && activeIndex === index ? (
-                            <VideoPlayer
-                              src={item.video_url}
-                              thumbnail={item.thumbnail_url || item.image_url}
-                              isActive={activeIndex === index}
-                              className="w-full h-full"
-                            />
-                          ) : (
-                            <motion.div
-                              className="w-full h-full"
-                              whileHover={{ scale: 1.05 }}
-                              transition={{ duration: 1.5, ease: [0.33, 1, 0.68, 1] }}
-                            >
-                              <img
-                                src={sanitizeImageUrl(item.image_url, item.affiliate_source, item.source_url)}
-                                alt={item.title}
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800";
-                                }}
-                                referrerPolicy="no-referrer"
-                              />
-                            </motion.div>
-                          )}
-
-                          {/* Gradient Overlays */}
-                          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#0a0a0b] via-[#0a0a0b]/40 to-transparent z-10" />
-                          <div className="absolute inset-x-0 top-0 h-1/4 bg-gradient-to-b from-black/40 to-transparent z-10" />
-
-                          {/* Badges superiores */}
-                          <div className="absolute top-6 left-6 flex gap-3 flex-wrap z-20">
-                            {item.is_premium && (
-                              <span className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-600 text-black text-[10px] font-black rounded-full flex items-center gap-1.5 shadow-lg shadow-amber-500/20 uppercase tracking-widest">
-                                <Sparkles className="w-3.5 h-3.5 fill-current" />
-                                VIP
-                              </span>
-                            )}
-                            <span className="px-4 py-2 bg-pink-500/90 backdrop-blur-md text-white text-[10px] font-black rounded-full uppercase tracking-widest">
-                              {item.category}
-                            </span>
-                            {item.is_verified && (
-                              <span className="px-4 py-2 bg-blue-500/90 backdrop-blur-md text-white text-[10px] font-black rounded-full flex items-center gap-1.5 uppercase tracking-widest">
-                                <BadgeCheck className="w-3.5 h-3.5" />
-                                Real Verificada
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Real-time Viewers badge */}
-                          {item.viewers_now && (
-                            <div className="absolute top-6 right-6 z-20">
-                              <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 text-white text-[10px] font-black animate-pulse shadow-xl shadow-red-600/20 tracking-widest">
-                                <span className="w-2 h-2 rounded-full bg-white shadow-[0_0_10px_white]" />
-                                LIVE {item.viewers_now.toLocaleString()}
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Info en la parte inferior */}
-                          <div className="absolute bottom-0 left-0 right-0 p-8 z-20">
-                            <div className="max-w-2xl">
-                              <motion.h2 className="text-4xl md:text-5xl font-bold mb-4 text-white leading-tight group-hover:text-pink-400 transition-colors duration-300">
-                                {item.title}
-                              </motion.h2>
-                              <p className="text-white/60 text-lg mb-6 line-clamp-2 font-medium leading-relaxed">
-                                {item.description}
-                              </p>
-
-                              <div className="flex items-center justify-between mt-auto">
-                                <div className="flex items-center gap-6 text-sm font-semibold text-white/40">
-                                  <span className="flex items-center gap-2">
-                                    <Eye className="w-5 h-5 text-pink-500/60" />
-                                    {(item.views || 0).toLocaleString()} vistos
-                                  </span>
-                                  <span className="flex items-center gap-2">
-                                    <Heart className="w-5 h-5 text-pink-500/60" />
-                                    {(item.likes || 0).toLocaleString()}
-                                  </span>
-                                  {item.location && (
-                                    <span className="flex items-center gap-2">
-                                      <MapPin className="w-5 h-5 text-pink-500/60" />
-                                      {item.location}
-                                    </span>
-                                  )}
-                                </div>
-
-                                <motion.button
-                                  whileHover={{ scale: 1.05, x: 5 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  onClick={() => handleContentClick(item.id)}
-                                  className="flex items-center gap-3 px-8 py-3 bg-white text-black rounded-full font-bold text-sm tracking-wider hover:bg-pink-500 hover:text-white transition-all duration-300 shadow-xl"
-                                >
-                                  Explorar Perfil
-                                  <span className="text-xl">→</span>
-                                </motion.button>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-
-                        {/* Quick Actions (Barra inferior separada) */}
-                        <div className="mt-4 px-6 py-4 bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-[1.5rem] flex items-center justify-between">
-                          <div className="flex gap-8">
-                            <button
-                              onClick={() => handleLike(item.id)}
-                              className="text-white/30 hover:text-pink-500 transition-all duration-300 flex items-center gap-2.5 font-bold text-xs uppercase tracking-widest"
-                            >
-                              <Heart className="w-5 h-5" />
-                              Favorito
-                            </button>
-                            <button
-                              onClick={() => handleShare(item.id)}
-                              className="text-white/30 hover:text-blue-400 transition-all duration-300 flex items-center gap-2.5 font-bold text-xs uppercase tracking-widest"
-                            >
-                              <Share2 className="w- 5 h-5" />
-                              Compartir
-                            </button>
-                          </div>
-
-                          {item.affiliate_url && (
-                            <motion.a
-                              href={`/api/go?id=${item.id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              whileHover={{ scale: 1.05 }}
-                              className="flex items-center gap-2.5 px-6 py-2 bg-gradient-to-r from-pink-500 to-rose-600 rounded-full text-white font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-pink-500/20"
-                            >
-                              Entrar Live
-                              <ExternalLink className="w-4 h-4" />
-                            </motion.a>
-                          )}
-                        </div>
+                        <ContentCardDesktop
+                          content={item}
+                          isActive={activeIndex === index}
+                          onClick={handleContentClick}
+                          onShare={handleShare}
+                        />
                       </div>
+
 
                       {/* ====================================
                           CARD MOBILE - Estilo TikTok

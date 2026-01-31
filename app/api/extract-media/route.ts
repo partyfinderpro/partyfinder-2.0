@@ -1,12 +1,24 @@
 // app/api/extract-media/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { extractMediaFromUrl } from '@/lib/mediaExtractor';
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Lazy initialization para evitar errores en build time
+let supabaseInstance: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+    if (!supabaseInstance) {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+        if (!url || !key) {
+            throw new Error('Missing Supabase environment variables');
+        }
+
+        supabaseInstance = createClient(url, key);
+    }
+    return supabaseInstance;
+}
 
 // POST: Extraer media de una URL y actualizar DB
 export async function POST(request: NextRequest) {
@@ -23,7 +35,7 @@ export async function POST(request: NextRequest) {
 
         // Actualizar en Supabase si hay contentId
         if (contentId) {
-            const { error } = await supabase
+            const { error } = await getSupabase()
                 .from('content')
                 .update({
                     image_url: media.image_url,
@@ -52,7 +64,7 @@ export async function GET(request: NextRequest) {
 
     try {
         // Obtener contenido sin imagen real (que tenga unsplash placeholder)
-        const { data: contents, error } = await supabase
+        const { data: contents, error } = await getSupabase()
             .from('content')
             .select('id, affiliate_url, image_url')
             .or('image_url.is.null,image_url.ilike.%unsplash%')
@@ -70,7 +82,7 @@ export async function GET(request: NextRequest) {
 
             const media = await extractMediaFromUrl(item.affiliate_url);
 
-            const { error: updateError } = await supabase
+            const { error: updateError } = await getSupabase()
                 .from('content')
                 .update({
                     image_url: media.image_url,

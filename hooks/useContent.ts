@@ -39,6 +39,9 @@ export interface ContentItem {
 
 interface UseContentOptions {
     category?: string;
+    mode?: 'inicio' | 'tendencias' | 'cerca' | 'favoritos';
+    city?: string;
+    search?: string;
     limit?: number;
     offset?: number;
 }
@@ -53,41 +56,10 @@ interface UseContentReturn {
     totalCount: number;
 }
 
-// Mock data como fallback si no hay datos en Supabase
-const FALLBACK_CONTENT: ContentItem[] = [
-    {
-        id: "1",
-        title: "Noche Latina @ Club Mandala",
-        description: "La mejor fiesta latina de Puerto Vallarta con DJ internacional",
-        image_url: "https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=800&q=80",
-        category: "club",
-        location: "Zona Romántica",
-        distance_km: 1.2,
-        is_verified: true,
-        is_open_now: true,
-        open_until: "4:00 AM",
-        views: 1523,
-        likes: 234,
-    },
-    {
-        id: "2",
-        title: "Sofia - Modelo Premium",
-        description: "Servicio VIP disponible 24/7. Fotos verificadas.",
-        image_url: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80",
-        category: "escort",
-        location: "Hotel Zone",
-        distance_km: 0.8,
-        is_verified: true,
-        is_premium: true,
-        views: 3421,
-        likes: 567,
-    }
-];
-
 export function useContent(options: UseContentOptions = {}): UseContentReturn {
-    const { category, limit = 20, offset: initialOffset = 0 } = options;
+    const { category, mode = 'inicio', city, search, limit = 20, offset: initialOffset = 0 } = options;
     const session = useSession();
-    const userId = session?.user?.id;
+    const userId = session?.user?.id || (typeof window !== 'undefined' ? localStorage.getItem('venuz_user_id') : null);
 
     const [content, setContent] = useState<ContentItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -96,7 +68,28 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
     const [offset, setOffset] = useState(initialOffset);
     const [totalCount, setTotalCount] = useState(0);
 
-    // Fetch content (usando el algoritmo de recomendaciones si no hay categoría específica)
+    const processResults = useCallback((data: ContentItem[], count: number, append: boolean) => {
+        if (data && data.length > 0) {
+            const normalizedData = data.map(item => ({
+                ...item,
+                image_url: item.image_url || (item.images && item.images.length > 0 ? item.images[0] : undefined)
+            }));
+
+            if (append) {
+                setContent(prev => [...prev, ...normalizedData]);
+            } else {
+                setContent(normalizedData);
+            }
+
+            setTotalCount(count);
+            setHasMore(data.length >= limit);
+        } else if (!append) {
+            setContent([]);
+            setHasMore(false);
+            setTotalCount(0);
+        }
+    }, [limit]);
+
     const fetchContent = useCallback(async (currentOffset: number, append: boolean = false) => {
         setIsLoading(true);
         setError(null);
@@ -105,67 +98,75 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
             let data: ContentItem[] = [];
             let count = 0;
 
-            if (category) {
-                // Si hay categoría, usar filtro normal
-                const { data: catData, error: fetchError, count: total } = await supabase
-                    .from('content')
-                    .select('*', { count: 'exact' })
-                    .eq('category', category)
-                    .neq('id', '00000000-0000-0000-0000-000000000000') // Cache breaking
-                    .order('created_at', { ascending: false })
-                    .range(currentOffset, currentOffset + limit - 1);
+            let query = supabase.from('content').select('*', { count: 'exact' });
 
-                if (fetchError) throw fetchError;
-                data = catData as ContentItem[];
-                count = total || 0;
-            } else {
-                // Si es el feed principal, usar algoritmo de recomendaciones de Grok
-                const { count: realCount } = await supabase.from('content').select('*', { count: 'exact', head: true });
-                data = await getRecommendedContent(userId, limit, currentOffset) as ContentItem[];
-                count = realCount || data.length;
+            // 1. Filtro por Búsqueda (Texto)
+            if (search) {
+                query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`);
             }
 
-            // Check if we got data
-            if (data && data.length > 0) {
-                // Normalize data: ensure image_url is populated if images exists
-                const normalizedData = data.map(item => ({
-                    ...item,
-                    image_url: item.image_url || (item.images && item.images.length > 0 ? item.images[0] : undefined)
-                }));
+            // 2. Filtro por Ciudad (Localización)
+            if (city && city !== 'Todas') {
+                query = query.ilike('location', `%${city}%`);
+            }
 
-                if (append) {
-                    setContent(prev => [...prev, ...normalizedData]);
+            // 3. Lógica de filtrado según el modo o categoría
+            if (category) {
+                query = query.eq('category', category)
+                    .order('is_premium', { ascending: false })
+                    .order('created_at', { ascending: false });
+            }
+            else if (mode === 'tendencias') {
+                query = query.order('views', { ascending: false }).order('likes', { ascending: false });
+            }
+            else if (mode === 'favoritos' && userId) {
+                const { data: interactions } = await supabase
+                    .from('interactions')
+                    .select('content_id')
+                    .eq('user_id', userId)
+                    .eq('action', 'like');
+
+                if (interactions && interactions.length > 0) {
+                    const ids = interactions.map(i => i.content_id);
+                    query = query.in('id', ids);
                 } else {
-                    setContent(normalizedData);
+                    if (!append) setContent([]);
+                    setHasMore(false);
+                    setIsLoading(false);
+                    return;
+                }
+            }
+            else {
+                if (!search && !city && !category && mode === 'inicio') {
+                    const { count: realCount } = await supabase.from('content').select('*', { count: 'exact', head: true });
+                    data = await getRecommendedContent(userId || undefined, limit, currentOffset) as ContentItem[];
+                    count = realCount || data.length;
+
+                    processResults(data, count, append);
+                    return;
                 }
 
-                setTotalCount(count);
-                setHasMore(data.length >= limit);
-            } else if (!append) {
-                // Fallback a los datos mock si nada funciona
-                console.log('[VENUZ] No se encontraron datos, usando fallback');
-                setContent(FALLBACK_CONTENT);
-                setTotalCount(FALLBACK_CONTENT.length);
-                setHasMore(false);
+                query = query.order('created_at', { ascending: false });
             }
+
+            const { data: finalData, error: fetchError, count: total } = await query.range(currentOffset, currentOffset + limit - 1);
+
+            if (fetchError) throw fetchError;
+            processResults(finalData as ContentItem[], total || 0, append);
+
         } catch (err: any) {
             console.error('[VENUZ] Error fetching content:', err);
-            const msg = err?.message || JSON.stringify(err);
-            setError(`Error al cargar contenido: ${msg}. URL: ${process.env.NEXT_PUBLIC_SUPABASE_URL ? 'OK' : 'MISSING'}`);
-            if (!append) {
-                setContent(FALLBACK_CONTENT);
-                setHasMore(false);
-            }
+            setError(`Error al cargar contenido`);
         } finally {
             setIsLoading(false);
         }
-    }, [category, limit, userId]);
+    }, [category, mode, city, search, limit, userId, processResults]);
 
     // Initial fetch
     useEffect(() => {
         setOffset(0);
         fetchContent(0, false);
-    }, [category, fetchContent, userId]); // Re-fetch si cambia el usuario para personalizar
+    }, [category, mode, city, search, fetchContent]);
 
     // Load more
     const loadMore = useCallback(async () => {

@@ -94,14 +94,22 @@ const logEvent = async (eventType: string, contentId: string, metadata?: Record<
 };
 
 // Obtener nombre legible del source
-const getSourceDisplayName = (source?: string): string => {
+const getSourceDisplayName = (source?: string, sourceUrl?: string): string => {
+    if (sourceUrl) {
+        try {
+            return sourceUrl.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+        } catch (e) {
+            // fallback
+        }
+    }
+
     const names: Record<string, string> = {
         camsoda: 'CamSoda',
         stripchat: 'Stripchat',
         chaturbate: 'Chaturbate',
         other: 'Sitio externo',
     };
-    return names[source || 'other'] || 'Sitio externo';
+    return names[source || 'other'] || source || 'Sitio externo';
 };
 
 export default function ContentPreViewModal({
@@ -341,10 +349,10 @@ export default function ContentPreViewModal({
                                     </div>
 
                                     {/* Affiliate Source Badge */}
-                                    {content.affiliate_source && (
+                                    {(content.source_url || content.affiliate_source) && (
                                         <div className="absolute top-4 right-14">
-                                            <span className="px-3 py-1.5 rounded-full text-xs font-bold uppercase bg-gradient-to-r from-pink-600 to-purple-600 text-white">
-                                                {content.affiliate_source}
+                                            <span className="px-3 py-1.5 rounded-full text-xs font-bold uppercase bg-gradient-to-r from-pink-600 to-purple-600 text-white shadow-lg">
+                                                {getSourceDisplayName(content.affiliate_source, content.source_url)}
                                             </span>
                                         </div>
                                     )}
@@ -474,7 +482,7 @@ export default function ContentPreViewModal({
                                                 onClick={handleExitButtonClick}
                                                 className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-gradient-to-r from-pink-500 via-rose-500 to-red-500 text-white font-bold text-lg shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-all"
                                             >
-                                                Visitar en {getSourceDisplayName(content.affiliate_source)}
+                                                Visitar {getSourceDisplayName(content.affiliate_source, content.source_url)}
                                                 <ExternalLink className="w-5 h-5" />
                                             </motion.button>
                                         )}
@@ -540,7 +548,7 @@ export default function ContentPreViewModal({
                                     </div>
 
                                     <p className="text-white/70 mb-6">
-                                        Estás a punto de visitar <strong className="text-white">{getSourceDisplayName(content.affiliate_source)}</strong>.
+                                        Estás a punto de visitar <strong className="text-white">{getSourceDisplayName(content.affiliate_source, content.source_url)}</strong>.
                                         Este es un sitio externo con contenido para adultos (+18).
                                     </p>
 

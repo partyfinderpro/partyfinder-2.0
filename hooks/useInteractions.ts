@@ -1,6 +1,6 @@
 // hooks/useInteractions.ts
-// Sistema de likes persistente con optimistic updates
-// Código basado en análisis de Grok
+// Sistema de interacciones persistente (Likes, Views, Shares) con optimistic updates
+// Soporta usuarios autenticados y anónimos (vía venuz_user_id en localStorage)
 
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -9,162 +9,183 @@ interface UseInteractionsProps {
     contentId: string;
     userId?: string | null;
     initialLikes?: number;
+    initialViews?: number;
+    initialShares?: number;
 }
 
-export function useInteractions({ contentId, userId, initialLikes = 0 }: UseInteractionsProps) {
+export function useInteractions({
+    contentId,
+    userId: providedUserId,
+    initialLikes = 0,
+    initialViews = 0,
+    initialShares = 0
+}: UseInteractionsProps) {
     const [liked, setLiked] = useState(false);
     const [likesCount, setLikesCount] = useState(initialLikes);
+    const [viewsCount, setViewsCount] = useState(initialViews);
+    const [sharesCount, setSharesCount] = useState(initialShares);
     const [loading, setLoading] = useState(false);
+    const [userId, setUserId] = useState<string | null>(providedUserId || null);
+
+    // Rate limiting: máximo 1 interacción cada segundo
+    const RATE_LIMIT_MS = 1000;
     const [lastInteraction, setLastInteraction] = useState<number>(0);
 
-    // Rate limiting: máximo 1 like cada 2 segundos
-    const RATE_LIMIT_MS = 2000;
+    // Obtener UserId de localStorage si no viene de props (Usuario Anónimo)
+    useEffect(() => {
+        if (!userId && typeof window !== 'undefined') {
+            const localId = localStorage.getItem('venuz_user_id');
+            if (localId) setUserId(localId);
+        }
+    }, [userId]);
 
-    // Cargar estado inicial de like
-    const loadLikeStatus = useCallback(async () => {
-        if (!userId || !contentId) return;
-
+    // Cargar estado inicial de like (solo si hay userId)
+    const loadLikeStatus = useCallback(async (currentUserId: string) => {
         try {
             const { data } = await supabase
                 .from('interactions')
                 .select('id')
-                .eq('user_id', userId)
+                .eq('user_id', currentUserId)
                 .eq('content_id', contentId)
                 .eq('action', 'like')
                 .maybeSingle();
 
-            setLiked(!!data);
+            if (data) setLiked(true);
         } catch (error) {
             console.error('[VENUZ] Error loading like status:', error);
-            setLiked(false);
         }
-    }, [userId, contentId]);
+    }, [contentId]);
 
-    // Toggle like con optimistic update y rate limiting
+    // Toggle LIKE
     const toggleLike = useCallback(async () => {
-        if (!contentId) return;
+        if (!contentId || loading) return;
 
-        // Rate limiting check
         const now = Date.now();
-        if (now - lastInteraction < RATE_LIMIT_MS) {
-            console.log('[VENUZ] Rate limited - espera antes de hacer like de nuevo');
-            return;
-        }
+        if (now - lastInteraction < RATE_LIMIT_MS) return;
         setLastInteraction(now);
-
-        if (loading) return;
         setLoading(true);
 
         // Optimistic update
         const newLiked = !liked;
+        const previousLiked = liked;
         setLiked(newLiked);
-        setLikesCount(prev => newLiked ? prev + 1 : prev - 1);
+        setLikesCount(prev => newLiked ? prev + 1 : Math.max(0, prev - 1));
 
         try {
-            if (userId) {
-                // Usuario autenticado - guardar en DB
-                const { data: existing } = await supabase
-                    .from('interactions')
-                    .select('id')
-                    .eq('user_id', userId)
-                    .eq('content_id', contentId)
-                    .eq('action', 'like')
-                    .maybeSingle();
+            const effectiveUserId = userId || localStorage.getItem('venuz_user_id') || 'anon';
 
-                if (existing) {
-                    // Quitar like
-                    await supabase.from('interactions').delete().eq('id', existing.id);
-                } else {
-                    // Añadir like
-                    await supabase.from('interactions').insert({
-                        user_id: userId,
-                        content_id: contentId,
-                        action: 'like',
-                        created_at: new Date().toISOString()
-                    });
-                }
+            if (newLiked) {
+                // Añadir Like
+                await supabase.from('interactions').insert({
+                    user_id: effectiveUserId,
+                    content_id: contentId,
+                    action: 'like'
+                });
 
-                // Actualizar contador en content (si existe la columna)
-                await supabase
-                    .from('content')
-                    .update({
-                        likes: newLiked ? likesCount + 1 : Math.max(0, likesCount - 1)
-                    })
-                    .eq('id', contentId);
+                // Actualizar contador global
+                await supabase.rpc('increment_likes', { row_id: contentId });
             } else {
-                // Usuario anónimo - guardar en localStorage
-                const localLikes = JSON.parse(localStorage.getItem('venuz_likes') || '{}');
-                if (newLiked) {
-                    localLikes[contentId] = true;
-                } else {
-                    delete localLikes[contentId];
-                }
-                localStorage.setItem('venuz_likes', JSON.stringify(localLikes));
+                // Quitar Like
+                await supabase.from('interactions')
+                    .delete()
+                    .eq('user_id', effectiveUserId)
+                    .eq('content_id', contentId)
+                    .eq('action', 'like');
+
+                await supabase.rpc('decrement_likes', { row_id: contentId });
             }
+
+            // Sincronizar localStorage para UI anónima offline
+            const localLikes = JSON.parse(localStorage.getItem('venuz_likes') || '{}');
+            if (newLiked) localLikes[contentId] = true;
+            else delete localLikes[contentId];
+            localStorage.setItem('venuz_likes', JSON.stringify(localLikes));
+
         } catch (error) {
-            // Revertir optimistic update on error
-            setLiked(!newLiked);
-            setLikesCount(prev => newLiked ? prev - 1 : prev + 1);
+            // Revertir en caso de error
+            setLiked(previousLiked);
+            setLikesCount(prev => previousLiked ? prev + 1 : Math.max(0, prev - 1));
             console.error('[VENUZ] Error toggling like:', error);
         } finally {
             setLoading(false);
         }
-    }, [userId, contentId, liked, likesCount, loading, lastInteraction]);
+    }, [contentId, liked, userId, loading, lastInteraction]);
 
-    // Registrar view
+    // Registrar SHARE
+    const registerShare = useCallback(async () => {
+        if (!contentId) return;
+
+        try {
+            const effectiveUserId = userId || localStorage.getItem('venuz_user_id') || 'anon';
+
+            // 1. Guardar log de interacción
+            await supabase.from('interactions').insert({
+                user_id: effectiveUserId,
+                content_id: contentId,
+                action: 'share'
+            });
+
+            // 2. Incrementar contador en DB
+            await supabase.rpc('increment_shares', { row_id: contentId });
+
+            setSharesCount(prev => prev + 1);
+        } catch (error) {
+            console.error('[VENUZ] Error registering share:', error);
+        }
+    }, [contentId, userId]);
+
+    // Registrar VIEW
     const registerView = useCallback(async () => {
         if (!contentId) return;
 
         try {
-            // Incrementar vistas en content
-            const { data: current } = await supabase
-                .from('content')
-                .select('views')
-                .eq('id', contentId)
-                .maybeSingle();
+            const effectiveUserId = userId || localStorage.getItem('venuz_user_id') || 'anon';
 
-            await supabase
-                .from('content')
-                .update({ views: (current?.views || 0) + 1 })
-                .eq('id', contentId);
+            // Solo registrar vista si no se ha registrado en esta sesión (opcional)
+            const sessionKey = `viewed_${contentId}`;
+            if (sessionStorage.getItem(sessionKey)) return;
 
-            // También insertar en interactions para analytics
-            if (userId) {
-                await supabase.from('interactions').insert({
-                    user_id: userId,
-                    content_id: contentId,
-                    action: 'view',
-                    created_at: new Date().toISOString()
-                });
-            }
+            await supabase.from('interactions').insert({
+                user_id: effectiveUserId,
+                content_id: contentId,
+                action: 'view'
+            });
+
+            await supabase.rpc('increment_views', { row_id: contentId });
+
+            setViewsCount(prev => prev + 1);
+            sessionStorage.setItem(sessionKey, 'true');
         } catch (error) {
             console.error('[VENUZ] Error registering view:', error);
         }
     }, [contentId, userId]);
 
-    // Cargar likes de localStorage para usuarios anónimos
+    // Efecto Inicial
     useEffect(() => {
         if (!contentId) return;
 
-        if (!userId) {
-            const localLikes = JSON.parse(localStorage.getItem('venuz_likes') || '{}');
-            setLiked(!!localLikes[contentId]);
-        } else {
-            loadLikeStatus();
+        // Cargar estado de "Like" previo
+        const localLikes = JSON.parse(localStorage.getItem('venuz_likes') || '{}');
+        if (localLikes[contentId]) {
+            setLiked(true);
+        } else if (userId) {
+            loadLikeStatus(userId);
         }
-    }, [userId, contentId, loadLikeStatus]);
+    }, [contentId, userId, loadLikeStatus]);
 
     return {
         liked,
         likesCount,
+        viewsCount,
+        sharesCount,
         toggleLike,
-        loadLikeStatus,
+        registerShare,
         registerView,
         loading
     };
 }
 
-// Hook para obtener stats de un contenido
+// Hook simple para lectura de estadísticas
 export function useContentStats(contentId: string) {
     const [stats, setStats] = useState({ views: 0, likes: 0, shares: 0 });
 
@@ -172,17 +193,17 @@ export function useContentStats(contentId: string) {
         if (!contentId) return;
 
         async function fetchStats() {
-            const { data } = await supabase
+            const { data, error } = await supabase
                 .from('content')
-                .select('views, likes')
+                .select('views, likes, shares')
                 .eq('id', contentId)
                 .maybeSingle();
 
-            if (data) {
+            if (data && !error) {
                 setStats({
                     views: data.views || 0,
                     likes: data.likes || 0,
-                    shares: 0
+                    shares: data.shares || 0
                 });
             }
         }
@@ -192,3 +213,4 @@ export function useContentStats(contentId: string) {
 
     return stats;
 }
+

@@ -1,12 +1,24 @@
 // app/api/go/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { injectAffiliateCode } from '@/lib/affiliateConfig';
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Lazy initialization para evitar errores en build time
+let supabaseInstance: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+    if (!supabaseInstance) {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+        if (!url || !key) {
+            throw new Error('Missing Supabase environment variables');
+        }
+
+        supabaseInstance = createClient(url, key);
+    }
+    return supabaseInstance;
+}
 
 /**
  * REDIRECT MANAGER (/api/go)
@@ -26,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     try {
         // 1. Buscar en la base de datos
-        const { data: item, error } = await supabase
+        const { data: item, error } = await getSupabase()
             .from('content')
             .select('affiliate_url, source_url')
             .eq('id', contentId)

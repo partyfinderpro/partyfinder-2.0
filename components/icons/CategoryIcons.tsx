@@ -498,6 +498,8 @@ export const CATEGORY_ICONS: Record<string, React.FC<IconProps>> = {
   casino: CasinoIcon,
   live: LiveIcon,
   cam: LiveIcon,
+  webcam: LiveIcon,
+  'live-cams': LiveIcon,
   camsoda: LiveIcon,
   stripchat: LiveIcon,
   chaturbate: LiveIcon,
@@ -506,6 +508,12 @@ export const CATEGORY_ICONS: Record<string, React.FC<IconProps>> = {
   destacado: HotIcon,
   hot: HotIcon,
   trending: HotIcon,
+  hookup: HotIcon,
+  'ai-porn': PremiumIcon,
+  masaje: EscortIcon,
+  tabledance: ClubIcon,
+  restaurante: BarIcon,
+  beach: PartyIcon,
 };
 
 // Helper para obtener el icono de una categoría

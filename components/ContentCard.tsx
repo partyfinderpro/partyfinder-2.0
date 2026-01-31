@@ -124,10 +124,25 @@ export default function ContentCard({
   onShare,
   onClick,
 }: ContentCardProps) {
-  const { liked, likesCount, toggleLike } = useInteractions({
+  const {
+    liked,
+    likesCount,
+    viewsCount,
+    toggleLike,
+    registerShare,
+    registerView
+  } = useInteractions({
     contentId: content.id,
     initialLikes: content.likes || 0,
+    initialViews: content.views || 0,
   });
+
+  // Registrar vista cuando la card es la activa (Mobile style)
+  useEffect(() => {
+    if (isActive) {
+      registerView();
+    }
+  }, [isActive, registerView]);
 
   const imageUrl = sanitizeImageUrl(
     content.image_url || CATEGORY_PLACEHOLDERS[content.category] || CATEGORY_PLACEHOLDERS.default,
@@ -203,15 +218,20 @@ export default function ContentCard({
           </div>
 
           <div className="flex flex-col items-end gap-2">
+            {content.source_url && (
+              <span className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-white/90 text-[10px] font-bold border border-white/10 uppercase tracking-widest">
+                {content.source_url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
+              </span>
+            )}
             {content.viewers_now ? (
               <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-600 text-white text-[10px] font-black animate-pulse shadow-lg">
                 <span className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_white]" />
                 LIVE
               </span>
             ) : (
-              content.views && (
+              (viewsCount > 0 || content.views) && (
                 <span className="px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md text-white/90 text-[10px] font-bold border border-white/10">
-                  {content.views.toLocaleString()} vistos
+                  {(viewsCount || content.views || 0).toLocaleString()} vistos
                 </span>
               )
             )}
@@ -250,7 +270,7 @@ export default function ContentCard({
 
       {/* Footer / Dynamic Actions */}
       <div className="px-5 py-4 flex items-center justify-between bg-gradient-to-b from-[#121214] to-black border-t border-white/5">
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-2">
           <motion.button
             whileHover={{ scale: 1.2 }}
             whileTap={{ scale: 0.9 }}
@@ -259,18 +279,21 @@ export default function ContentCard({
               toggleLike();
               onLike?.(content.id);
             }}
-            className={`transition-all duration-300 ${liked ? "text-pink-500" : "text-white/30 hover:text-white"}`}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 transition-all duration-300 ${liked ? "text-pink-500" : "text-white/30 hover:text-white"}`}
           >
-            <Heart className={`w-6 h-6 ${liked ? "fill-current" : ""}`} />
+            <Heart className={`w-5 h-5 ${liked ? "fill-current" : ""}`} />
+            <span className="text-xs font-bold">{likesCount.toLocaleString()}</span>
           </motion.button>
+
           <motion.button
             whileHover={{ scale: 1.2 }}
             whileTap={{ scale: 0.9 }}
             onClick={(e) => {
               e.stopPropagation();
-              onShare?.(content.id);
+              registerShare();
+              if (onShare) onShare(content.id);
             }}
-            className="text-white/30 hover:text-white transition-all duration-300"
+            className="p-1.5 text-white/30 hover:text-white transition-all duration-300"
           >
             <Share2 className="w-5 h-5" />
           </motion.button>

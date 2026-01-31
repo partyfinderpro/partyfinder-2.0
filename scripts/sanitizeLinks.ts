@@ -12,9 +12,50 @@ const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 import * as cheerio from 'cheerio';
 
 /**
- * Intenta resolver un link de PornDude al dominio final analizando el HTML.
+ * CONFIGURACIÓN DE SMARTLINKS
+ * Aquí puedes definir cómo transformar el link limpio en tu link de afiliado.
  */
-async function resolveFinalDomain(url: string): Promise<string | null> {
+const SMARTLINK_MAPPER: Record<string, (url: string) => string> = {
+    'camsoda.com': (url) => `${url}?aff=VENUZ_OFFICIAL`, // Ejemplo
+    'stripchat.com': (url) => `https://lp.stripchat.com/VENUZ_PRO`, // Ejemplo
+    'chaturbate.com': (url) => `https://chaturbate.com/affid/VENUZ`, // Ejemplo
+    // El default simplemente devuelve la URL limpia
+    'default': (url) => url
+};
+
+function getSmartLink(domain: string): string {
+    const host = domain.replace(/^https?:\/\/(www\.)?/, '');
+    const mapper = SMARTLINK_MAPPER[host] || SMARTLINK_MAPPER['default'];
+    return mapper(domain);
+}
+
+const DIRECTORY_DOMAINS = [
+    'theporndude.com',
+    'pdude.link',
+    'porndudedeutsch.com',
+    'porndudecasting.com',
+    'porndudeviet.com',
+    'porndudeespanol.com',
+    'porndudees.com',
+    'porndude.me',
+    'theporndude.vip',
+    'porndudeshop.com',
+    'twitter.com',
+    'x.com',
+    'facebook.com',
+    'instagram.com',
+    'discord.gg',
+    't.me'
+];
+
+function isDirectory(url: string): boolean {
+    return DIRECTORY_DOMAINS.some(d => url.includes(d));
+}
+
+/**
+ * Intenta resolver un link de PornDude al dominio final y extrae metadata de calidad.
+ */
+async function resolveFinalData(url: string): Promise<{ domain: string, title?: string, description?: string } | null> {
     try {
         console.log(`🔍 Analizando página: ${url}`);
 
@@ -27,81 +68,55 @@ async function resolveFinalDomain(url: string): Promise<string | null> {
         const html = await response.text();
         const $ = cheerio.load(html);
 
-        // 1. Buscar enlaces que griten "VISITAR SITIO"
-        const candidates: string[] = [];
+        // 1. Buscar el enlace de salida (visit site)
+        let finalUrl: string | null = null;
 
         $('a[href]').each((_, el) => {
+            if (finalUrl) return;
             const href = $(el).attr('href') || '';
-            const text = $(el).text().toLowerCase();
-            const className = $(el).attr('class')?.toLowerCase() || '';
             const dataUrl = $(el).attr('data-url') || '';
+            const target = dataUrl || href;
 
-            const linkToAnalyze = dataUrl || href;
+            if (isDirectory(target) || target.startsWith('/') || target.startsWith('#')) {
+                return;
+            }
 
-            // Saltamos enlaces internos, redes sociales o trackers (excepto pdude.link que lo seguiremos)
-            if (
-                linkToAnalyze.includes('theporndude.com') ||
-                linkToAnalyze.includes('porndudedeutsch.com') ||
-                linkToAnalyze.includes('twitter.com') ||
-                linkToAnalyze.includes('facebook.com') ||
-                linkToAnalyze.includes('work-with') ||
-                linkToAnalyze.includes('advertise') ||
-                linkToAnalyze.includes('contact') ||
-                linkToAnalyze.startsWith('/') ||
-                linkToAnalyze.startsWith('#') ||
-                linkToAnalyze.includes('google')
-            ) return;
-
-            // Priorizamos si tiene palabras clave o clases comunes de "visit"
-            const score = (
-                text.includes('visit') ||
-                text.includes('official') ||
-                text.includes('open') ||
-                className.includes('visit') ||
-                className.includes('btn-site') ||
-                className.includes('btn-main')
-            ) ? 100 : 0;
-
-            if (score > 0) {
-                candidates.unshift(linkToAnalyze); // Al principio
-            } else {
-                candidates.push(linkToAnalyze);
+            if (target.startsWith('http')) {
+                finalUrl = target;
             }
         });
 
-        if (candidates.length > 0) {
-            let finalUrl = candidates[0];
-            console.log(`   Found ${candidates.length} candidates, picking: ${finalUrl}`);
+        if (!finalUrl) return null;
 
-            // Si es un link de tracking de porndude, intentamos seguirlo una vez más
-            if (finalUrl.includes('pdude.link')) {
-                try {
-                    const followRes = await fetch(finalUrl, {
-                        method: 'HEAD',
-                        headers: { 'User-Agent': USER_AGENT },
-                        redirect: 'follow'
-                    });
-                    finalUrl = followRes.url;
-                } catch (e) {
-                    // Si falla el follow, nos quedamos con el original
-                }
-            }
+        // 2. Ahora vamos al SITIO FINAL para sacar la mejor metadata
+        console.log(`   🚀 Entrando al sitio real: ${finalUrl}`);
+        const realRes = await fetch(finalUrl, {
+            headers: { 'User-Agent': USER_AGENT },
+            redirect: 'follow'
+        });
 
-            const urlObj = new URL(finalUrl);
-            const domain = `${urlObj.protocol}//${urlObj.hostname}`;
-
-            // REFUERZO: Si el dominio sigue siendo una red de directorios, lo ignoramos
-            const directoryDomains = ['theporndude.com', 'porndudedeutsch.com', 'porndudecasting.com', 'pdude.link'];
-            if (directoryDomains.some(d => domain.includes(d))) {
-                return null;
-            }
-
-            return domain;
+        // Solo aceptamos si no es otra página del directorio
+        if (isDirectory(realRes.url)) {
+            console.log(`   ⏩ Ignorando redirección a otro directorio: ${realRes.url}`);
+            return null;
         }
 
-        return null;
+        const realHtml = await realRes.text();
+        const $real = cheerio.load(realHtml);
+
+        const title = $real('title').text() || $real('meta[property="og:title"]').attr('content');
+        const description = $real('meta[name="description"]').attr('content') || $real('meta[property="og:description"]').attr('content');
+        const urlObj = new URL(realRes.url);
+        const domain = `${urlObj.protocol}//${urlObj.hostname}`;
+
+        return {
+            domain,
+            title: title?.trim(),
+            description: description?.trim()
+        };
+
     } catch (error) {
-        console.warn(`⚠️ No se pudo parsear ${url}:`, error);
+        console.warn(`⚠️ No se pudo procesar ${url}:`, error);
         return null;
     }
 }
@@ -124,25 +139,36 @@ async function sanitize() {
 
     for (const item of contents || []) {
         try {
-            const cleanDomain = await resolveFinalDomain(item.affiliate_url!);
+            const cleanData = await resolveFinalData(item.affiliate_url!);
 
-            if (cleanDomain) {
+            if (cleanData) {
+                const smartLink = getSmartLink(cleanData.domain);
+
                 const { error: updateError } = await supabase
                     .from('content')
                     .update({
-                        affiliate_url: cleanDomain,
-                        // Guardamos una nota original si fuera necesario
+                        affiliate_url: smartLink,
+                        source_url: cleanData.domain,
+                        title: cleanData.title || item.title,
+                        description: cleanData.description || undefined
                     })
                     .eq('id', item.id);
 
-                if (updateError) console.error(`❌ Update failed for ${item.id}`);
-                else console.log(`✅ ${item.title} -> ${cleanDomain}`);
+                if (updateError) {
+                    if (updateError.code === '23505') {
+                        console.log(`⏩ Saltando ${item.title} (Dominio ya existe en otro registro)`);
+                    } else {
+                        console.error(`❌ Update failed for ${item.id}:`, updateError.message);
+                    }
+                } else {
+                    console.log(`✅ ${item.title} -> ${cleanData.domain} (Metadata OK)`);
+                }
             } else {
-                console.log(`⏩ Saltando ${item.title} (no se pudo resolver)`);
+                console.log(`⏩ Saltando ${item.title} (no se pudo resolver sitio externo)`);
             }
 
-            // Rate limiting: 1 segundo entre peticiones para no ser bloqueados
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Rate limiting moderado para no ser baneados por el sitio final
+            await new Promise(resolve => setTimeout(resolve, 1500));
         } catch (e) {
             console.error(`❌ Falló ${item.id}:`, e);
         }

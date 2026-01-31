@@ -7,13 +7,24 @@ import {
     getClubsFeed,
     getEscortsFeed,
 } from '@/lib/feedAlgorithm';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Supabase client para tracking
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Lazy initialization para evitar errores en build time
+let supabaseInstance: SupabaseClient | null = null;
+
+function getSupabase(): SupabaseClient {
+    if (!supabaseInstance) {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        if (!url || !key) {
+            throw new Error('Missing Supabase environment variables');
+        }
+
+        supabaseInstance = createClient(url, key);
+    }
+    return supabaseInstance;
+}
 
 // ============================================
 // CACHE EN MEMORIA
@@ -156,16 +167,16 @@ export async function POST(request: NextRequest) {
 
         // Registrar interacción
         if (action === 'view') {
-            await supabase.rpc('increment_content_views', { p_id: contentId });
+            await getSupabase().rpc('increment_content_views', { p_id: contentId });
         } else if (action === 'like' && userId) {
-            await supabase.rpc('toggle_content_like', {
+            await getSupabase().rpc('toggle_content_like', {
                 p_user_id: userId,
                 p_content_id: contentId
             });
         }
 
         // También guardar en tabla de interacciones
-        await supabase.from('user_interactions').insert({
+        await getSupabase().from('user_interactions').insert({
             user_id: userId || null,
             content_id: contentId,
             action_type: action,
