@@ -4,6 +4,7 @@ import "./globals.css";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import AuthProvider from "@/components/AuthProvider";
 import Footer from "@/components/Footer";
+import AgeGate from "@/components/AgeGate";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -78,6 +79,47 @@ export default function RootLayout({
   return (
     <html lang="es-MX">
       <head>
+        {/* Schema.org JSON-LD for SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "VENUZ",
+              "url": "https://venuz.com",
+              "logo": "https://venuz.com/logo.png",
+              "description": "La plataforma líder de entretenimiento adulto y vida nocturna en México",
+              "foundingDate": "2025",
+              "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "Puerto Vallarta",
+                "addressRegion": "Jalisco",
+                "addressCountry": "MX"
+              },
+              "sameAs": [
+                "https://twitter.com/venuzapp",
+                "https://telegram.me/venuzoficial"
+              ]
+            })
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "VENUZ",
+              "url": "https://venuz.com",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://venuz.com/search?q={search_term_string}",
+                "query-input": "required name=search_term_string"
+              }
+            })
+          }}
+        />
         {/* Leaflet CSS para mapas */}
         <link
           rel="stylesheet"
@@ -88,8 +130,10 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-black text-white antialiased`}>
         <AuthProvider>
-          {children}
-          <Footer />
+          <AgeGate>
+            {children}
+            <Footer />
+          </AgeGate>
           <PWAInstallPrompt />
         </AuthProvider>
       </body>
