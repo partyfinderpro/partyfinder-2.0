@@ -36,6 +36,8 @@ import {
 } from "lucide-react";
 import { TopRatedSidebar, exampleTopRatedItems } from "@/components/TopRatedSidebar";
 import { TrustSignalsBanner } from "@/components/TrustSignalsBanner";
+import { FeedTabs, filterByMode, type FeedMode } from "@/components/FeedTabs";
+import { AlgorithmBadge } from "@/components/AlgorithmBadge";
 
 // ============================================
 // VENUZ - Página Principal HÍBRIDA
@@ -113,6 +115,7 @@ export default function HomePage() {
   const [notificationCount, setNotificationCount] = useState(5);
   const [ageVerified, setAgeVerified] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [feedMode, setFeedMode] = useState<FeedMode>('all');
 
   // Modal state para interstitial
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
@@ -149,7 +152,8 @@ export default function HomePage() {
     }
   }
 
-  const filteredContent = content;
+  // 🔥 Filtrar contenido por modo (Nightlife vs Adult)
+  const filteredContent = filterByMode(content, feedMode);
 
   // Intersection Observer para detectar card activo
   useEffect(() => {
@@ -506,6 +510,19 @@ export default function HomePage() {
                   Más
                 </button>
               </div>
+            </div>
+
+            {/* 🔥 NUEVOS: Feed Mode Tabs (Nightlife vs Adult) + Algorithm Badge */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+              <FeedTabs
+                initialMode="all"
+                onModeChange={(mode) => setFeedMode(mode)}
+              />
+              <AlgorithmBadge
+                isActive={isHighwayActive || false}
+                intentScore={intentScore || 0.5}
+                variant={abVariant}
+              />
             </div>
 
             {/* Trust Signals Banner - SEO & Trust */}
