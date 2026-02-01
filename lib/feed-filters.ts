@@ -53,64 +53,49 @@ export const MAX_TRUNCATION_INDICATOR = true; // Rechazar títulos que terminan 
 /**
  * Verifica si un item del feed es contenido de calidad
  * Retorna TRUE si el contenido es válido, FALSE si debe ser filtrado
+ * 🔥 VERSIÓN MENOS AGRESIVA - Solo bloquea basura obvia
  */
 export function isQualityContent(item: any): boolean {
     const title = item.name || item.title || '';
     const description = item.description || '';
     const source = item.source_domain || item.source || item.source_url || '';
     const url = item.url || item.link || item.affiliate_url || '';
+    const imageUrl = item.image_url || item.thumbnail_url || '';
 
     // 1. Rechazar fuentes bloqueadas
     if (BLOCKED_SOURCES.some(blockedSource =>
         source.toLowerCase().includes(blockedSource.toLowerCase())
     )) {
-        console.log(`[VENUZ Filter] Blocked source: ${source}`);
         return false;
     }
 
     // 2. Rechazar URLs bloqueadas
     if (BLOCKED_URL_PATTERNS.some(pattern => pattern.test(url))) {
-        console.log(`[VENUZ Filter] Blocked URL pattern: ${url}`);
         return false;
     }
 
-    // 3. Rechazar títulos basura
+    // 3. Rechazar títulos basura obvios
     if (BLOCKED_TITLE_PATTERNS.some(pattern => pattern.test(title))) {
-        console.log(`[VENUZ Filter] Blocked title pattern: ${title}`);
         return false;
     }
 
     // 4. Rechazar descripciones basura
     if (BLOCKED_DESCRIPTION_PATTERNS.some(pattern => pattern.test(description))) {
-        console.log(`[VENUZ Filter] Blocked description pattern`);
         return false;
     }
 
-    // 5. Rechazar títulos muy cortos
-    if (title.length < MIN_TITLE_LENGTH) {
-        console.log(`[VENUZ Filter] Title too short: ${title}`);
-        return false;
-    }
-
-    // 6. Rechazar títulos truncados (terminan en "..." o "+ ")
-    if (title.endsWith('...') || title.endsWith('... +') || title.endsWith('...+')) {
-        console.log(`[VENUZ Filter] Truncated title: ${title}`);
-        return false;
-    }
-
-    // 7. Rechazar items sin categoría válida
-    if (!item.category && !item.categories) {
-        console.log(`[VENUZ Filter] No category`);
-        return false;
-    }
-
-    // 8. Verificar que no sea contenido de "lista de sitios"
-    const listIndicators = ['Top Premium', 'Free Porn', 'Best Porn', 'Live Sex Cam Sites'];
+    // 5. Verificar que no sea contenido de "lista de sitios"
+    const listIndicators = ['Top Premium Porn', 'Free Porn Tube', 'Best Porn Sites', 'Live Sex Cam Sites'];
     if (listIndicators.some(indicator => title.includes(indicator))) {
-        console.log(`[VENUZ Filter] List content blocked: ${title}`);
         return false;
     }
 
+    // 6. Bloquear si la imagen es de ThePornDude
+    if (imageUrl && BLOCKED_SOURCES.some(src => imageUrl.toLowerCase().includes(src))) {
+        return false;
+    }
+
+    // Si llegó hasta aquí, es contenido válido
     return true;
 }
 
