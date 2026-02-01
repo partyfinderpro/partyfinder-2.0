@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getRecommendedContent } from '@/lib/recommendations';
 import { useSession } from '@/components/AuthProvider';
+import { filterFeedContent } from '@/lib/feed-filters';
 
 // ============================================
 // VENUZ - Hook para obtener contenido de Supabase
+// FILTRO DE CALIDAD ACTIVADO: Bloquea ThePornDude y basura
 // ============================================
 
 export interface ContentItem {
@@ -70,7 +72,11 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
 
     const processResults = useCallback((data: ContentItem[], count: number, append: boolean) => {
         if (data && data.length > 0) {
-            const normalizedData = data.map(item => ({
+            // 🔥 FILTRO DE CALIDAD: Eliminar basura de ThePornDude
+            const filteredData = filterFeedContent(data);
+            console.log(`[VENUZ Legacy] Filtered ${data.length - filteredData.length} junk items`);
+
+            const normalizedData = filteredData.map(item => ({
                 ...item,
                 image_url: item.image_url || (item.images && item.images.length > 0 ? item.images[0] : undefined)
             }));

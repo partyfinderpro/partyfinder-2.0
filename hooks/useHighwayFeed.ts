@@ -5,11 +5,14 @@ import { isHighwayEnabled, debugFeatureFlags } from '@/lib/featureFlags';
 import { getHighwayFeed, type HighwayContentItem } from '@/lib/highwayAlgorithm';
 import { useUserIntent } from '@/hooks/useUserIntent';
 import { assignVariant, trackHighwayAPICall } from '@/lib/abTestConfig';
+import { filterFeedContent, sanitizeTitle } from '@/lib/feed-filters';
 
 // ============================================
 // VENUZ - Hook para Highway Feed con Feature Flags
 // Combina: Feature Flags + A/B Testing + User Intent
+// FILTRO DE CALIDAD ACTIVADO: Bloquea ThePornDude y basura
 // ============================================
+
 
 interface UseHighwayFeedOptions {
     limit?: number;
@@ -132,11 +135,15 @@ export function useHighwayFeed(options: UseHighwayFeedOptions = {}): UseHighwayF
                 trackHighwayAPICall(userId, responseTime, intentScore);
             }
 
-            // Update state
+            // 🔥 FILTRO DE CALIDAD: Eliminar basura de ThePornDude y contenido scraped
+            const filteredResponse = filterFeedContent(response);
+            console.log(`[VENUZ] Filtered ${response.length - filteredResponse.length} junk items`);
+
+            // Update state with FILTERED content only
             if (append) {
-                setFeed(prev => [...prev, ...response]);
+                setFeed(prev => [...prev, ...filteredResponse]);
             } else {
-                setFeed(response);
+                setFeed(filteredResponse);
             }
 
             setHasMore(response.length >= limit);

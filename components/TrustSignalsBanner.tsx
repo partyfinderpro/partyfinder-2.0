@@ -30,12 +30,13 @@ interface TrustSignalsBannerProps {
   className?: string
 }
 
-// Stats por defecto
+// Stats por defecto - NÚMEROS HONESTOS Y VERIFICABLES
+// Actualizado: 31 Enero 2026 por requerimiento de auditoría Claude+Grok
 const defaultStats: TrustStat[] = [
-  { value: 2200, label: 'Lugares verificados', icon: '✓', suffix: '+' },
-  { value: 50000, label: 'Usuarios mensuales', icon: '👥', suffix: '+' },
+  { value: 2200, label: 'Lugares indexados', icon: '📍', suffix: '+' },
+  { value: 8, label: 'Categorías', icon: '🏷️' },
   { value: 4.8, label: 'Rating promedio', icon: '⭐' },
-  { value: '24/7', label: 'Soporte disponible', icon: '💬' }
+  { value: '24/7', label: 'Actualización', icon: '🔄' }
 ]
 
 export function TrustSignalsBanner({
@@ -44,7 +45,7 @@ export function TrustSignalsBanner({
   className = ''
 }: TrustSignalsBannerProps) {
   const [animatedStats, setAnimatedStats] = useState(stats)
-  
+
   // Animar números incrementalmente al montar
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -65,8 +66,8 @@ export function TrustSignalsBanner({
           <div key={i} className="flex items-center gap-2 text-sm">
             <span className="text-pink-400">{stat.icon}</span>
             <span className="text-white font-semibold">
-              {typeof stat.value === 'number' 
-                ? stat.value.toLocaleString() 
+              {typeof stat.value === 'number'
+                ? stat.value.toLocaleString()
                 : stat.value
               }
               {stat.suffix}
@@ -112,18 +113,18 @@ export function TrustSignalsBanner({
             La plataforma líder de entretenimiento adulto en México
           </p>
         </div>
-        
+
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {animatedStats.map((stat, i) => (
-            <div 
-              key={i} 
+            <div
+              key={i}
               className="text-center p-4 bg-gray-800/50 rounded-xl border border-gray-700/50"
             >
               <div className="text-3xl mb-2">{stat.icon}</div>
               <div className="text-2xl md:text-3xl font-bold text-white mb-1">
-                {typeof stat.value === 'number' 
-                  ? stat.value.toLocaleString() 
+                {typeof stat.value === 'number'
+                  ? stat.value.toLocaleString()
                   : stat.value
                 }
                 {stat.suffix}
@@ -132,7 +133,7 @@ export function TrustSignalsBanner({
             </div>
           ))}
         </div>
-        
+
         {/* Trust Badges */}
         <div className="flex flex-wrap justify-center gap-4 mt-8">
           <TrustBadge icon="🔒" text="SSL Seguro" />
@@ -182,10 +183,10 @@ interface VerificationBadgeProps {
   showText?: boolean
 }
 
-export function VerificationBadge({ 
-  type, 
-  size = 'md', 
-  showText = true 
+export function VerificationBadge({
+  type,
+  size = 'md',
+  showText = true
 }: VerificationBadgeProps) {
   const config = {
     verified: {
@@ -245,7 +246,7 @@ interface AffiliateDisclosureProps {
   siteName?: string
 }
 
-export function AffiliateDisclosure({ 
+export function AffiliateDisclosure({
   variant = 'inline',
   siteName = 'VENUZ'
 }: AffiliateDisclosureProps) {
@@ -262,8 +263,8 @@ export function AffiliateDisclosure({
       <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-3 text-sm">
         <p className="text-gray-400">
           <span className="text-yellow-400 font-medium">📢 Divulgación:</span>{' '}
-          Algunos enlaces en esta página son de afiliados. Esto significa que {siteName} 
-          puede recibir una pequeña comisión si realizas una compra, sin costo adicional 
+          Algunos enlaces en esta página son de afiliados. Esto significa que {siteName}
+          puede recibir una pequeña comisión si realizas una compra, sin costo adicional
           para ti. Esto nos ayuda a mantener el sitio gratuito.{' '}
           <a href="/about#affiliate" className="text-pink-400 hover:underline">
             Más información
@@ -278,10 +279,10 @@ export function AffiliateDisclosure({
     <div className="border-t border-gray-700 pt-4 mt-6">
       <p className="text-gray-500 text-sm">
         <strong className="text-gray-400">Divulgación de Afiliados:</strong>{' '}
-        {siteName} participa en programas de afiliados con diversas plataformas de 
-        entretenimiento. Cuando haces clic en ciertos enlaces y realizas una compra 
-        o te registras, podemos recibir una comisión sin costo adicional para ti. 
-        Nuestras recomendaciones se basan en evaluaciones independientes y no están 
+        {siteName} participa en programas de afiliados con diversas plataformas de
+        entretenimiento. Cuando haces clic en ciertos enlaces y realizas una compra
+        o te registras, podemos recibir una comisión sin costo adicional para ti.
+        Nuestras recomendaciones se basan en evaluaciones independientes y no están
         influenciadas por compensaciones de afiliados.{' '}
         <a href="/terms" className="text-pink-400 hover:underline">
           Ver términos completos
@@ -323,11 +324,11 @@ export function RecentActivity({
 
   useEffect(() => {
     if (!autoScroll) return
-    
+
     const timer = setInterval(() => {
       setCurrentIndex(prev => (prev + 1) % activities.length)
     }, 4000)
-    
+
     return () => clearInterval(timer)
   }, [activities.length, autoScroll])
 
@@ -344,13 +345,13 @@ export function RecentActivity({
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
       </span>
-      
+
       <span className="text-gray-300">
         <span className="text-white font-medium">{current.user}</span>
         {' '}{current.action}{' '}
         <span className="text-pink-400">{current.target}</span>
       </span>
-      
+
       <span className="text-gray-500">{current.time}</span>
     </div>
   )
