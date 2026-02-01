@@ -34,6 +34,8 @@ import {
   Eye,
   Heart
 } from "lucide-react";
+import { TopRatedSidebar, exampleTopRatedItems } from "@/components/TopRatedSidebar";
+import { TrustSignalsBanner } from "@/components/TrustSignalsBanner";
 
 // ============================================
 // VENUZ - Página Principal HÍBRIDA
@@ -506,6 +508,9 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* Trust Signals Banner - SEO & Trust */}
+            <TrustSignalsBanner variant="compact" className="mb-6 rounded-xl overflow-hidden shadow-lg border border-white/5" />
+
             {/* Error Display for Debugging */}
             {error && (
               <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm">
@@ -650,42 +655,11 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Estadísticas */}
-              <div className="venuz-card p-4">
-                <h3 className="text-sm font-semibold mb-3 text-venuz-pink flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  ESTADÍSTICAS HOY
-                </h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Eventos totales</span>
-                    <span className="font-bold text-venuz-gold">{stats.total}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400 flex items-center gap-1">
-                      <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                      En vivo
-                    </span>
-                    <span className="font-bold text-red-500">{stats.live}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400 flex items-center gap-1">
-                      <Star className="w-3 h-3 text-yellow-400" />
-                      Destacados
-                    </span>
-                    <span className="font-bold text-venuz-gold">{stats.featured}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400 flex items-center gap-1">
-                      <Eye className="w-3 h-3" />
-                      Vistas totales
-                    </span>
-                    <span className="font-bold text-venuz-gold">
-                      {stats.views.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              {/* Top Rated & Trending Ranking */}
+              <TopRatedSidebar
+                items={exampleTopRatedItems}
+                className="mb-4"
+              />
 
               {/* Banner publicitario 2 */}
               <div className="venuz-card h-[200px] bg-venuz-charcoal border-2 border-venuz-pink/30 flex items-center justify-center">
@@ -735,10 +709,10 @@ export default function HomePage() {
           </aside>
 
         </div>
-      </div>
+      </div >
 
       {/* Content Preview Modal */}
-      <ContentPreviewModal
+      < ContentPreviewModal
         content={selectedContent}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
@@ -746,7 +720,7 @@ export default function HomePage() {
         onShare={handleShare}
         relatedContent={getRelatedContent(selectedContent)}
       />
-    </div>
+    </div >
   );
 }
 

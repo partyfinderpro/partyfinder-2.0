@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, Flame, Menu, X, MapPin, Search, ChevronDown } from "lucide-react";
 import { detectUserCity, saveUserCity, getStoredCity } from "@/lib/geo";
+import { LiveNowCounter } from "@/components/LiveNowCounter";
 
 interface HeaderProps {
     notificationCount?: number;
@@ -117,6 +118,11 @@ export default function Header({
                                     )}
                                 </AnimatePresence>
                             </div>
+                        </div>
+
+                        {/* Social Proof Counter - Desktop Only */}
+                        <div className="hidden md:block ml-6">
+                            <LiveNowCounter size="sm" />
                         </div>
                     </div>
 
