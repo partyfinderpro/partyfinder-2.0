@@ -1,43 +1,49 @@
+'use client';
+
 // ============================================
-// VENUZ - Integración Highway Feed con Feature Flag
-// Archivo temporal de ejemplo para integración
-// ============================================
-// 
-// INSTRUCCIONES:
-// 1. Este código muestra cómo integrar useHighwayFeed en la página principal
-// 2. Usa el feature flag para rollout gradual (10% → 25% → 50% → 100%)
-// 3. Fallback a useContent si Highway no está activo
-//
-// PARA INTEGRAR:
-// - Reemplazar el useContent actual por este wrapper
-// - O usar directamente el ejemplo de abajo
+// VENUZ - Adaptive Feed Hook (FIXED - Race Condition Fix by Claude)
+// Implementa lazy loading condicional para evitar race conditions
 // ============================================
 
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useHighwayFeed } from '@/hooks/useHighwayFeed';
 import { useContent, type ContentItem } from '@/hooks/useContent';
 import { isHighwayEnabled } from '@/lib/featureFlags';
 
-/**
- * Hook wrapper que decide entre Highway y Legacy feed
- * Basado en el feature flag para rollout gradual
- */
-export function useAdaptiveFeed(options: {
+interface UseAdaptiveFeedOptions {
     category?: string;
     mode?: string;
     search?: string;
     city?: string;
     limit?: number;
-}) {
-    const userId = typeof window !== 'undefined'
-        ? localStorage.getItem('venuz_user_id')
-        : null;
+}
 
-    // Verificar si Highway está habilitado para este usuario
-    const highwayEnabled = isHighwayEnabled(userId || undefined);
+/**
+ * Hook wrapper que decide entre Highway y Legacy feed
+ * 🔧 FIXED: Memoización + Auto-carga para garantizar mínimo de items
+ */
+export function useAdaptiveFeed(options: UseAdaptiveFeedOptions) {
+    const { limit = 20 } = options;
+
+    // 🔧 FIX 1: Memoizar userId para evitar recalculaciones
+    const userId = useMemo(() => {
+        if (typeof window === 'undefined') return null;
+        return localStorage.getItem('venuz_user_id');
+    }, []);
+
+    // 🔧 FIX 2: Memoizar la decisión del feature flag
+    const highwayEnabled = useMemo(() => {
+        return isHighwayEnabled(userId || undefined);
+    }, [userId]);
+
+    // 🔧 FIX 3: Estado para tracking de carga inicial
+    const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
+    const MAX_RETRIES = 3;
 
     // Highway Feed (nuevo algoritmo)
     const highway = useHighwayFeed({
-        limit: options.limit || 20,
+        limit: limit,
     });
 
     // Legacy Feed (feed actual)
@@ -46,21 +52,69 @@ export function useAdaptiveFeed(options: {
         mode: options.mode as any,
         search: options.search,
         city: options.city,
+        limit: limit,
     });
+
+    // 🔧 FIX 4: Seleccionar el feed activo
+    const activeFeed = highwayEnabled ? {
+        content: highway.feed as unknown as ContentItem[],
+        isLoading: highway.isLoading,
+        error: highway.error,
+        hasMore: highway.hasMore,
+        loadMore: highway.loadMore,
+        refresh: highway.refresh,
+    } : {
+        content: legacy.content,
+        isLoading: legacy.isLoading,
+        error: legacy.error,
+        hasMore: legacy.hasMore,
+        loadMore: legacy.loadMore,
+        refresh: legacy.refresh,
+    };
+
+    // 🔧 FIX 5: Garantizar mínimo de items
+    const contentLength = activeFeed.content?.length || 0;
+    const hasMinimumContent = contentLength >= 10; // Mínimo 10 items antes de mostrar
+
+    // 🔧 FIX 6: Auto-cargar más si no hay suficiente contenido
+    useEffect(() => {
+        const shouldAutoLoad =
+            !activeFeed.isLoading &&
+            contentLength < 10 &&
+            contentLength > 0 &&
+            activeFeed.hasMore &&
+            !initialLoadComplete &&
+            retryCount < MAX_RETRIES;
+
+        if (shouldAutoLoad) {
+            console.log(`[VENUZ] Auto-loading more content (attempt ${retryCount + 1}). Current: ${contentLength}`);
+            setRetryCount(prev => prev + 1);
+            activeFeed.loadMore?.();
+        } else if (contentLength >= 10 || (!activeFeed.hasMore && contentLength > 0)) {
+            if (!initialLoadComplete) {
+                console.log(`[VENUZ] Initial load complete with ${contentLength} items`);
+                setInitialLoadComplete(true);
+            }
+        }
+    }, [contentLength, activeFeed.isLoading, activeFeed.hasMore, initialLoadComplete, retryCount]);
+
+    // 🔧 FIX 7: Retry automático si el feed está vacío
+    const handleRefreshWithRetry = useCallback(async () => {
+        setRetryCount(0);
+        setInitialLoadComplete(false);
+        await activeFeed.refresh?.();
+    }, [activeFeed.refresh]);
 
     // Retornar el feed según el feature flag
     if (highwayEnabled) {
-        console.log('[VENUZ] 🛣️ Using Highway Algorithm feed');
         return {
-            // Cast a ContentItem[] para compatibilidad
             content: highway.feed as unknown as ContentItem[],
-            isLoading: highway.isLoading,
+            isLoading: highway.isLoading || (!hasMinimumContent && highway.hasMore && retryCount < MAX_RETRIES),
             error: highway.error,
             hasMore: highway.hasMore,
             loadMore: highway.loadMore,
-            refresh: highway.refresh,
-            totalCount: highway.feed.length,
-            // Extra info de Highway
+            refresh: handleRefreshWithRetry,
+            totalCount: highway.feed?.length || 0,
             isHighwayActive: true,
             intentScore: highway.intentScore,
             abVariant: highway.abVariant,
@@ -68,94 +122,19 @@ export function useAdaptiveFeed(options: {
         };
     }
 
-    console.log('[VENUZ] 📋 Using Legacy feed');
     return {
         content: legacy.content,
-        isLoading: legacy.isLoading,
+        isLoading: legacy.isLoading || (!hasMinimumContent && legacy.hasMore && retryCount < MAX_RETRIES),
         error: legacy.error,
         hasMore: legacy.hasMore,
         loadMore: legacy.loadMore,
-        refresh: legacy.refresh,
+        refresh: handleRefreshWithRetry,
         totalCount: legacy.totalCount,
-        // Highway no activo
         isHighwayActive: false,
         intentScore: 0.5,
         abVariant: null,
         weights: { wJob: 0.33, wEvent: 0.33, wAdult: 0.33 },
     };
 }
-
-// ============================================
-// EJEMPLO DE USO EN PÁGINA PRINCIPAL
-// ============================================
-/*
-
-// En app/page.tsx, reemplazar:
-
-// ANTES (líneas 88-101):
-const {
-    content,
-    isLoading,
-    error,
-    hasMore,
-    loadMore,
-    refresh,
-    totalCount
-} = useContent({
-    category: selectedCategory || undefined,
-    mode: activeMenu as any,
-    search: searchQuery,
-    city: selectedCity
-});
-
-// DESPUÉS:
-const {
-    content,
-    isLoading,
-    error,
-    hasMore,
-    loadMore,
-    refresh,
-    totalCount,
-    isHighwayActive,  // <-- Nuevo
-    intentScore,       // <-- Nuevo
-    abVariant,         // <-- Nuevo
-} = useAdaptiveFeed({
-    category: selectedCategory || undefined,
-    mode: activeMenu,
-    search: searchQuery,
-    city: selectedCity,
-    limit: 20,
-});
-
-// Opcional: Mostrar indicador de Highway activo (solo dev)
-{process.env.NODE_ENV === 'development' && isHighwayActive && (
-    <div className="fixed top-20 right-4 z-50 px-3 py-1 bg-venuz-pink/20 text-venuz-pink text-xs rounded-full">
-        🛣️ Highway ({abVariant}) | Score: {(intentScore * 100).toFixed(0)}%
-    </div>
-)}
-
-*/
-
-// ============================================
-// CÓMO CAMBIAR EL PORCENTAJE DE ROLLOUT
-// ============================================
-/*
-
-En lib/featureFlags.ts, cambiar:
-
-const ROLLOUT_CONFIG = {
-    highway_algorithm: {
-        ...
-        percentage: 10,  // <- CAMBIAR AQUÍ
-        // 10 = 10% de usuarios
-        // 25 = 25% de usuarios
-        // 50 = 50% de usuarios
-        // 100 = todos
-    },
-    ...
-};
-
-*/
 
 export default useAdaptiveFeed;
