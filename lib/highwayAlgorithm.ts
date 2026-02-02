@@ -442,6 +442,10 @@ async function fetchPillarContent(
         .from('content')
         .select('*')
         .in('category', pillarCategories)
+        // 🔥 SQL Filtering: Bloquear basura en origen
+        .not('source_url', 'ilike', '%theporndude%')
+        .not('title', 'ilike', '%porn sites%')
+        .not('title', 'ilike', '%sex cams%')
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 

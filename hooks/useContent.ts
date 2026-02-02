@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getRecommendedContent } from '@/lib/recommendations';
 import { useSession } from '@/components/AuthProvider';
@@ -8,7 +8,7 @@ import { filterFeedContent } from '@/lib/feed-filters';
 
 // ============================================
 // VENUZ - Hook para obtener contenido de Supabase
-// FILTRO DE CALIDAD ACTIVADO: Bloquea ThePornDude y basura
+// FILTRO DE CALIDAD MEJORADO: Recursive Fetching + SQL Filtering
 // ============================================
 
 export interface ContentItem {
@@ -44,7 +44,7 @@ interface UseContentOptions {
     mode?: 'inicio' | 'tendencias' | 'cerca' | 'favoritos';
     city?: string;
     search?: string;
-    limit?: number;
+    limit?: number; // Target number of valid items
     offset?: number;
 }
 
@@ -67,98 +67,126 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(true);
-    const [offset, setOffset] = useState(initialOffset);
     const [totalCount, setTotalCount] = useState(0);
 
-    const processResults = useCallback((data: ContentItem[], count: number, append: boolean) => {
-        if (data && data.length > 0) {
-            // 🔥 FILTRO DE CALIDAD: Eliminar basura de ThePornDude
-            const filteredData = filterFeedContent(data);
-            console.log(`[VENUZ Legacy] Filtered ${data.length - filteredData.length} junk items`);
+    // Track DB offset separately from UI items
+    // Esto es crucial: 'dbOffset' rastrea cuántos items RAW hemos leído de Supabase
+    const dbOffsetRef = useRef(initialOffset);
 
-            const normalizedData = filteredData.map(item => ({
-                ...item,
-                image_url: item.image_url || (item.images && item.images.length > 0 ? item.images[0] : undefined)
-            }));
+    // Resetear offset al cambiar filtros
+    useEffect(() => {
+        dbOffsetRef.current = 0;
+    }, [category, mode, city, search]);
 
-            if (append) {
-                setContent(prev => [...prev, ...normalizedData]);
-            } else {
-                setContent(normalizedData);
-            }
+    const fetchBatch = useCallback(async (startOffset: number, batchSize: number) => {
+        let query = supabase.from('content').select('*', { count: 'exact' });
 
-            setTotalCount(count);
-            setHasMore(data.length >= limit);
-        } else if (!append) {
-            setContent([]);
-            setHasMore(false);
-            setTotalCount(0);
+        // 1. Filtro por Búsqueda (Texto)
+        if (search) {
+            query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`);
         }
-    }, [limit]);
 
-    const fetchContent = useCallback(async (currentOffset: number, append: boolean = false) => {
+        // 2. Filtro por Ciudad (Localización)
+        if (city && city !== 'Todas') {
+            query = query.ilike('location', `%${city}%`);
+        }
+
+        // 3. Filtros SQL de Calidad (Bloquear basura en origen para ahorrar ancho de banda)
+        query = query.not('source_url', 'ilike', '%theporndude%')
+            .not('title', 'ilike', '%porn sites%')
+            .not('title', 'ilike', '%sex cams%');
+
+        // 4. Lógica de filtrado según el modo o categoría
+        if (category) {
+            query = query.eq('category', category)
+                .order('is_premium', { ascending: false })
+                .order('created_at', { ascending: false });
+        }
+        else if (mode === 'tendencias') {
+            query = query.order('views', { ascending: false }).order('likes', { ascending: false });
+        }
+        else if (mode === 'favoritos' && userId) {
+            const { data: interactions } = await supabase
+                .from('interactions')
+                .select('content_id')
+                .eq('user_id', userId)
+                .eq('action', 'like');
+
+            if (interactions && interactions.length > 0) {
+                const ids = interactions.map(i => i.content_id);
+                query = query.in('id', ids);
+            } else {
+                return { data: [], count: 0, error: null };
+            }
+        }
+        else {
+            if (!search && !city && !category && mode === 'inicio') {
+                // Para 'inicio', usamos lógica especial o ordenamiento por defecto
+                // TODO: Integrar getRecommendedContent si se requiere híbrido real aquí
+                query = query.order('created_at', { ascending: false });
+            } else {
+                query = query.order('created_at', { ascending: false });
+            }
+        }
+
+        const { data, error, count } = await query.range(startOffset, startOffset + batchSize - 1);
+        return { data: data as ContentItem[], error, count };
+
+    }, [category, mode, city, search, userId]);
+
+    // Función recursiva para llenar el 'bucket' de items válidos
+    const fetchUntilFulfilled = useCallback(async (targetCount: number, append: boolean) => {
         setIsLoading(true);
         setError(null);
 
+        const BATCH_SIZE = 50; // Leemos más items para compensar el filtrado
+        let accumulatedItems: ContentItem[] = [];
+        let currentDbOffset = dbOffsetRef.current;
+        let loops = 0;
+        const MAX_LOOPS = 5; // Evitar loops infinitos si todo es basura
+        let totalDBCount = 0;
+
         try {
-            let data: ContentItem[] = [];
-            let count = 0;
+            while (accumulatedItems.length < targetCount && loops < MAX_LOOPS) {
+                const { data, error: fetchError, count } = await fetchBatch(currentDbOffset, BATCH_SIZE);
 
-            let query = supabase.from('content').select('*', { count: 'exact' });
+                if (fetchError) throw fetchError;
 
-            // 1. Filtro por Búsqueda (Texto)
-            if (search) {
-                query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`);
-            }
+                totalDBCount = count || 0;
 
-            // 2. Filtro por Ciudad (Localización)
-            if (city && city !== 'Todas') {
-                query = query.ilike('location', `%${city}%`);
-            }
-
-            // 3. Lógica de filtrado según el modo o categoría
-            if (category) {
-                query = query.eq('category', category)
-                    .order('is_premium', { ascending: false })
-                    .order('created_at', { ascending: false });
-            }
-            else if (mode === 'tendencias') {
-                query = query.order('views', { ascending: false }).order('likes', { ascending: false });
-            }
-            else if (mode === 'favoritos' && userId) {
-                const { data: interactions } = await supabase
-                    .from('interactions')
-                    .select('content_id')
-                    .eq('user_id', userId)
-                    .eq('action', 'like');
-
-                if (interactions && interactions.length > 0) {
-                    const ids = interactions.map(i => i.content_id);
-                    query = query.in('id', ids);
-                } else {
-                    if (!append) setContent([]);
-                    setHasMore(false);
-                    setIsLoading(false);
-                    return;
-                }
-            }
-            else {
-                if (!search && !city && !category && mode === 'inicio') {
-                    const { count: realCount } = await supabase.from('content').select('*', { count: 'exact', head: true });
-                    data = await getRecommendedContent(userId || undefined, limit, currentOffset) as ContentItem[];
-                    count = realCount || data.length;
-
-                    processResults(data, count, append);
-                    return;
+                if (!data || data.length === 0) {
+                    break; // No hay más datos en DB
                 }
 
-                query = query.order('created_at', { ascending: false });
+                // Filtrar basura client-side (doble check)
+                const validItems = filterFeedContent(data);
+
+                // Normalizar imágenes
+                const normalizedItems = validItems.map(item => ({
+                    ...item,
+                    image_url: item.image_url || (item.images && item.images.length > 0 ? item.images[0] : undefined)
+                }));
+
+                accumulatedItems = [...accumulatedItems, ...normalizedItems];
+                currentDbOffset += data.length; // Avanzamos el offset real de la DB
+                loops++;
             }
 
-            const { data: finalData, error: fetchError, count: total } = await query.range(currentOffset, currentOffset + limit - 1);
+            // Actualizar referencia de offset para la próxima vez
+            dbOffsetRef.current = currentDbOffset;
 
-            if (fetchError) throw fetchError;
-            processResults(finalData as ContentItem[], total || 0, append);
+            console.log(`[VENUZ Fetch] Loop finished. Requested: ${targetCount}, Got: ${accumulatedItems.length}, Loops: ${loops}`);
+
+            if (append) {
+                setContent(prev => [...prev, ...accumulatedItems]);
+            } else {
+                setContent(accumulatedItems);
+            }
+
+            setTotalCount(totalDBCount);
+            // Si trajimos menos items de los pedidos en el último batch crudo, es que se acabó la DB
+            // O si el count total es menor o igual al offset actual
+            setHasMore(currentDbOffset < totalDBCount);
 
         } catch (err: any) {
             console.error('[VENUZ] Error fetching content:', err);
@@ -166,28 +194,28 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
         } finally {
             setIsLoading(false);
         }
-    }, [category, mode, city, search, limit, userId, processResults]);
+    }, [fetchBatch]);
 
     // Initial fetch
     useEffect(() => {
-        setOffset(0);
-        fetchContent(0, false);
-    }, [category, mode, city, search, fetchContent]);
+        setContent([]);
+        dbOffsetRef.current = 0;
+        fetchUntilFulfilled(limit, false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [category, mode, city, search, limit]); // Removed fetchUntilFulfilled to avoid recursive deps if not memoized deeply
 
     // Load more
     const loadMore = useCallback(async () => {
         if (isLoading || !hasMore) return;
-
-        const newOffset = offset + limit;
-        setOffset(newOffset);
-        await fetchContent(newOffset, true);
-    }, [isLoading, hasMore, offset, limit, fetchContent]);
+        console.log('[VENUZ] Loading more... current db offset:', dbOffsetRef.current);
+        await fetchUntilFulfilled(limit, true);
+    }, [isLoading, hasMore, limit, fetchUntilFulfilled]);
 
     // Refresh
     const refresh = useCallback(async () => {
-        setOffset(0);
-        await fetchContent(0, false);
-    }, [fetchContent]);
+        dbOffsetRef.current = 0;
+        await fetchUntilFulfilled(limit, false);
+    }, [limit, fetchUntilFulfilled]);
 
     return {
         content,

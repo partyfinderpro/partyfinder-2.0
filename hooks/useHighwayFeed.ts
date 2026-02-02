@@ -1,18 +1,17 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { isHighwayEnabled, debugFeatureFlags } from '@/lib/featureFlags';
 import { getHighwayFeed, type HighwayContentItem } from '@/lib/highwayAlgorithm';
 import { useUserIntent } from '@/hooks/useUserIntent';
 import { assignVariant, trackHighwayAPICall } from '@/lib/abTestConfig';
-import { filterFeedContent, sanitizeTitle } from '@/lib/feed-filters';
+import { filterFeedContent } from '@/lib/feed-filters';
 
 // ============================================
 // VENUZ - Hook para Highway Feed con Feature Flags
 // Combina: Feature Flags + A/B Testing + User Intent
-// FILTRO DE CALIDAD ACTIVADO: Bloquea ThePornDude y basura
+// FILTRO DE CALIDAD MEJORADO: Recursive Fetching + SQL Filtering
 // ============================================
-
 
 interface UseHighwayFeedOptions {
     limit?: number;
@@ -38,32 +37,19 @@ interface UseHighwayFeedReturn {
     refresh: () => Promise<void>;
 }
 
-/**
- * Hook principal para obtener el feed con Highway Algorithm
- * 
- * Uso:
- * ```tsx
- * const { 
- *   feed, 
- *   isLoading,
- *   isHighwayActive,
- *   abVariant,
- *   intentScore,
- *   loadMore 
- * } = useHighwayFeed();
- * ```
- */
 export function useHighwayFeed(options: UseHighwayFeedOptions = {}): UseHighwayFeedReturn {
     const { limit = 20, initialOffset = 0, location } = options;
 
     const [feed, setFeed] = useState<HighwayContentItem[]>([]);
-    const [offset, setOffset] = useState(initialOffset);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [hasMore, setHasMore] = useState(true);
     const [isHighwayActive, setIsHighwayActive] = useState(false);
     const [abVariant, setAbVariant] = useState<string | null>(null);
+
+    // Track DB offset separately
+    const dbOffsetRef = useRef(initialOffset);
 
     // User Intent hook
     const {
@@ -81,77 +67,71 @@ export function useHighwayFeed(options: UseHighwayFeedOptions = {}): UseHighwayF
     // Check feature flags on mount
     useEffect(() => {
         const userId = getUserId();
-
-        // Check if Highway is enabled for this user
         const highwayEnabled = isHighwayEnabled(userId || undefined);
         setIsHighwayActive(highwayEnabled);
-
-        // Get A/B variant if enabled
         if (highwayEnabled && userId) {
-            const variant = assignVariant(userId);
-            setAbVariant(variant);
+            setAbVariant(assignVariant(userId));
         }
+    }, [getUserId]);
 
-        // Debug log in development
-        if (process.env.NODE_ENV === 'development') {
-            debugFeatureFlags(userId || undefined);
-            console.log(`[Highway Feed] Active: ${highwayEnabled}, Variant: ${abVariant}`);
-        }
-    }, [getUserId, abVariant]);
-
-    // Fetch feed
-    const fetchFeed = useCallback(async (currentOffset: number, append: boolean = false) => {
+    // Fetch batch function
+    const fetchBatch = useCallback(async (currentOffset: number, batchSize: number) => {
         const userId = getUserId();
+        if (!userId) return { data: [], error: null }; // Should handle anon?
 
-        if (!userId) {
-            setIsLoading(false);
-            return;
-        }
+        const startTime = performance.now();
 
-        if (append) {
-            setIsLoadingMore(true);
-        } else {
-            setIsLoading(true);
-        }
+        const response = await getHighwayFeed({
+            userId: isHighwayActive ? userId : undefined,
+            intentScore: isHighwayActive ? intentScore : 0.5,
+            location,
+            limit: batchSize,
+            offset: currentOffset,
+        });
+
+        const responseTime = performance.now() - startTime;
+        if (isHighwayActive) trackHighwayAPICall(userId, responseTime, intentScore);
+
+        return { data: response, error: null };
+    }, [getUserId, isHighwayActive, intentScore, location]);
+
+    // Recursive fetch until fulfilled
+    const fetchUntilFulfilled = useCallback(async (targetCount: number, append: boolean) => {
+        if (append) setIsLoadingMore(true);
+        else setIsLoading(true);
 
         setError(null);
 
+        const BATCH_SIZE = 40;
+        let accumulatedItems: HighwayContentItem[] = [];
+        let currentDbOffset = dbOffsetRef.current;
+        let loops = 0;
+        const MAX_LOOPS = 5;
+
         try {
-            const startTime = performance.now();
+            while (accumulatedItems.length < targetCount && loops < MAX_LOOPS) {
+                const { data } = await fetchBatch(currentDbOffset, BATCH_SIZE);
 
-            // Fetch from Highway API
-            const response = await getHighwayFeed({
-                userId: isHighwayActive ? userId : undefined,
-                intentScore: isHighwayActive ? intentScore : 0.5,  // Neutral if not active
-                location,
-                limit,
-                offset: currentOffset,
-            });
+                if (!data || data.length === 0) break;
 
-            const responseTime = performance.now() - startTime;
+                // Client-side filtering
+                const validItems = filterFeedContent(data) as HighwayContentItem[];
+                console.log(`[Highway Loop ${loops}] Raw: ${data.length}, Valid: ${validItems.length}`);
 
-            // Track API call for analytics
-            if (isHighwayActive) {
-                trackHighwayAPICall(userId, responseTime, intentScore);
+                accumulatedItems = [...accumulatedItems, ...validItems];
+                currentDbOffset += data.length;
+                loops++;
             }
 
-            // 🔥 FILTRO DE CALIDAD: Eliminar basura de ThePornDude y contenido scraped
-            const filteredResponse = filterFeedContent(response);
-            console.log(`[VENUZ] Filtered ${response.length - filteredResponse.length} junk items`);
+            dbOffsetRef.current = currentDbOffset;
 
-            // Update state with FILTERED content only
             if (append) {
-                setFeed(prev => [...prev, ...filteredResponse]);
+                setFeed(prev => [...prev, ...accumulatedItems]);
             } else {
-                setFeed(filteredResponse);
+                setFeed(accumulatedItems);
             }
 
-            setHasMore(response.length >= limit);
-            setOffset(currentOffset + response.length);
-
-            if (process.env.NODE_ENV === 'development') {
-                console.log(`[Highway Feed] Loaded ${response.length} items in ${responseTime.toFixed(0)}ms`);
-            }
+            setHasMore(accumulatedItems.length > 0); // Simplistic check
 
         } catch (err) {
             console.error('[Highway Feed] Error:', err);
@@ -160,27 +140,29 @@ export function useHighwayFeed(options: UseHighwayFeedOptions = {}): UseHighwayF
             setIsLoading(false);
             setIsLoadingMore(false);
         }
-    }, [getUserId, isHighwayActive, intentScore, location, limit]);
+    }, [fetchBatch]);
 
     // Initial load
     useEffect(() => {
         if (!intentLoading) {
-            fetchFeed(0, false);
+            dbOffsetRef.current = 0;
+            fetchUntilFulfilled(limit, false);
         }
-    }, [intentLoading, isHighwayActive, fetchFeed]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [intentLoading, isHighwayActive, limit]); // Removed recursive deps
 
     // Load more
     const loadMore = useCallback(async () => {
         if (isLoadingMore || !hasMore) return;
-        await fetchFeed(offset, true);
-    }, [fetchFeed, offset, isLoadingMore, hasMore]);
+        await fetchUntilFulfilled(limit, true);
+    }, [isLoadingMore, hasMore, limit, fetchUntilFulfilled]);
 
     // Refresh
     const refresh = useCallback(async () => {
-        setOffset(0);
+        dbOffsetRef.current = 0;
         setHasMore(true);
-        await fetchFeed(0, false);
-    }, [fetchFeed]);
+        await fetchUntilFulfilled(limit, false);
+    }, [limit, fetchUntilFulfilled]);
 
     return {
         feed,

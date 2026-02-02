@@ -7,13 +7,19 @@ const TheHunter = require('./bots/hunter');
 const TheSeducer = require('./bots/seducer');
 const TheSpecialist = require('./bots/specialist');
 const TheSocialite = require('./bots/social_events');
+// const ApifyHunter = require('./bots/apify_hunter'); // Disabled until token fixed
+const GooglePlacesHunter = require('./bots/google_places'); // NEW: Google Places API
 
-// Initialize Supabase
+// Initialize Supabase con Llave de Admin (Bypass RLS)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error("⚠️ Error: Supabase credentials missing. Create a .env file.");
+}
+
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn("⚠️ WARNING: Using ANON_KEY. Database writes may fail due to RLS. Add SUPABASE_SERVICE_ROLE_KEY to .env");
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -93,6 +99,11 @@ async function runOmniScraper() {
     const eventCatId = getCatId('clubes-eventos');
     eventContent.forEach(e => allResults.push({ ...e, category_id: eventCatId }));
 
+    // Launcher: Google Places Hunter (REAL DATA from Google API)
+    console.log('\n🌍 LAUNCHING GOOGLE PLACES HUNTER...');
+    const googleContent = await GooglePlacesHunter.scrapeAll();
+    googleContent.forEach(g => allResults.push({ ...g, category_id: eventCatId }));
+
     // 3. Apply TikTok Algorithm & Preparation
     console.log(`\n🧠 Processing ${allResults.length} items through TikTok Engine...`);
     const processedContent = allResults.map(item => {
@@ -117,15 +128,27 @@ async function runOmniScraper() {
 async function saveToSupabase(items) {
   if (items.length === 0) return;
 
-  const { error } = await supabase.from('content').upsert(items, {
+  // Deduplicar por source_url antes de enviar (evita error "cannot affect row a second time")
+  const uniqueItems = [];
+  const seenUrls = new Set();
+  for (const item of items) {
+    if (item.source_url && !seenUrls.has(item.source_url)) {
+      seenUrls.add(item.source_url);
+      uniqueItems.push(item);
+    }
+  }
+
+  console.log(`📦 Sending ${uniqueItems.length} unique items (filtered ${items.length - uniqueItems.length} duplicates)`);
+
+  const { error } = await supabase.from('content').upsert(uniqueItems, {
     onConflict: 'source_url',
-    ignoreDuplicates: false
+    ignoreDuplicates: true // Cambiar a true para ignorar duplicados existentes
   });
 
   if (error) {
     console.error(`❌ [Database] Mass Deployment Error:`, error.message);
   } else {
-    console.log(`✅ [Database] Synchronized ${items.length} items with the Cloud.`);
+    console.log(`✅ [Database] Synchronized ${uniqueItems.length} items with the Cloud.`);
   }
 }
 
