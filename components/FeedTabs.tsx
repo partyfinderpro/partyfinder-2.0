@@ -89,7 +89,7 @@ export function FeedTabs({ initialMode = 'all', onModeChange, className = '' }: 
     )
 }
 
-// Categorías por modo
+// Categorías por modo (Sincronizado con DB Venuz)
 export const NIGHTLIFE_CATEGORIES = [
     'bar',
     'bares',
@@ -101,6 +101,10 @@ export const NIGHTLIFE_CATEGORIES = [
     'beach_club',
     'beach club',
     'beach clubs',
+    'beach',
+    'social media',
+    'social_media',
+    'Social Media',
     'event',
     'evento',
     'eventos',
@@ -128,6 +132,7 @@ export const ADULT_CATEGORIES = [
     'cams',
     'escort',
     'escorts',
+    'soltero',
     'massage',
     'masaje',
     'masajes',
@@ -140,6 +145,10 @@ export const ADULT_CATEGORIES = [
     'hookup',
     'hookups',
     'dating',
+    'ai-porn',
+    'free-tubes',
+    'live-cams',
+    'premium',
 ]
 
 /**
