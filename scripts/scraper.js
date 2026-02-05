@@ -6,9 +6,19 @@ const TheWatcher = require('./bots/watcher');
 const TheHunter = require('./bots/hunter');
 const TheSeducer = require('./bots/seducer');
 const TheSpecialist = require('./bots/specialist');
-const TheSocialite = require('./bots/social_events');
-// const ApifyHunter = require('./bots/apify_hunter'); // Disabled until token fixed
-const GooglePlacesHunter = require('./bots/google_places'); // NEW: Google Places API
+const TheGladiator = require('./bots/sports_gladiator'); // Sports Events (TheSportsDB)
+const TheSocialite = require('./bots/eventbrite'); // Eventbrite Events V2
+const GooglePlacesHunter = require('./bots/google_places');
+const ApifyHunter = require('./bots/apify_hunter');
+const ThePromoter = require('./bots/ticketmaster'); // Ticketmaster Events
+const TheScouter = require('./bots/seatgeek'); // SeatGeek Events (New)
+const TheGroupie = require('./bots/bandsintown'); // Bandsintown Live Music (New)
+const TijuanaBot = require('./bots/tijuana_bot'); // TJ Special Ops (New)
+
+// Nuevos Módulos de Inteligencia (Fase 1 Integrada)
+const { applyQualityFilters } = require('./utils/qualityFilters');
+const { processAndUploadImage } = require('./utils/imageProcessor');
+
 
 // Initialize Supabase con Llave de Admin (Bypass RLS)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -104,11 +114,72 @@ async function runOmniScraper() {
     const googleContent = await GooglePlacesHunter.scrapeAll();
     googleContent.forEach(g => allResults.push({ ...g, category_id: eventCatId }));
 
+    // Launcher: The Promoter (Ticketmaster Events)
+    console.log('\n🎫 LAUNCHING TICKETMASTER PROMOTER...');
+    const ticketmasterContent = await ThePromoter.scrape();
+    ticketmasterContent.forEach(t => allResults.push({ ...t, category_id: eventCatId }));
+
+    // Launcher: The Gladiator (Sports)
+    console.log('\n🥊 LAUNCHING GLADIATOR (SPORTS)...');
+    const sportsContent = await TheGladiator.scrape();
+    sportsContent.forEach(s => allResults.push({ ...s, category_id: eventCatId }));
+
+    // Launcher: The Scouter (SeatGeek)
+    console.log('\n🏟️ LAUNCHING SCOUTER (SEATGEEK)...');
+    const seatgeekContent = await TheScouter.scrape();
+    seatgeekContent.forEach(s => allResults.push({ ...s, category_id: eventCatId }));
+
+    // Launcher: The Groupie (Bandsintown)
+    console.log('\n🎸 LAUNCHING GROUPIE (BANDSINTOWN)...');
+    const bandsintownContent = await TheGroupie.scrape();
+    bandsintownContent.forEach(b => allResults.push({ ...b, category_id: eventCatId }));
+
+    // Launcher: Tijuana Special Ops (Dominio Local)
+    console.log('\n🌮 LAUNCHING TIJUANA SPECIAL OPS...');
+    const tijuanaBot = new TijuanaBot();
+    const tijuanaContent = await tijuanaBot.scrape();
+    // Default cat ID for now, logic inside bot can refine
+    tijuanaContent.forEach(t => allResults.push({ ...t, category_id: eventCatId }));
+
+    // Launcher: Apify Hunter (Instagram, TikTok, Facebook)
+    console.log('\n🎯 LAUNCHING APIFY HUNTER (Social Media)...');
+    const apifyContent = await ApifyHunter.scrapeAll();
+    apifyContent.forEach(a => allResults.push({ ...a, category_id: getCatId(a.category) || eventCatId }));
+
     // 3. Apply TikTok Algorithm & Preparation
     console.log(`\n🧠 Processing ${allResults.length} items through TikTok Engine...`);
+
+    // CITY CENTER COORDINATES (Fallback)
+    const CITY_COORDS = {
+      'vallarta': { lat: 20.6534, lng: -105.2253 },
+      'guadalajara': { lat: 20.6597, lng: -103.3496 },
+      'cdmx': { lat: 19.4326, lng: -99.1332 },
+      'monterrey': { lat: 25.6866, lng: -100.3161 },
+      'cancun': { lat: 21.1619, lng: -86.8515 },
+      'tijuana': { lat: 32.5149, lng: -117.0382 },
+      'playa': { lat: 20.6296, lng: -87.0739 } // Playa del Carmen
+    };
+
     const processedContent = allResults.map(item => {
       const now = new Date().toISOString();
-      const itemWithTime = { ...item, scraped_at: item.scraped_at || now };
+      let itemWithTime = { ...item, scraped_at: item.scraped_at || now };
+
+      // GEOLOCATION FALLBACK PATCH 📍
+      if (!itemWithTime.latitude || !itemWithTime.longitude) {
+        const textToScan = (item.title + ' ' + (item.tags ? item.tags.join(' ') : '')).toLowerCase();
+
+        for (const [key, coords] of Object.entries(CITY_COORDS)) {
+          if (textToScan.includes(key)) {
+            itemWithTime.latitude = coords.lat;
+            itemWithTime.longitude = coords.lng;
+            // Add small random jitter (0.005) so they don't stack perfectly on top of each other
+            itemWithTime.latitude += (Math.random() - 0.5) * 0.01;
+            itemWithTime.longitude += (Math.random() - 0.5) * 0.01;
+            break;
+          }
+        }
+      }
+
       return {
         ...itemWithTime,
         rank_score: calculateTikTokScore(itemWithTime),
@@ -128,27 +199,77 @@ async function runOmniScraper() {
 async function saveToSupabase(items) {
   if (items.length === 0) return;
 
-  // Deduplicar por source_url antes de enviar (evita error "cannot affect row a second time")
+  console.log(`\n🧠 PROCESSING QUALITY GATES FOR ${items.length} ITEMS...`);
+
+  // Obtener items existentes para comparación de duplicados (Optimización: traer solo títulos y coords recientes)
+  // Para MVP, traemos los últimos 1000 items activos.
+  const { data: existingEvents } = await supabase
+    .from('content')
+    .select('title, description, latitude, longitude')
+    .eq('active', true)
+    .limit(1000);
+
+  const cleanItems = [];
+  let rejectedCount = 0;
+
+  for (const item of items) {
+    // 1. Filtros de Calidad
+    const { approved, reason, correctedEvent } = await applyQualityFilters(item, existingEvents || []);
+
+    if (!approved) {
+      console.log(`   ⛔ Rejected [${reason}]: ${item.title.substring(0, 40)}...`);
+      rejectedCount++;
+      continue;
+    }
+
+    // 2. Procesamiento de Imagen (Solo si tiene imagen externa no procesada)
+    // Nota: Esto puede ser lento. Para producción masiva, mover a Worker separado.
+    // Activamos solo para eventos con imágenes válidas.
+    if (correctedEvent.image_url && !correctedEvent.image_url.includes('supabase')) {
+      console.log(`   📸 Processing image for: ${correctedEvent.title}...`);
+      try {
+        const processedIds = await processAndUploadImage(correctedEvent.image_url, correctedEvent.id || require('uuid').v4());
+        if (processedIds) {
+          correctedEvent.thumbnail_url = processedIds.thumbnail;
+          correctedEvent.medium_url = processedIds.medium;
+          correctedEvent.large_url = processedIds.large;
+          correctedEvent.image_url = processedIds.medium; // Use medium as default
+          console.log(`   ✅ Image optimized: 3 variants created.`);
+        }
+      } catch (imgErr) {
+        console.error(`   ⚠️ Image proc failed: ${imgErr.message}`);
+      }
+    }
+
+    // Clean internal properties before saving
+    delete correctedEvent._cleanTextScore;
+
+    cleanItems.push(correctedEvent);
+  }
+
+  console.log(`\n📊 QUALITY SUMMARY: ${cleanItems.length} Approved | ${rejectedCount} Rejected`);
+
+  if (cleanItems.length === 0) return;
+
+  // Deduplicar final por source_url
   const uniqueItems = [];
   const seenUrls = new Set();
-  for (const item of items) {
+  for (const item of cleanItems) {
     if (item.source_url && !seenUrls.has(item.source_url)) {
       seenUrls.add(item.source_url);
       uniqueItems.push(item);
     }
   }
 
-  console.log(`📦 Sending ${uniqueItems.length} unique items (filtered ${items.length - uniqueItems.length} duplicates)`);
-
   const { error } = await supabase.from('content').upsert(uniqueItems, {
     onConflict: 'source_url',
-    ignoreDuplicates: true // Cambiar a true para ignorar duplicados existentes
+    ignoreDuplicates: false
   });
 
   if (error) {
     console.error(`❌ [Database] Mass Deployment Error:`, error.message);
   } else {
-    console.log(`✅ [Database] Synchronized ${uniqueItems.length} items with the Cloud.`);
+    console.log(`✅ [Database] Successfully synced ${uniqueItems.length} high-quality items.`);
   }
 }
 

@@ -38,7 +38,7 @@ export default function Footer() {
                         <ul className="space-y-2 text-sm text-gray-500">
                             <li><Link href="/webcams" className="hover:text-white transition-colors">Webcams Reviews</Link></li>
                             <li><Link href="/nightlife" className="hover:text-white transition-colors">Vida Nocturna</Link></li>
-                            <li><Link href="/escorts" className="hover:text-white transition-colors">Escorts Verificadas</Link></li>
+                            <li><Link href="/soltero" className="hover:text-white transition-colors">Estoy Soltero</Link></li>
                             <li><Link href="/guias" className="hover:text-white transition-colors">Guías de Ciudad</Link></li>
                         </ul>
                     </div>

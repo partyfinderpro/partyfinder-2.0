@@ -7,7 +7,7 @@ import {
     ConcertIcon,
     BarIcon,
     ClubIcon,
-    EscortIcon,
+    SolteroIcon,
     CasinoIcon,
     PartyIcon,
     LiveIcon,
@@ -63,13 +63,13 @@ const CATEGORY_CONFIG: Record<string, {
         gradient: "from-purple-500 via-pink-400 to-rose-400",
         bgGradient: "from-purple-500/20 to-pink-500/10",
     },
-    escort: {
-        Icon: EscortIcon,
+    soltero: {
+        Icon: SolteroIcon,
         gradient: "from-pink-500 via-rose-400 to-red-400",
         bgGradient: "from-pink-500/20 to-rose-500/10",
     },
     modelo: {
-        Icon: EscortIcon,
+        Icon: SolteroIcon,
         gradient: "from-pink-500 via-rose-400 to-red-400",
         bgGradient: "from-pink-500/20 to-rose-500/10",
     },

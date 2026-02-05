@@ -315,7 +315,7 @@ export function RecentActivity({
     { user: 'Carlos M.', action: 'visitó', target: 'Stripchat', time: 'hace 2 min' },
     { user: 'María L.', action: 'se registró en', target: 'CamSoda', time: 'hace 5 min' },
     { user: 'Juan R.', action: 'dejó review en', target: 'Club Mandala', time: 'hace 8 min' },
-    { user: 'Ana S.', action: 'verificó', target: 'Luna Escorts', time: 'hace 12 min' }
+    { user: 'Ana S.', action: 'verificó', target: 'Luna VIP', time: 'hace 12 min' }
   ],
   autoScroll = true,
   className = ''

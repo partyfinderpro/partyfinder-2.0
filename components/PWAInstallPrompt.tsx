@@ -17,19 +17,39 @@ export default function PWAInstallPrompt() {
 
     useEffect(() => {
         // Check if already installed
+        if (typeof window === 'undefined') return;
+
         if (window.matchMedia("(display-mode: standalone)").matches) {
             setIsInstalled(true);
             return;
         }
 
-        // Check if user dismissed before (localStorage)
+        // --- THE HIGHWAY LOGIC: Only prompt engaged users ---
+
+        // 1. Visit Counter
+        let visits = 0;
+        try {
+            const storedVisits = localStorage.getItem('venuz_visit_count');
+            visits = storedVisits ? parseInt(storedVisits) : 0;
+            // Note: Visit incrementing happens elsewhere (e.g. session start), or we can do it here if "visited" implies loaded this component multiple times across sessions.
+            // For safety, let's increment a session flag so we don't spam-increment on refresh
+            if (!sessionStorage.getItem('venuz_session_counted')) {
+                visits++;
+                localStorage.setItem('venuz_visit_count', visits.toString());
+                sessionStorage.setItem('venuz_session_counted', 'true');
+            }
+        } catch (e) { console.error('Storage error', e); }
+
+        // 2. Interaction Check (from Highway)
+        // Only true if user actually clicked Like
+        const hasInteracted = localStorage.getItem('venuz_has_interacted') === 'true';
+
+        // 3. Dismissal Check
         const wasDismissed = localStorage.getItem("venuz-pwa-dismissed");
         if (wasDismissed) {
             const dismissedAt = new Date(wasDismissed);
             const now = new Date();
             const daysSinceDismissed = (now.getTime() - dismissedAt.getTime()) / (1000 * 60 * 60 * 24);
-
-            // Show again after 7 days
             if (daysSinceDismissed < 7) {
                 setDismissed(true);
                 return;
@@ -41,10 +61,18 @@ export default function PWAInstallPrompt() {
             e.preventDefault();
             setDeferredPrompt(e as BeforeInstallPromptEvent);
 
-            // Show prompt after 5 seconds of page load
-            setTimeout(() => {
-                setShowPrompt(true);
-            }, 5000);
+            // LOGIC GATE: Only show if visits >= 2 AND has interacted
+            // (Or if debug forced)
+            const isEngaged = visits >= 2 && hasInteracted;
+
+            if (isEngaged) {
+                // Show prompt after delay
+                setTimeout(() => {
+                    setShowPrompt(true);
+                }, 5000);
+            } else {
+                console.log('PWA Prompt withheld: User not yet engaged (Visits:', visits, 'Interacted:', hasInteracted, ')');
+            }
         };
 
         window.addEventListener("beforeinstallprompt", handleBeforeInstall);

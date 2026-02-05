@@ -97,7 +97,7 @@ const CATEGORY_TO_PILLAR: Record<string, ContentPillar> = {
     'pornsite': 'adult',
     'onlyfans': 'adult',
     'dating': 'adult',
-    'escort': 'adult',
+    'soltero': 'adult',
     'stripclub': 'adult',
     'sexshop': 'adult',
 
@@ -105,7 +105,6 @@ const CATEGORY_TO_PILLAR: Record<string, ContentPillar> = {
     'evento': 'event',
     'event': 'event',
     'bar': 'event',
-    'antro': 'event',
     'club': 'event',
     'concierto': 'event',
     'fiesta': 'event',
@@ -438,6 +437,44 @@ async function fetchPillarContent(
         .filter(([_, p]) => p === pillar)
         .map(([cat, _]) => cat);
 
+    // 🚀 GEO-FIRST STRATEGY
+    // Si tenemos ubicación, intentamos primero obtener contenido local
+    if (location && offset === 0) { // Solo en la primera página para consistencia
+        try {
+            // Llamamos al RPC de cercanía (trae todo lo cercano sin filtrar categoría por SQL por ahora)
+            const { data: geoData, error: geoError } = await supabase.rpc('nearby_events', {
+                user_lat: location.lat,
+                user_lon: location.lng,
+                max_distance_km: 100, // 100km radio
+                cat_ids: null
+            });
+
+            if (!geoError && geoData) {
+                // Filtrar en memoria por las categorías del pilar actual
+                const localPillarItems = (geoData as HighwayContentItem[]).filter(item =>
+                    pillarCategories.includes(item.category?.toLowerCase() || '')
+                );
+
+                // Si encontramos suficientes items locales, los devolvemos priorizados
+                if (localPillarItems.length > 0) {
+                    console.log(`[Highway] Found ${localPillarItems.length} local items for ${pillar} in ${location.lat},${location.lng}`);
+                    // Normalizar y devolver (slice por si el RPC trajo demasiados)
+                    return localPillarItems.slice(0, limit).map(item => ({
+                        ...item,
+                        pillar,
+                        likes: item.likes || 0,
+                        views: item.views || 0,
+                        // Boost extra por ser local
+                        baseScore: (item.baseScore || 0) + 500
+                    }));
+                }
+            }
+        } catch (e) {
+            console.warn('[Highway] Geo-fetch failed, falling back to global:', e);
+        }
+    }
+
+    // FALLBACK: Query Global Estándar (Si falla geo o no hay items locales)
     let query = supabase
         .from('content')
         .select('*')
@@ -448,11 +485,6 @@ async function fetchPillarContent(
         .not('title', 'ilike', '%sex cams%')
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
-
-    // TODO: Agregar filtro geográfico cuando tengamos PostGIS
-    // if (location) {
-    //     query = query.rpc('nearby_content', { lat: location.lat, lng: location.lng, radius_km: 50 });
-    // }
 
     const { data, error } = await query;
 

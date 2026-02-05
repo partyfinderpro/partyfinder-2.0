@@ -3,15 +3,23 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useFeed, useInfiniteScroll, useTrackInteraction } from '@/lib/hooks/useFeed';
+import { useFeedMixer } from '@/hooks/useFeedMixer';
 import type { ContentItem } from '@/lib/feedAlgorithm';
+import { LikeButton } from '@/components/ui/LikeButton';
 
 // ============================================
 // FEED PRINCIPAL - Estilo TikTok/VENUZ
 // ============================================
 export default function FeedPage() {
     const [feedType, setFeedType] = useState<'trending' | 'webcams' | 'clubs' | 'nearby'>('trending');
-    const { items, loading, error, hasMore, loadMore, refresh } = useFeed({ type: feedType });
+    const { items: rawItems, loading, error, hasMore, loadMore, refresh } = useFeed({ type: feedType });
     const triggerRef = useInfiniteScroll(loadMore, hasMore, loading);
+
+    // 🛣️ THE HIGHWAY: Chameleon Feed Logic
+    const { feed: mixedItems, handleLike } = useFeedMixer(rawItems);
+
+    // Use mixed items for display, fallback to raw if mixer hasn't initialized (shouldn't happen but safety first)
+    const displayItems = mixedItems.length > 0 ? mixedItems : rawItems;
 
     return (
         <div className="min-h-screen bg-black">
@@ -31,8 +39,8 @@ export default function FeedPage() {
                             key={tab}
                             onClick={() => setFeedType(tab)}
                             className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${feedType === tab
-                                    ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/30'
-                                    : 'bg-gray-800 text-gray-400 hover:text-white'
+                                ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/30'
+                                : 'bg-gray-800 text-gray-400 hover:text-white'
                                 }`}
                         >
                             {tab === 'trending' ? '🔥 Trending' :
@@ -60,15 +68,24 @@ export default function FeedPage() {
             <main className="pb-20">
                 {/* Mobile: Full screen cards */}
                 <div className="lg:hidden snap-y snap-mandatory overflow-y-auto h-[calc(100vh-120px)]">
-                    {items.map((item, index) => (
-                        <FeedCardMobile key={item.id} item={item} index={index} />
+                    {displayItems.map((item, index) => (
+                        <FeedCardMobile
+                            key={item.id}
+                            item={item as ContentItem}
+                            index={index}
+                            onLikeAction={handleLike}
+                        />
                     ))}
                 </div>
 
                 {/* Desktop: Grid */}
                 <div className="hidden lg:grid lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 p-4">
-                    {items.map((item) => (
-                        <FeedCardDesktop key={item.id} item={item} />
+                    {displayItems.map((item) => (
+                        <FeedCardDesktop
+                            key={item.id}
+                            item={item as ContentItem}
+                            onLikeAction={handleLike}
+                        />
                     ))}
                 </div>
 
@@ -83,7 +100,7 @@ export default function FeedPage() {
                 <div ref={triggerRef} className="h-4" />
 
                 {/* No more content */}
-                {!hasMore && items.length > 0 && (
+                {!hasMore && displayItems.length > 0 && (
                     <p className="text-center text-gray-500 py-8">
                         No hay más contenido 🎭
                     </p>
@@ -96,15 +113,13 @@ export default function FeedPage() {
 // ============================================
 // CARD MOBILE - Estilo TikTok
 // ============================================
-function FeedCardMobile({ item, index }: { item: ContentItem; index: number }) {
+function FeedCardMobile({ item, index, onLikeAction }: { item: ContentItem; index: number; onLikeAction: any }) {
     const { trackLike } = useTrackInteraction();
-    const [liked, setLiked] = useState(false);
 
-    const handleLike = () => {
-        if (!liked) {
-            setLiked(true);
-            trackLike(item.id);
-        }
+    // Handler combinado
+    const handleLike = (id: string, category: string, isNSFW: boolean) => {
+        trackLike(id); // Tracking original
+        onLikeAction(id, category, isNSFW); // The Highway Logic
     };
 
     // Sanitize image URL
@@ -184,13 +199,14 @@ function FeedCardMobile({ item, index }: { item: ContentItem; index: number }) {
 
             {/* Action buttons - right side */}
             <div className="absolute right-3 bottom-32 flex flex-col items-center gap-5">
-                <button onClick={handleLike} className="flex flex-col items-center">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${liked ? 'bg-pink-500' : 'bg-white/20 backdrop-blur'
-                        }`}>
-                        <span className="text-2xl">{liked ? '❤️' : '🤍'}</span>
-                    </div>
-                    <span className="text-white text-xs mt-1">{item.likes + (liked ? 1 : 0)}</span>
-                </button>
+                <LikeButton
+                    contentId={item.id}
+                    category={item.category || 'general'}
+                    initialCount={item.likes}
+                    isNSFW={item.category === 'escort' || item.category === 'webcam' || item.affiliate_source === 'Reddit'}
+                    onLike={handleLike}
+                    size="lg"
+                />
 
                 <div className="flex flex-col items-center">
                     <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
@@ -213,9 +229,13 @@ function FeedCardMobile({ item, index }: { item: ContentItem; index: number }) {
 // ============================================
 // CARD DESKTOP - Estilo Casino/Neon
 // ============================================
-function FeedCardDesktop({ item }: { item: ContentItem }) {
+function FeedCardDesktop({ item, onLikeAction }: { item: ContentItem; onLikeAction: any }) {
     const { trackLike } = useTrackInteraction();
-    const [liked, setLiked] = useState(false);
+
+    const handleLike = (id: string, category: string, isNSFW: boolean) => {
+        trackLike(id);
+        onLikeAction(id, category, isNSFW);
+    };
 
     const imageUrl = item.image_url?.includes('googleapis.com')
         ? 'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=800'
@@ -252,17 +272,17 @@ function FeedCardDesktop({ item }: { item: ContentItem }) {
                 </div>
 
                 {/* Like button */}
-                <button
-                    onClick={() => {
-                        if (!liked) {
-                            setLiked(true);
-                            trackLike(item.id);
-                        }
-                    }}
-                    className="absolute top-3 right-3 w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center hover:bg-black/70 transition-colors"
-                >
-                    <span className="text-xl">{liked ? '❤️' : '🤍'}</span>
-                </button>
+                <div className="absolute top-3 right-3">
+                    <LikeButton
+                        contentId={item.id}
+                        category={item.category || 'general'}
+                        initialCount={item.likes}
+                        isNSFW={item.category === 'escort' || item.category === 'webcam' || item.affiliate_source === 'Reddit'}
+                        onLike={handleLike}
+                        size="md"
+                        showCount={false}
+                    />
+                </div>
             </div>
 
             {/* Content */}
@@ -279,7 +299,8 @@ function FeedCardDesktop({ item }: { item: ContentItem }) {
 
                 <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-3 text-gray-500">
-                        <span>❤️ {item.likes + (liked ? 1 : 0)}</span>
+                        {/* We use the internal count of LikeButton, so we don't need to duplicate display here unless desired */}
+                        <span>Like it! 👆</span>
                         <span>👁️ {item.views}</span>
                     </div>
 

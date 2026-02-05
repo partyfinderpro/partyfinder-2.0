@@ -41,7 +41,8 @@ function useDebounce<T>(value: T, delay: number): T {
     return debouncedValue;
 }
 
-export default function SearchBar({ onResults, onSelect, placeholder = "Buscar bares, eventos, escorts..." }: SearchBarProps) {
+export default function SearchBar({ onResults, onSelect, placeholder = "Buscar bares, eventos, soltero..." }: SearchBarProps) {
+
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<SearchResult[]>([]);
     const [isOpen, setIsOpen] = useState(false);

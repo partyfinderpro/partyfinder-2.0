@@ -180,8 +180,8 @@ export function ClubIcon({ size = 24, className = "", ...props }: IconProps) {
   );
 }
 
-// 💋 ESCORT / MODELO
-export function EscortIcon({ size = 24, className = "", ...props }: IconProps) {
+// 💋 ESTOY SOLTERO
+export function SolteroIcon({ size = 24, className = "", ...props }: IconProps) {
   return (
     <svg
       width={size}
@@ -193,7 +193,7 @@ export function EscortIcon({ size = 24, className = "", ...props }: IconProps) {
       {...props}
     >
       <defs>
-        <linearGradient id="escort-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="soltero-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#EC4899" />
           <stop offset="100%" stopColor="#BE185D" />
         </linearGradient>
@@ -201,19 +201,19 @@ export function EscortIcon({ size = 24, className = "", ...props }: IconProps) {
       {/* Silhouette */}
       <path
         d="M12 2C14.21 2 16 3.79 16 6C16 8.21 14.21 10 12 10C9.79 10 8 8.21 8 6C8 3.79 9.79 2 12 2Z"
-        fill="url(#escort-gradient)"
+        fill="url(#soltero-gradient)"
         opacity="0.8"
       />
       {/* Body */}
       <path
         d="M12 11C16 11 19 13 20 16L18 22H6L4 16C5 13 8 11 12 11Z"
-        fill="url(#escort-gradient)"
+        fill="url(#soltero-gradient)"
         opacity="0.6"
       />
       {/* Sparkle */}
       <path
         d="M19 4L20 6L22 5L20 6L21 8L20 6L18 7L20 6L19 4Z"
-        fill="url(#escort-gradient)"
+        fill="url(#soltero-gradient)"
       />
     </svg>
   );
@@ -492,9 +492,10 @@ export const CATEGORY_ICONS: Record<string, React.FC<IconProps>> = {
   club: ClubIcon,
   nightclub: ClubIcon,
   disco: ClubIcon,
-  escort: EscortIcon,
-  modelo: EscortIcon,
-  model: EscortIcon,
+  soltero: SolteroIcon,
+  escort: SolteroIcon,
+  modelo: SolteroIcon,
+  model: SolteroIcon,
   casino: CasinoIcon,
   live: LiveIcon,
   cam: LiveIcon,
@@ -510,7 +511,7 @@ export const CATEGORY_ICONS: Record<string, React.FC<IconProps>> = {
   trending: HotIcon,
   hookup: HotIcon,
   'ai-porn': PremiumIcon,
-  masaje: EscortIcon,
+  masaje: SolteroIcon,
   tabledance: ClubIcon,
   restaurante: BarIcon,
   beach: PartyIcon,

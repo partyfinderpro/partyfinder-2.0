@@ -46,6 +46,9 @@ interface UseContentOptions {
     search?: string;
     limit?: number; // Target number of valid items
     offset?: number;
+    latitude?: number | null;
+    longitude?: number | null;
+    radius?: number;
 }
 
 interface UseContentReturn {
@@ -79,6 +82,31 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
     }, [category, mode, city, search]);
 
     const fetchBatch = useCallback(async (startOffset: number, batchSize: number) => {
+        // 🚀 SMART GEO-QUERIES (Prioridad 1)
+        if (options.latitude && options.longitude && !search && (!mode || mode === 'cerca')) {
+            try {
+                // Usar la función RPC optimizada para geo-búsqueda
+                const { data, error } = await supabase.rpc('nearby_events', {
+                    user_lat: options.latitude,
+                    user_lon: options.longitude,
+                    max_distance_km: options.radius || 50, // 50km por defecto
+                    cat_ids: null // TODO: mapear category string a UUID si es necesario
+                });
+
+                if (error) throw error;
+
+                // RPC devuelve todos los resultados, paginamos en memoria o ajustamos RPC
+                // Por ahora, como es 'nearby', asumimos que el RPC devuelve los top X ordenados por distancia
+                // Simulamos paginación slice
+                const paginated = (data || []).slice(startOffset, startOffset + batchSize);
+                return { data: paginated as ContentItem[], error: null, count: (data || []).length };
+            } catch (rpcError) {
+                console.error('RPC Error, falling back to basic query:', rpcError);
+                // Fallback continúa abajo
+            }
+        }
+
+        // Lógica Estándar (Fallback)
         let query = supabase.from('content').select('*', { count: 'exact' });
 
         // 1. Filtro por Búsqueda (Texto)
@@ -86,8 +114,8 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
             query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`);
         }
 
-        // 2. Filtro por Ciudad (Localización)
-        if (city && city !== 'Todas') {
+        // 2. Filtro por Ciudad (Localización Texto) - SOLO si no usamos coordenadas
+        if (city && city !== 'Todas' && (!options.latitude || !options.longitude)) {
             query = query.ilike('location', `%${city}%`);
         }
 
@@ -132,7 +160,7 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
         const { data, error, count } = await query.range(startOffset, startOffset + batchSize - 1);
         return { data: data as ContentItem[], error, count };
 
-    }, [category, mode, city, search, userId]);
+    }, [category, mode, city, search, userId, options.latitude, options.longitude, options.radius]);
 
     // Función recursiva para llenar el 'bucket' de items válidos
     const fetchUntilFulfilled = useCallback(async (targetCount: number, append: boolean) => {

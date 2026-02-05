@@ -46,11 +46,11 @@ export function TopRatedSidebar({
 }: TopRatedSidebarProps) {
   const [displayItems, setDisplayItems] = useState(items.slice(0, maxItems))
   const [refreshIn, setRefreshIn] = useState(60)
-  
+
   // Countdown para próximo refresh
   useEffect(() => {
     if (!showRefreshTimer) return
-    
+
     const timer = setInterval(() => {
       setRefreshIn(prev => {
         if (prev <= 1) {
@@ -64,7 +64,7 @@ export function TopRatedSidebar({
         return prev - 1
       })
     }, 1000)
-    
+
     return () => clearInterval(timer)
   }, [items, maxItems, showRefreshTimer])
 
@@ -104,7 +104,7 @@ export function TopRatedSidebar({
           </span>
         )}
       </div>
-      
+
       {/* Lista de items */}
       <div className="space-y-3">
         {displayItems.map((item, index) => (
@@ -117,7 +117,7 @@ export function TopRatedSidebar({
             <div className="flex-shrink-0 w-6 h-6 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
               {index + 1}
             </div>
-            
+
             {/* Thumbnail */}
             <div className="relative flex-shrink-0">
               <img
@@ -131,7 +131,7 @@ export function TopRatedSidebar({
                 </span>
               )}
             </div>
-            
+
             {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -144,7 +144,7 @@ export function TopRatedSidebar({
                   </span>
                 )}
               </div>
-              
+
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-gray-500 text-xs">{item.category}</span>
                 <span className="text-yellow-400 text-xs">
@@ -158,7 +158,7 @@ export function TopRatedSidebar({
           </a>
         ))}
       </div>
-      
+
       {/* Ver más link */}
       <a
         href="/trending"
@@ -186,7 +186,7 @@ interface TopRatedTabsProps {
 
 export function TopRatedTabs({ tabs, className = '' }: TopRatedTabsProps) {
   const [activeTab, setActiveTab] = useState(tabs[0]?.id || '')
-  
+
   const activeItems = tabs.find(t => t.id === activeTab)?.items || []
 
   return (
@@ -199,8 +199,8 @@ export function TopRatedTabs({ tabs, className = '' }: TopRatedTabsProps) {
             onClick={() => setActiveTab(tab.id)}
             className={`
               flex-1 px-3 py-3 text-sm font-medium transition-colors
-              ${activeTab === tab.id 
-                ? 'text-pink-400 border-b-2 border-pink-400 bg-pink-400/5' 
+              ${activeTab === tab.id
+                ? 'text-pink-400 border-b-2 border-pink-400 bg-pink-400/5'
                 : 'text-gray-400 hover:text-white'
               }
             `}
@@ -210,7 +210,7 @@ export function TopRatedTabs({ tabs, className = '' }: TopRatedTabsProps) {
           </button>
         ))}
       </div>
-      
+
       {/* Content */}
       <div className="p-4">
         <div className="space-y-2">
@@ -246,7 +246,7 @@ export const exampleTopRatedItems: TopRatedItem[] = [
     category: 'Club Nocturno',
     rating: 4.8,
     reviewCount: 324,
-    imageUrl: '/images/venues/mandala.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?q=80&w=200&h=200&auto=format&fit=crop',
     href: '/nightlife/puerto-vallarta/clubs/mandala',
     badge: 'trending',
     isLive: true
@@ -257,18 +257,18 @@ export const exampleTopRatedItems: TopRatedItem[] = [
     category: 'Webcams',
     rating: 4.7,
     reviewCount: 15420,
-    imageUrl: '/images/webcams/stripchat.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1590650153855-d9e808231d41?q=80&w=200&h=200&auto=format&fit=crop',
     href: '/webcams/reviews/stripchat',
     badge: 'verified'
   },
   {
     id: '3',
-    name: 'Luna Escorts VIP',
-    category: 'Escorts',
+    name: 'Luna VIP PV',
+    category: 'Estoy Soltero',
     rating: 4.9,
     reviewCount: 87,
-    imageUrl: '/images/escorts/luna.jpg',
-    href: '/escorts/puerto-vallarta/luna-vip',
+    imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&h=200&auto=format&fit=crop',
+    href: '/soltero/puerto-vallarta/luna-vip',
     badge: 'hot'
   },
   {
@@ -277,7 +277,7 @@ export const exampleTopRatedItems: TopRatedItem[] = [
     category: 'Webcams',
     rating: 4.6,
     reviewCount: 12847,
-    imageUrl: '/images/webcams/camsoda.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?q=80&w=200&h=200&auto=format&fit=crop',
     href: '/webcams/reviews/camsoda',
     badge: 'new'
   },
@@ -287,9 +287,10 @@ export const exampleTopRatedItems: TopRatedItem[] = [
     category: 'Bar',
     rating: 4.5,
     reviewCount: 156,
-    imageUrl: '/images/venues/lasanta.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?q=80&w=200&h=200&auto=format&fit=crop',
     href: '/nightlife/puerto-vallarta/bars/la-santa'
   }
 ]
+
 
 export default TopRatedSidebar

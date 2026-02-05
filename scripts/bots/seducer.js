@@ -9,7 +9,7 @@ const TheSeducer = {
     async scrape() {
         console.log(`🔥 [${this.name}] Sourcing trending content from Reddit...`);
         const content = [];
-        const subreddits = ['OnlyFansGenie', 'NSFW_GIF', 'RealGirls', 'CamGirls'];
+        const subreddits = ['OnlyFansGenie', 'NSFW_GIF', 'RealGirls', 'CamGirls', 'GoneWild', 'BonersInPublic', 'nsfw'];
 
         for (const sub of subreddits) {
             try {
@@ -19,51 +19,50 @@ const TheSeducer = {
                 });
 
                 const children = response.data?.data?.children || [];
-                children.forEach(child => {
+                for (const child of children) {
                     const post = child.data;
 
                     // Filter for adult content/video compatibility
-                    if (post.over_18) {
-                        let videoUrl = null;
-                        let affiliateUrl = null;
+                    // QUALITY CONTROL ENGINE 🛡️
+                    const ups = post.ups || 0;
+                    const isHighRes = post.preview?.images?.[0]?.source?.width >= 720;
 
-                        // Video extraction logic
-                        if (post.is_video && post.media?.reddit_video?.fallback_url) {
-                            videoUrl = post.media.reddit_video.fallback_url;
-                        } else if (post.url && (post.url.endsWith('.mp4') || post.url.includes('redgifs') || post.url.includes('imgur'))) {
-                            // Simple heuristic for external video links
-                            // Note: deep redgifs support needs specific handling, for now we treat direct MP4s
-                            if (post.url.endsWith('.mp4')) videoUrl = post.url;
-                        }
+                    // Filter 1: Minimum Popularity (Avoid spam/trash)
+                    if (ups < 50) continue;
 
-                        // Heuristic detection for affiliate content in title
-                        // (Very basic, would need cleaner parsing in production)
-                        if (post.title.toLowerCase().includes('cam') || sub === 'CamGirls') {
-                            // Mock affiliate for purposes of V2 demo if none found
-                            // In real prod, we'd parse comments or specific domains
-                            // affiliateUrl = "https://camsoda.com/track/..." 
-                        }
+                    // Filter 2: Visual Quality (No pixelated content)
+                    // Note: Direct video links might skip this check, handled below
 
-                        content.push({
-                            title: post.title,
-                            description: `De r/${sub} • ${post.ups} likes`,
-                            image_url: post.url_overridden_by_dest || post.thumbnail,
-                            thumbnail_url: post.thumbnail && post.thumbnail.startsWith('http') ? post.thumbnail : null,
-                            video_url: videoUrl,
-                            source_url: `https://reddit.com${post.permalink}`,
-                            source_site: `Reddit r/${sub}`,
-                            type: 'social',
-                            category_id: 'contenido-xxx',
-                            active: true,
-                            tags: ['reddit', 'trending', sub, videoUrl ? 'video' : 'image'],
-
-                            // New V2 Fields
-                            affiliate_url: affiliateUrl,
-                            affiliate_source: affiliateUrl ? 'other' : null,
-                            is_premium: false
-                        });
+                    let videoUrl = null;
+                    if (post.is_video && post.media?.reddit_video?.fallback_url) {
+                        videoUrl = post.media.reddit_video.fallback_url;
+                    } else if (post.url && post.url.endsWith('.mp4')) {
+                        videoUrl = post.url;
                     }
-                });
+
+                    // Calculate Quality Score (0-100)
+                    // Viral posts (>1000 ups) get huge boost. High Res gets boost.
+                    let qualityScore = Math.min(ups / 10, 80); // Base score on likes, cap at 80
+                    if (isHighRes || videoUrl) qualityScore += 20; // Bonus for HD/Video
+                    if (post.all_awardings?.length > 0) qualityScore += 10; // Bonus for awards
+
+                    content.push({
+                        title: post.title.substring(0, 100),
+                        description: `Comunidad r/${sub} • 🔥 ${post.ups} upvotes`,
+                        image_url: post.url_overridden_by_dest || post.thumbnail,
+                        video_url: videoUrl,
+                        source_url: `https://reddit.com${post.permalink}`,
+                        source_site: 'reddit',
+                        category: 'soltero',
+                        subcategory: sub,
+                        location: 'Streaming / Online',
+                        active: true,
+                        is_verified: post.ups > 500,
+                        is_premium: false,
+                        quality_score: Math.round(qualityScore),
+                        created_at: new Date().toISOString()
+                    });
+                }
             } catch (err) {
                 console.error(`❌ [${this.name}] Error reaching r/${sub}:`, err.message);
             }

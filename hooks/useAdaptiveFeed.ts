@@ -16,6 +16,9 @@ interface UseAdaptiveFeedOptions {
     search?: string;
     city?: string;
     limit?: number;
+    latitude?: number | null;
+    longitude?: number | null;
+    radius?: number;
 }
 
 /**
@@ -44,6 +47,8 @@ export function useAdaptiveFeed(options: UseAdaptiveFeedOptions) {
     // Highway Feed (nuevo algoritmo)
     const highway = useHighwayFeed({
         limit: limit,
+        // Pass location to highway algo
+        location: (options.latitude && options.longitude) ? { lat: options.latitude, lng: options.longitude } : undefined
     });
 
     // Legacy Feed (feed actual)
@@ -53,10 +58,18 @@ export function useAdaptiveFeed(options: UseAdaptiveFeedOptions) {
         search: options.search,
         city: options.city,
         limit: limit,
+        // Pass location to useContent
+        latitude: options.latitude,
+        longitude: options.longitude,
+        radius: options.radius
     });
 
     // 🔧 FIX 4: Seleccionar el feed activo
-    const activeFeed = highwayEnabled ? {
+    // Si hay una categoría seleccionada, usamos Legacy para garantizar el filtrado correcto
+    // El modo Highway actualmente se enfoca en el "Main Feed" (mix de contenido)
+    const useHighwayNow = highwayEnabled && !options.category;
+
+    const activeFeed = useHighwayNow ? {
         content: highway.feed as unknown as ContentItem[],
         isLoading: highway.isLoading,
         error: highway.error,
@@ -71,6 +84,7 @@ export function useAdaptiveFeed(options: UseAdaptiveFeedOptions) {
         loadMore: legacy.loadMore,
         refresh: legacy.refresh,
     };
+
 
     // 🔧 FIX 5: Garantizar mínimo de items
     const contentLength = activeFeed.content?.length || 0;
@@ -105,8 +119,8 @@ export function useAdaptiveFeed(options: UseAdaptiveFeedOptions) {
         await activeFeed.refresh?.();
     }, [activeFeed.refresh]);
 
-    // Retornar el feed según el feature flag
-    if (highwayEnabled) {
+    // Retornar el feed según el feature flag y el contexto
+    if (useHighwayNow) {
         return {
             content: highway.feed as unknown as ContentItem[],
             isLoading: highway.isLoading || (!hasMinimumContent && highway.hasMore && retryCount < MAX_RETRIES),
@@ -121,6 +135,7 @@ export function useAdaptiveFeed(options: UseAdaptiveFeedOptions) {
             weights: highway.weights,
         };
     }
+
 
     return {
         content: legacy.content,

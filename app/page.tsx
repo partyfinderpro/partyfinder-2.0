@@ -15,7 +15,7 @@ import {
   ConcertIcon,
   BarIcon,
   ClubIcon,
-  EscortIcon,
+  SolteroIcon,
   PartyIcon,
   LiveIcon,
   getCategoryIcon
@@ -54,7 +54,7 @@ interface Category {
 
 // Categorías con iconos premium
 const CATEGORIES: Category[] = [
-  { id: "escort", name: "Escorts", description: "Acompañantes verificadas" },
+  { id: "soltero", name: "Estoy Soltero", description: "Acompañantes verificadas" },
   { id: "webcam", name: "Webcams", description: "Streams y cams en vivo" },
   { id: "club", name: "Clubs", description: "Discotecas y antros" },
   { id: "bar", name: "Bares", description: "Nightlife" },
@@ -79,12 +79,17 @@ const TRENDING_TAGS = [
 
 // El sanitizeImageUrl ahora se importa de @/lib/media
 
+import { useSmartLocation } from "@/hooks/useSmartLocation"; // Import nueva hook
+
 export default function HomePage() {
   // Filters & State
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [activeMenu, setActiveMenu] = useState('inicio');
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCity, setSelectedCity] = useState("Todas");
+  // const [selectedCity, setSelectedCity] = useState("Todas"); // Reemplazado por SmartLocation
+
+  // 🚀 Smart Location Hook
+  const { city: selectedCity, lat, lng, detectLocation, setManualCity, isLoading: locLoading, error: locError } = useSmartLocation();
 
   const {
     content,
@@ -104,6 +109,10 @@ export default function HomePage() {
     search: searchQuery,
     city: selectedCity,
     limit: 20,
+    // Pass coordinates specifically for geo-queries
+    latitude: lat,
+    longitude: lng,
+    radius: 50
   });
 
   // Centralized Device Detection
@@ -126,21 +135,18 @@ export default function HomePage() {
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
-    const verified = localStorage.getItem('venuz_age_verified')
-    if (verified === 'true') {
-      setAgeVerified(true)
-      setShowSplash(false)
-    } else {
-      setTimeout(() => setShowSplash(false), 2000)
-    }
+    // Forzamos verificación automática para evitar bloqueos según reporte de usuario
+    setAgeVerified(true)
+    setShowSplash(false)
 
     if (!localStorage.getItem('venuz_user_id')) {
+
       localStorage.setItem('venuz_user_id', `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
     }
 
     // Cargar ciudad guardada
-    const storedCity = localStorage.getItem('venuz_user_city');
-    if (storedCity) setSelectedCity(storedCity);
+    // const storedCity = localStorage.getItem('venuz_user_city');
+    // if (storedCity) setSelectedCity(storedCity); // Handle by useSmartLocation
   }, [])
 
   const handleAgeVerification = (verified: boolean) => {
@@ -246,8 +252,11 @@ export default function HomePage() {
   };
 
   const handleCityChange = (city: string) => {
-    setSelectedCity(city);
-    localStorage.setItem('venuz_user_city', city);
+    if (city === 'Ubicación Actual') {
+      detectLocation();
+    } else {
+      setManualCity(city);
+    }
     setActiveIndex(0);
     feedRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -288,50 +297,8 @@ export default function HomePage() {
     )
   }
 
-  // ==========================================
-  // AGE VERIFICATION
-  // ==========================================
-  if (!ageVerified) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-black p-6">
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="max-w-md w-full"
-        >
-          <div className="venuz-card p-8 text-center">
-            <div className="text-6xl mb-6">🔞</div>
-            <h1 className="text-4xl font-display font-bold text-gradient mb-4">
-              VENUZ
-            </h1>
-            <h2 className="text-2xl font-semibold text-white mb-4">
-              Verificación de Edad
-            </h2>
-            <p className="text-white/70 mb-8">
-              Este sitio contiene contenido para adultos. Debes tener al menos 18 años para continuar.
-            </p>
-            <div className="space-y-3">
-              <button
-                onClick={() => handleAgeVerification(true)}
-                className="w-full venuz-button"
-              >
-                Soy mayor de 18 años
-              </button>
-              <button
-                onClick={() => handleAgeVerification(false)}
-                className="w-full px-6 py-3 rounded-xl font-semibold bg-venuz-gray text-white/70 hover:bg-venuz-gray/80 transition-all"
-              >
-                Soy menor de 18 años
-              </button>
-            </div>
-            <p className="text-xs text-white/40 mt-6">
-              Al continuar, aceptas que eres mayor de edad según las leyes de tu país.
-            </p>
-          </div>
-        </motion.div>
-      </div>
-    )
-  }
+  // Bloque de verificación de edad removido para fluidez (Urgente)
+
 
   // ==========================================
   // MAIN LAYOUT - RESPONSIVE HÃ BRIDO
@@ -342,6 +309,10 @@ export default function HomePage() {
         notificationCount={notificationCount}
         onSearch={handleSearch}
         onCityChange={handleCityChange}
+        onRefresh={() => {
+          console.log("Refrescando feed...");
+          window.location.reload(); // Hard reload asegurado para limpiar PWA cache si es necesario, o usar refresh() del hook
+        }}
       />
 
       {/* Highway Algorithm Debug Indicator - Solo en desarrollo */}

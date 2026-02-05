@@ -130,13 +130,14 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-black text-white antialiased`}>
         <AuthProvider>
-          <AgeGate>
-            {children}
-            <Footer />
-          </AgeGate>
+          {/* <AgeGate> */}
+          {children}
+          <Footer />
+          {/* </AgeGate> */}
           <PWAInstallPrompt />
         </AuthProvider>
       </body>
+
     </html>
   );
 }

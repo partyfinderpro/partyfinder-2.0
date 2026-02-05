@@ -83,7 +83,9 @@ export function useInteractions({
                 });
 
                 // Actualizar contador global
-                await supabase.rpc('increment_likes', { row_id: contentId });
+                try {
+                    await supabase.rpc('increment_likes', { row_id: contentId });
+                } catch (e) { console.warn('RPC increment_likes missing'); }
             } else {
                 // Quitar Like
                 await supabase.from('interactions')
@@ -92,7 +94,9 @@ export function useInteractions({
                     .eq('content_id', contentId)
                     .eq('action', 'like');
 
-                await supabase.rpc('decrement_likes', { row_id: contentId });
+                try {
+                    await supabase.rpc('decrement_likes', { row_id: contentId });
+                } catch (e) { console.warn('RPC decrement_likes missing'); }
             }
 
             // Sincronizar localStorage para UI anónima offline
@@ -126,7 +130,9 @@ export function useInteractions({
             });
 
             // 2. Incrementar contador en DB
-            await supabase.rpc('increment_shares', { row_id: contentId });
+            try {
+                await supabase.rpc('increment_shares', { row_id: contentId });
+            } catch (e) { console.warn('RPC increment_shares missing'); }
 
             setSharesCount(prev => prev + 1);
         } catch (error) {
@@ -145,13 +151,19 @@ export function useInteractions({
             const sessionKey = `viewed_${contentId}`;
             if (sessionStorage.getItem(sessionKey)) return;
 
+            // 1. Guardar log de interacción (vía tabla)
             await supabase.from('interactions').insert({
                 user_id: effectiveUserId,
                 content_id: contentId,
                 action: 'view'
             });
 
-            await supabase.rpc('increment_views', { row_id: contentId });
+            // Actualizar contador global vía RPC (Falla silenciosamente si no existe el RPC)
+            try {
+                await supabase.rpc('increment_views', { row_id: contentId });
+            } catch (rpcErr) {
+                console.warn('[VENUZ] RPC increment_views failed (ignore if not implemented):', rpcErr);
+            }
 
             setViewsCount(prev => prev + 1);
             sessionStorage.setItem(sessionKey, 'true');
@@ -159,6 +171,7 @@ export function useInteractions({
             console.error('[VENUZ] Error registering view:', error);
         }
     }, [contentId, userId]);
+
 
     // Efecto Inicial
     useEffect(() => {

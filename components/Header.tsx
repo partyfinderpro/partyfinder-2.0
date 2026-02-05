@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Flame, Menu, X, MapPin, Search, ChevronDown } from "lucide-react";
+import { Bell, Flame, Menu, X, MapPin, Search, ChevronDown, RefreshCw } from "lucide-react";
 import { detectUserCity, saveUserCity, getStoredCity } from "@/lib/geo";
 import { LiveNowCounter } from "@/components/LiveNowCounter";
 
@@ -11,17 +11,19 @@ interface HeaderProps {
     onMenuClick?: () => void;
     onNotificationClick?: () => void;
     onHighlightsClick?: () => void;
+    onRefresh?: () => void;
     onSearch?: (query: string) => void;
     onCityChange?: (city: string) => void;
 }
 
-const MEXICO_CITIES = ['Todas', 'CDMX', 'Guadalajara', 'Monterrey', 'Cancún', 'Puerto Vallarta', 'Tulum'];
+const MEXICO_CITIES = ['Todas', 'Ubicación Actual', 'CDMX', 'Guadalajara', 'Monterrey', 'Cancún', 'Puerto Vallarta', 'Tulum'];
 
 export default function Header({
     notificationCount = 0,
     onMenuClick,
     onNotificationClick,
     onHighlightsClick,
+    onRefresh,
     onSearch,
     onCityChange,
 }: HeaderProps) {
@@ -158,6 +160,15 @@ export default function Header({
                             className="p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-pink-500/20 border border-amber-500/30 group transition-all"
                         >
                             <Flame className="w-5 h-5 text-amber-400 group-hover:text-amber-300 transition-colors" />
+                        </motion.button>
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={onRefresh}
+                            className="p-2.5 sm:p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 group transition-all"
+                            title="Actualizar Feed"
+                        >
+                            <RefreshCw className="w-5 h-5 text-white/70 group-hover:text-pink-400 transition-colors group-active:animate-spin" />
                         </motion.button>
                     </div>
                 </div>

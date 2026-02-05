@@ -11,6 +11,7 @@ export interface ContentItem {
     video_url?: string;
     category?: string;
     subcategory?: string;
+    tags?: string[];
     location?: string;
     latitude?: number;
     longitude?: number;
@@ -23,6 +24,11 @@ export interface ContentItem {
     likes: number;
     views: number;
     active?: boolean;
+    is_permanent?: boolean;
+    quality_score?: number;
+    thumbnail_url?: string;
+    medium_url?: string;
+    large_url?: string;
     created_at: string;
     updated_at?: string;
     // Campos calculados
@@ -81,37 +87,62 @@ async function fetchAllContent(options?: {
 // ============================================
 // SCORING ALGORITHM
 // ============================================
+// Palabras clave de alto valor (Ofertas reales)
+const DEAL_KEYWORDS = [
+    '2x1', '3x2', '50%', 'descuento', 'gratis', 'free', 'no cover',
+    'barra libre', 'ladies night', 'happy hour', 'happy-hour',
+    'cubetazo', 'promocion', 'promo', 'oferta', 'cumpleañero',
+    'botella gratis', 'shot gratis', 'entrada libre'
+];
+
 function calculateBaseScore(item: ContentItem): number {
     const now = Date.now();
     const createdAt = new Date(item.created_at).getTime();
     const ageInHours = (now - createdAt) / (1000 * 60 * 60);
 
-    // Engagement (likes pesan más que views)
-    const engagementScore = (item.likes * 2) + (item.views * 0.1);
+    let score = 0;
 
-    // Rating bonus (si existe)
-    const ratingScore = (item.rating || 3) * 50;
+    // 1. DEAL DETECTION (El factor más importante ahora)
+    const textToScan = ((item.title || '') + ' ' + (item.description || '') + ' ' + (item.tags?.join(' ') || '')).toLowerCase();
+    const hasDeal = DEAL_KEYWORDS.some(keyword => textToScan.includes(keyword));
 
-    // Freshness decay - contenido nuevo tiene boost
+    if (hasDeal) {
+        score += 500; // 💎 BOOST MASIVO A LAS OFERTAS
+    }
+
+    // 2. FILLER FUNNEL (Castigo al relleno)
+    // Si no es oferta y es una categoría genérica, al fondo.
+    const genericCategories = ['restaurant', 'hotel', 'cafe', 'bar_generico'];
+    if (!hasDeal && item.category && genericCategories.includes(item.category)) {
+        score -= 200; // 📉 PENALIZACIÓN FUERTE
+    }
+
+    // 3. Engagement (likes pesan más que views)
+    score += (item.likes * 2) + (item.views * 0.1);
+
+    // 4. Rating bonus (si existe)
+    score += (item.rating || 3) * 50;
+
+    // 5. Freshness decay - contenido nuevo tiene boost
     let freshnessScore = 0;
     if (ageInHours < 6) freshnessScore = 500;
     else if (ageInHours < 24) freshnessScore = 300;
     else if (ageInHours < 72) freshnessScore = 150;
     else if (ageInHours < 168) freshnessScore = 50;
 
-    // Premium content boost
-    const premiumBoost = item.is_premium ? 200 : 0;
+    score += freshnessScore;
 
-    // Verified boost
-    const verifiedBoost = item.is_verified ? 100 : 0;
+    // 6. Premium content boost
+    if (item.is_premium) score += 200;
 
-    // Contenido con imagen vale más
-    const imageBonus = item.image_url ? 100 : 0;
+    // 7. Verified boost
+    if (item.is_verified) score += 100;
 
-    // Video bonus
-    const videoBonus = item.video_url ? 150 : 0;
+    // 8. Visual Appeal
+    if (item.image_url) score += 100;
+    if (item.video_url) score += 150;
 
-    return engagementScore + ratingScore + freshnessScore + premiumBoost + verifiedBoost + imageBonus + videoBonus;
+    return Math.max(0, score); // No permitir scores negativos
 }
 
 // ============================================
@@ -306,6 +337,6 @@ export async function getClubsFeed(limit = 20): Promise<ContentItem[]> {
     return getRecommendedFeed({ filterCategory: 'club', limit });
 }
 
-export async function getEscortsFeed(limit = 20): Promise<ContentItem[]> {
-    return getRecommendedFeed({ filterCategory: 'escort', limit });
+export async function getSolteroFeed(limit = 20): Promise<ContentItem[]> {
+    return getRecommendedFeed({ filterCategory: 'soltero', limit });
 }

@@ -1,8 +1,24 @@
 {
     "crons": [
         {
-            "path": "/api/cron/scraper",
-            "schedule": "0 0 * * *"
+            "path": "/api/cron/ingest-events",
+            "schedule": "0 2 * * *"
+        },
+        {
+            "path": "/api/cron/refresh-venues",
+            "schedule": "0 3 * * 0"
+        },
+        {
+            "path": "/api/cron/update-trending",
+            "schedule": "0 */4 * * *"
+        },
+        {
+            "path": "/api/cron/cleanup-cache",
+            "schedule": "0 5 * * *"
+        },
+        {
+            "path": "/api/cron/cleanup",
+            "schedule": "0 4 * * *"
         }
     ]
 }

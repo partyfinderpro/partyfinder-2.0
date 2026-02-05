@@ -16,6 +16,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { useInteractions } from "@/hooks/useInteractions";
+import { useHighwayTracking } from "@/hooks/useHighwayTracking";
 import { sanitizeImageUrl } from "@/lib/media";
 
 // Interfaces
@@ -54,7 +55,7 @@ interface ContentCardProps {
 
 // Placeholder images por categoría
 const CATEGORY_PLACEHOLDERS: Record<string, string> = {
-  escort: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80",
+  soltero: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80",
   modelo: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&q=80",
   club: "https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=800&q=80",
   bar: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=800&q=80",
@@ -137,12 +138,29 @@ export default function ContentCard({
     initialViews: content.views || 0,
   });
 
-  // Registrar vista cuando la card es la activa (Mobile style)
+  // 🚀 Highway v4 Tracking
+  const {
+    startTracking,
+    stopTracking,
+    trackClick,
+    trackShare
+  } = useHighwayTracking({
+    itemId: content.id,
+    categorySlug: content.category,
+    isPremium: content.is_premium
+  });
+
+  // Sincronizar tracking con visibilidad (Mobile TikTok style)
   useEffect(() => {
     if (isActive) {
       registerView();
+      startTracking();
+    } else {
+      stopTracking();
     }
-  }, [isActive, registerView]);
+    return () => stopTracking();
+  }, [isActive, registerView, startTracking, stopTracking]);
+
 
   const imageUrl = sanitizeImageUrl(
     content.image_url || CATEGORY_PLACEHOLDERS[content.category] || CATEGORY_PLACEHOLDERS.default,
@@ -304,7 +322,11 @@ export default function ContentCard({
             href={`/api/go?id=${content.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              trackClick();
+            }}
+
             whileHover={{
               scale: 1.05,
               boxShadow: "0 0 25px rgba(236, 72, 153, 0.4)"

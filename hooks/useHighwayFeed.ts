@@ -81,18 +81,14 @@ export function useHighwayFeed(options: UseHighwayFeedOptions = {}): UseHighwayF
 
         const startTime = performance.now();
 
-        const response = await getHighwayFeed({
-            userId: isHighwayActive ? userId : undefined,
-            intentScore: isHighwayActive ? intentScore : 0.5,
-            location,
-            limit: batchSize,
-            offset: currentOffset,
-        });
+        const response = await fetch(`/api/feed?device_id=${userId}&intent_score=${intentScore}&limit=${batchSize}&offset=${currentOffset}&city=${location?.lat ? 'geo' : 'cdmx'}&lat=${location?.lat || ''}&lng=${location?.lng || ''}`);
+        const result = await response.json();
 
         const responseTime = performance.now() - startTime;
         if (isHighwayActive) trackHighwayAPICall(userId, responseTime, intentScore);
 
-        return { data: response, error: null };
+        return { data: result.data || [], error: result.error || null };
+
     }, [getUserId, isHighwayActive, intentScore, location]);
 
     // Recursive fetch until fulfilled
