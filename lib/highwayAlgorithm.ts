@@ -94,12 +94,14 @@ const CATEGORY_TO_PILLAR: Record<string, ContentPillar> = {
     'camsoda': 'adult',
     'stripchat': 'adult',
     'chaturbate': 'adult',
-    'pornsite': 'adult',
-    'onlyfans': 'adult',
-    'dating': 'adult',
     'soltero': 'adult',
+    'live-cams': 'adult',
+    'ai-porn': 'adult',
+    'free-tubes': 'adult',
+    'hookup': 'adult',
     'stripclub': 'adult',
     'sexshop': 'adult',
+    'masaje': 'adult',
 
     // Pilar 2: PartyFinder (Events)
     'evento': 'event',
