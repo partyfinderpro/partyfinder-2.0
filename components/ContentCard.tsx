@@ -162,11 +162,15 @@ export default function ContentCard({
   }, [isActive, registerView, startTracking, stopTracking]);
 
 
+  const [imgError, setImgError] = useState(false);
+
   const imageUrl = sanitizeImageUrl(
     content.image_url || CATEGORY_PLACEHOLDERS[content.category] || CATEGORY_PLACEHOLDERS.default,
     content.affiliate_source,
     content.source_url
   );
+
+  const displayImageUrl = imgError ? (CATEGORY_PLACEHOLDERS[content.category] || CATEGORY_PLACEHOLDERS.default) : imageUrl;
 
   const isAffiliate = Boolean(content.affiliate_url);
 
@@ -194,7 +198,7 @@ export default function ContentCard({
         {content.video_url && isActive ? (
           <VideoPlayer
             src={content.video_url}
-            thumbnail={imageUrl}
+            thumbnail={displayImageUrl}
             isActive={isActive}
             className="w-full h-full"
           />
@@ -205,14 +209,16 @@ export default function ContentCard({
             transition={{ duration: 1.2, ease: [0.33, 1, 0.68, 1] }}
           >
             <Image
-              src={imageUrl}
+              src={displayImageUrl}
               alt={content.title}
               fill
               className="object-cover"
-              unoptimized={shouldUseUnoptimized(imageUrl)}
+              unoptimized={shouldUseUnoptimized(displayImageUrl)}
+              onError={() => setImgError(true)}
             />
           </motion.div>
         )}
+
 
         {/* Gradient Overlays */}
         <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#121214] via-[#121214]/40 to-transparent z-10" />
