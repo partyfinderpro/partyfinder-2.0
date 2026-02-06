@@ -1,10 +1,17 @@
 // /lib/highway-v4.ts
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+// Lazy initialization to avoid build-time errors
+let _supabase: SupabaseClient | null = null
+function getSupabase(): SupabaseClient {
+    if (!_supabase) {
+        _supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+            process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+        )
+    }
+    return _supabase
+}
 
 // =============================================
 // TIPOS
@@ -54,12 +61,12 @@ export class HighwayAlgorithm {
     // =============================================
     async loadConfig() {
         try {
-            const { data } = await supabase
+            const { data } = await getSupabase()
                 .from('algorithm_config')
                 .select('config_key, config_value')
 
             if (data && data.length > 0) {
-                data.forEach(row => {
+                data.forEach((row: any) => {
                     this.config[row.config_key] = row.config_value
                 })
             }
@@ -96,7 +103,7 @@ export class HighwayAlgorithm {
 
         // Aplicar modificador de CIUDAD
         try {
-            const { data: city } = await supabase
+            const { data: city } = await getSupabase()
                 .from('cities')
                 .select('ratio_overrides')
                 .eq('slug', this.context.city)
@@ -153,7 +160,7 @@ export class HighwayAlgorithm {
     private async applyUserPreferences() {
         const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
-        const { data: engagements } = await supabase
+        const { data: engagements } = await getSupabase()
             .from('user_engagement')
             .select('category_slug, time_spent, clicked')
             .eq('device_id', this.context.deviceId)
@@ -167,7 +174,7 @@ export class HighwayAlgorithm {
         // Calcular engagement score por categoría
         const categoryScores: Record<string, number> = {}
 
-        engagements.forEach(e => {
+        engagements.forEach((e: any) => {
             if (!e.category_slug) return
             if (!categoryScores[e.category_slug]) categoryScores[e.category_slug] = 0
 
@@ -206,7 +213,7 @@ export class HighwayAlgorithm {
 
         // Intentar cache primero
         try {
-            const { data: cached } = await supabase
+            const { data: cached } = await getSupabase()
                 .from('feed_cache')
                 .select('items')
                 .eq('cache_key', cacheKey)
@@ -215,8 +222,8 @@ export class HighwayAlgorithm {
 
             if (cached?.items) {
                 // Cache hit - incrementar contador
-                await supabase.rpc('increment_cache_hit', { key: cacheKey })
-                const pool = (cached.items as any[]).map(item => ({
+                await getSupabase().rpc('increment_cache_hit', { key: cacheKey })
+                const pool = (cached.items as any[]).map((item: any) => ({
                     ...item,
                     score: item.score || this.calculateItemScore(item)
                 }))
@@ -227,7 +234,7 @@ export class HighwayAlgorithm {
         }
 
         // Cache miss - query DB
-        let query = supabase
+        let query = getSupabase()
             .from('content')
             .select('*')
             .eq('category', dbCategory)
@@ -247,7 +254,7 @@ export class HighwayAlgorithm {
             return []
         }
 
-        const pool = data.map(item => ({
+        const pool = data.map((item: any) => ({
             ...item as any,
             score: this.calculateItemScore(item)
         }))
@@ -255,7 +262,7 @@ export class HighwayAlgorithm {
         // Guardar en cache (4 horas para venues, 1 hora para eventos)
         try {
             const ttlHours = dbCategory === 'evento' ? 1 : 4
-            await supabase.from('feed_cache').upsert({
+            await getSupabase().from('feed_cache').upsert({
                 cache_key: cacheKey,
                 city_slug: this.context.city,
                 category_slug: dbCategory,
