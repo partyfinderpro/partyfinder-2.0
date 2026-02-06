@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { HighwayAlgorithm, UserContext } from '@/lib/highway-v4';
 import { createClient } from '@supabase/supabase-js';
 
-// Fallback Supabase client para cuando Highway falla
+// Fallback Supabase client - usando credenciales directas para garantizar conexión
+const SUPABASE_URL = 'https://jbrmziwosyeructvlvrq.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_emVwFBH19Vn54SrEegsWxg_WKU9MaHR';
+
 function getFallbackSupabase() {
     return createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+        process.env.NEXT_PUBLIC_SUPABASE_URL || SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || SUPABASE_ANON_KEY
     );
 }
 
@@ -52,12 +55,26 @@ export async function GET(request: NextRequest) {
         try {
             const supabase = getFallbackSupabase();
 
-            const { data, error } = await supabase
+            // Primer intento: con filtro active=true
+            let { data, error } = await supabase
                 .from('content')
                 .select('*')
                 .eq('active', true)
                 .order('created_at', { ascending: false })
                 .limit(pageSize);
+
+            // Si no hay datos o hay error, intentar sin filtro active
+            if (error || !data || data.length === 0) {
+                console.warn('First fallback attempt failed or empty, trying without active filter');
+                const result = await supabase
+                    .from('content')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(pageSize);
+
+                data = result.data;
+                error = result.error;
+            }
 
             if (error) throw error;
 
