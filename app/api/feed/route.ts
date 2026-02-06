@@ -1,26 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HighwayAlgorithm, UserContext } from '@/lib/highway-v4';
+import { createClient } from '@supabase/supabase-js';
+
+// Fallback Supabase client para cuando Highway falla
+function getFallbackSupabase() {
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+    );
+}
 
 export async function GET(request: NextRequest) {
+    const { searchParams } = new URL(request.url);
+
+    // Normalizar contexto del usuario
+    const context: UserContext = {
+        city: searchParams.get('city')?.toLowerCase() || 'cdmx',
+        lat: parseFloat(searchParams.get('lat') || '') || undefined,
+        lng: parseFloat(searchParams.get('lng') || '') || undefined,
+        deviceId: searchParams.get('device_id') || 'anonymous',
+        userId: searchParams.get('user_id') || undefined,
+        sessionId: searchParams.get('session_id') || Date.now().toString()
+    };
+
+    const pageSize = parseInt(searchParams.get('limit') || '20');
+
     try {
-        const { searchParams } = new URL(request.url);
-
-        // Normalizar contexto del usuario
-        const context: UserContext = {
-            city: searchParams.get('city')?.toLowerCase() || 'cdmx',
-            lat: parseFloat(searchParams.get('lat') || '') || undefined,
-            lng: parseFloat(searchParams.get('lng') || '') || undefined,
-            deviceId: searchParams.get('device_id') || 'anonymous',
-            userId: searchParams.get('user_id') || undefined,
-            sessionId: searchParams.get('session_id') || Date.now().toString()
-        };
-
-        const pageSize = parseInt(searchParams.get('limit') || '20');
-
-        // Inicializar algoritmo
+        // Intentar Highway Algorithm primero
         const highway = new HighwayAlgorithm(context);
-
-        // Generación de feed
         const feed = await highway.generateFeed(pageSize);
 
         return NextResponse.json({
@@ -29,6 +36,7 @@ export async function GET(request: NextRequest) {
             meta: {
                 city: context.city,
                 count: feed.length,
+                source: 'highway',
                 timestamp: new Date().toISOString()
             }
         }, {
@@ -37,13 +45,50 @@ export async function GET(request: NextRequest) {
             }
         });
 
+    } catch (highwayError: any) {
+        console.error('Highway Feed Error, falling back to legacy:', highwayError.message);
 
-    } catch (error: any) {
-        console.error('Highway Feed Error:', error);
-        return NextResponse.json(
-            { success: false, error: 'Failed to generate feed: ' + error.message },
-            { status: 500 }
-        );
+        // FALLBACK: Query directo a Supabase si Highway falla
+        try {
+            const supabase = getFallbackSupabase();
+
+            const { data, error } = await supabase
+                .from('content')
+                .select('*')
+                .eq('active', true)
+                .order('created_at', { ascending: false })
+                .limit(pageSize);
+
+            if (error) throw error;
+
+            return NextResponse.json({
+                success: true,
+                data: data || [],
+                meta: {
+                    city: context.city,
+                    count: data?.length || 0,
+                    source: 'legacy_fallback',
+                    highway_error: highwayError.message,
+                    timestamp: new Date().toISOString()
+                }
+            }, {
+                headers: {
+                    'Cache-Control': 'no-store, max-age=0'
+                }
+            });
+
+        } catch (fallbackError: any) {
+            console.error('Fallback also failed:', fallbackError.message);
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'Both Highway and fallback failed',
+                    highway_error: highwayError.message,
+                    fallback_error: fallbackError.message
+                },
+                { status: 500 }
+            );
+        }
     }
 }
 
