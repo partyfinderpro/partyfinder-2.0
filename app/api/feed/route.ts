@@ -55,20 +55,26 @@ export async function GET(request: NextRequest) {
         try {
             const supabase = getFallbackSupabase();
 
-            // Primer intento: con filtro active=true
+            // Primer intento: con filtro active=true y que tengan imagen
             let { data, error } = await supabase
                 .from('content')
                 .select('*')
                 .eq('active', true)
+                .not('image_url', 'is', null)
+                .neq('image_url', '')
+                .order('quality_score', { ascending: false })  // Mejor contenido primero
                 .order('created_at', { ascending: false })
                 .limit(pageSize);
 
-            // Si no hay datos o hay error, intentar sin filtro active
+            // Si no hay datos o hay error, intentar sin filtro active pero SÍ con filtro de imagen
             if (error || !data || data.length === 0) {
                 console.warn('First fallback attempt failed or empty, trying without active filter');
                 const result = await supabase
                     .from('content')
                     .select('*')
+                    .not('image_url', 'is', null)
+                    .neq('image_url', '')
+                    .order('quality_score', { ascending: false })
                     .order('created_at', { ascending: false })
                     .limit(pageSize);
 

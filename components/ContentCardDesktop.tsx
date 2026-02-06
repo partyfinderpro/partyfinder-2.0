@@ -129,12 +129,14 @@ export default function ContentCardDesktop({
                     )}
                 </div>
 
-                {/* Provider Domain Badge */}
+                {/* Provider Domain Badge - Discreto */}
                 {content.source_url && (
                     <div className="absolute top-6 right-6 z-20 flex flex-col items-end gap-2">
-                        <span className="px-4 py-2 bg-black/60 backdrop-blur-md border border-white/10 text-white/90 text-[10px] font-black rounded-full uppercase tracking-widest shadow-xl">
-                            {content.source_url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
+                        {/* Badge de origen más discreto */}
+                        <span className="px-2 py-1 bg-black/40 backdrop-blur-sm text-white/50 text-[8px] font-medium rounded-md lowercase tracking-wide">
+                            via {content.source_url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
                         </span>
+                        {/* Badge LIVE - este sí es prominente */}
                         {content.viewers_now && (
                             <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 text-white text-[10px] font-black animate-pulse shadow-xl shadow-red-600/20 tracking-widest">
                                 <span className="w-2 h-2 rounded-full bg-white shadow-[0_0_10px_white]" />
@@ -156,7 +158,7 @@ export default function ContentCardDesktop({
                 {/* Info en la parte inferior */}
                 <div className="absolute bottom-0 left-0 right-0 p-8 z-20">
                     <div className="max-w-2xl">
-                        <motion.h2 className="text-4xl md:text-5xl font-bold mb-4 text-white leading-tight group-hover:text-pink-400 transition-colors duration-300">
+                        <motion.h2 className="text-xl md:text-2xl font-bold mb-3 text-white leading-tight group-hover:text-pink-400 transition-colors duration-300 line-clamp-2">
                             {content.title}
                         </motion.h2>
                         <p className="text-white/60 text-lg mb-6 line-clamp-2 font-medium leading-relaxed">
@@ -217,15 +219,19 @@ export default function ContentCardDesktop({
                     </button>
                 </div>
 
-                {content.affiliate_url && (
+                {/* Botón CTA - Siempre visible si hay destino */}
+                {(content.affiliate_url || content.source_url) && (
                     <motion.a
-                        href={`/api/go?id=${content.id}`}
+                        href={content.affiliate_url ? `/api/go?id=${content.id}` : content.source_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         whileHover={{ scale: 1.05 }}
-                        className="flex items-center gap-2.5 px-6 py-2 bg-gradient-to-r from-pink-500 to-rose-600 rounded-full text-white font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-pink-500/20"
+                        className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-[0.15em] shadow-lg transition-all duration-300 ${content.affiliate_url
+                            ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-pink-500/20'
+                            : 'bg-white/10 text-white hover:bg-white/20 border border-white/20'
+                            }`}
                     >
-                        Entrar Live
+                        {content.affiliate_url ? 'Entrar Live' : 'Visitar Sitio'}
                         <ExternalLink className="w-4 h-4" />
                     </motion.a>
                 )}
