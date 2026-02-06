@@ -89,66 +89,31 @@ export function FeedTabs({ initialMode = 'all', onModeChange, className = '' }: 
     )
 }
 
-// Categorías por modo (Sincronizado con DB Venuz)
+// Categorías por modo - Importadas desde lib/categories.ts (Sincronizado con DB Venuz)
+import { NIGHTLIFE_SLUGS, ADULT_SLUGS } from '@/lib/categories'
+
+// Legacy compatibility - estas constantes mapean strings de category a slugs
 export const NIGHTLIFE_CATEGORIES = [
-    'bar',
-    'bares',
-    'club',
-    'clubs',
-    'restaurant',
-    'restaurante',
-    'restaurantes',
-    'beach_club',
-    'beach club',
-    'beach clubs',
-    'beach',
-    'social media',
-    'social_media',
-    'Social Media',
-    'event',
-    'evento',
-    'eventos',
-    'concert',
-    'concierto',
-    'conciertos',
-    'party',
-    'fiesta',
-    'fiestas',
-    'lounge',
-    'rooftop',
-    'brewery',
-    'cerveceria',
-    'cervecería',
-    'cantina',
-    'pub',
-    'sports bar',
-    'karaoke',
+    // Slugs de la nueva tabla
+    ...NIGHTLIFE_SLUGS,
+    // Legacy strings para compatibilidad
+    'bar', 'bares', 'club', 'clubs', 'restaurant', 'restaurante', 'restaurantes',
+    'beach_club', 'beach club', 'beach clubs', 'beach',
+    'social media', 'social_media', 'Social Media',
+    'event', 'evento', 'eventos', 'concert', 'concierto', 'conciertos',
+    'party', 'fiesta', 'fiestas', 'lounge', 'rooftop',
+    'brewery', 'cerveceria', 'cervecería', 'cantina', 'pub', 'sports bar', 'karaoke',
 ]
 
 export const ADULT_CATEGORIES = [
-    'webcam',
-    'webcams',
-    'cam',
-    'cams',
-    'escort',
-    'escorts',
-    'soltero',
-    'massage',
-    'masaje',
-    'masajes',
-    'table_dance',
-    'table dance',
-    'strip',
-    'strip club',
-    'stripclub',
-    'adult',
-    'hookup',
-    'hookups',
-    'dating',
-    'ai-porn',
-    'free-tubes',
-    'live-cams',
-    'premium',
+    // Slugs de la nueva tabla
+    ...ADULT_SLUGS,
+    // Legacy strings para compatibilidad
+    'webcam', 'webcams', 'cam', 'cams', 'escort', 'escorts', 'soltero',
+    'massage', 'masaje', 'masajes', 'table_dance', 'table dance',
+    'strip', 'strip club', 'stripclub', 'adult',
+    'hookup', 'hookups', 'dating',
+    'ai-porn', 'free-tubes', 'live-cams', 'premium',
 ]
 
 /**
