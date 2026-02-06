@@ -28,7 +28,7 @@ export async function GET(request: Request) {
         for (const city of cities) {
             const places = await google.searchNearby({ latitude: city.lat, longitude: city.lng });
             if (places && places.length > 0) {
-                const enriched = places.map(p => ({ ...p, location: city.name }));
+                const enriched = places.map((p: any) => ({ ...p, location: city.name }));
                 const { data, error } = await supabase
                     .from('content')
                     .upsert(enriched, { onConflict: 'source_url', ignoreDuplicates: true })
