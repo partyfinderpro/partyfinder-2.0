@@ -127,34 +127,69 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
         // 4. Lógica de filtrado según el modo o categoría
         if (category) {
             query = query.eq('category', category)
+                .not('image_url', 'is', null)
+                .neq('image_url', '')
                 .order('is_premium', { ascending: false })
+                .order('quality_score', { ascending: false })
                 .order('created_at', { ascending: false });
         }
         else if (mode === 'tendencias') {
-            query = query.order('views', { ascending: false }).order('likes', { ascending: false });
-        }
-        else if (mode === 'favoritos' && userId) {
-            const { data: interactions } = await supabase
-                .from('interactions')
-                .select('content_id')
-                .eq('user_id', userId)
-                .eq('action', 'like');
+            // Tendencias: Top quality score + contenido reciente (últimos 7 días preferido)
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-            if (interactions && interactions.length > 0) {
-                const ids = interactions.map(i => i.content_id);
-                query = query.in('id', ids);
-            } else {
+            query = query
+                .not('image_url', 'is', null)
+                .neq('image_url', '')
+                .gte('created_at', sevenDaysAgo.toISOString())
+                .order('quality_score', { ascending: false })
+                .order('views', { ascending: false })
+                .order('created_at', { ascending: false });
+        }
+        else if (mode === 'favoritos') {
+            // Favoritos: Primero intentar localStorage, luego base de datos
+            if (typeof window !== 'undefined') {
+                const localFavorites = localStorage.getItem('venuz_favorites');
+                if (localFavorites) {
+                    try {
+                        const favIds = JSON.parse(localFavorites) as string[];
+                        if (favIds.length > 0) {
+                            query = query.in('id', favIds);
+                        } else {
+                            return { data: [], count: 0, error: null };
+                        }
+                    } catch {
+                        // Si falla el parse, intentar con userId
+                    }
+                }
+            }
+
+            // Fallback: buscar en base de datos si hay userId
+            if (userId) {
+                const { data: interactions } = await supabase
+                    .from('interactions')
+                    .select('content_id')
+                    .eq('user_id', userId)
+                    .eq('action', 'like');
+
+                if (interactions && interactions.length > 0) {
+                    const ids = interactions.map(i => i.content_id);
+                    query = query.in('id', ids);
+                } else {
+                    return { data: [], count: 0, error: null };
+                }
+            } else if (!localStorage.getItem('venuz_favorites')) {
+                // No hay favoritos ni en localStorage ni en DB
                 return { data: [], count: 0, error: null };
             }
         }
         else {
-            if (!search && !city && !category && mode === 'inicio') {
-                // Para 'inicio', usamos lógica especial o ordenamiento por defecto
-                // TODO: Integrar getRecommendedContent si se requiere híbrido real aquí
-                query = query.order('created_at', { ascending: false });
-            } else {
-                query = query.order('created_at', { ascending: false });
-            }
+            // Modo 'inicio' o default
+            query = query
+                .not('image_url', 'is', null)
+                .neq('image_url', '')
+                .order('quality_score', { ascending: false })
+                .order('created_at', { ascending: false });
         }
 
         const { data, error, count } = await query.range(startOffset, startOffset + batchSize - 1);

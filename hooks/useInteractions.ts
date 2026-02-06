@@ -105,6 +105,20 @@ export function useInteractions({
             else delete localLikes[contentId];
             localStorage.setItem('venuz_likes', JSON.stringify(localLikes));
 
+            // ✨ NUEVO: También sincronizar con venuz_favorites para el sistema de favoritos
+            const localFavorites = JSON.parse(localStorage.getItem('venuz_favorites') || '[]') as string[];
+            if (newLiked) {
+                if (!localFavorites.includes(contentId)) {
+                    localFavorites.push(contentId);
+                }
+            } else {
+                const index = localFavorites.indexOf(contentId);
+                if (index > -1) {
+                    localFavorites.splice(index, 1);
+                }
+            }
+            localStorage.setItem('venuz_favorites', JSON.stringify(localFavorites));
+
         } catch (error) {
             // Revertir en caso de error
             setLiked(previousLiked);
