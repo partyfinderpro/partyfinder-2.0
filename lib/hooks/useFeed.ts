@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ContentItem } from '@/lib/feedAlgorithm';
 
 interface UseFeedOptions {
-    type?: 'trending' | 'nearby' | 'webcams' | 'clubs' | 'escorts' | 'personalized';
+    type?: 'trending' | 'nearby' | 'webcams' | 'clubs' | 'soltero' | 'personalized';
     userId?: string;
     lat?: number;
     lng?: number;

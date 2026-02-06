@@ -107,7 +107,7 @@ export function LiveNowCounterDetailed({
   categories = [
     { name: 'Webcams', count: 523, icon: '📹' },
     { name: 'Clubs', count: 187, icon: '🎉' },
-    { name: 'Escorts', count: 94, icon: '💎' }
+    { name: 'Estoy Soltero', count: 94, icon: '💎' }
   ],
   className = ''
 }: LiveNowCounterDetailedProps) {

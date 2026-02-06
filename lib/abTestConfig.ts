@@ -77,7 +77,7 @@ export const AB_VARIANTS: Record<ABVariant, ABTestConfig> = {
         categoryMultipliers: {
             // Multiplicadores por categoría específica
             'webcam': 1.2,
-            'escort': 1.3,
+            'soltero': 1.3,
             'evento': 1.0,
             'empleo': 0.8,
         },

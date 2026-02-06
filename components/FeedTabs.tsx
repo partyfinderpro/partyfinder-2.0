@@ -40,7 +40,7 @@ const tabs = [
         label: 'Adultos',
         icon: Flame,
         color: 'red',
-        description: 'Webcams, Escorts, Table Dance'
+        description: 'Webcams, Estoy Soltero, Table Dance'
     }
 ]
 
