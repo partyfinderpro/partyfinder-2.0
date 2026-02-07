@@ -474,15 +474,24 @@ export default function ContentPreViewModal({
                                             </motion.button>
                                         </div>
 
-                                        {/* Visit Site Button (for affiliates) */}
-                                        {isAffiliate && (
+                                        {/* Visit Site Button (for affiliates AND source_url) */}
+                                        {(content.affiliate_url || content.source_url) && (
                                             <motion.button
                                                 whileHover={{ scale: 1.02 }}
                                                 whileTap={{ scale: 0.98 }}
-                                                onClick={handleExitButtonClick}
-                                                className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-gradient-to-r from-pink-500 via-rose-500 to-red-500 text-white font-bold text-lg shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 transition-all"
+                                                onClick={() => {
+                                                    if (content.affiliate_url) {
+                                                        handleExitButtonClick();
+                                                    } else if (content.source_url) {
+                                                        window.open(content.source_url, '_blank', 'noopener,noreferrer');
+                                                    }
+                                                }}
+                                                className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold text-lg shadow-lg transition-all ${content.affiliate_url
+                                                        ? 'bg-gradient-to-r from-pink-500 via-rose-500 to-red-500 text-white shadow-pink-500/30 hover:shadow-pink-500/50'
+                                                        : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-blue-500/30 hover:shadow-blue-500/50'
+                                                    }`}
                                             >
-                                                Visitar {getSourceDisplayName(content.affiliate_source, content.source_url)}
+                                                {content.affiliate_url ? 'Visitar' : 'Ver Original'} {getSourceDisplayName(content.affiliate_source, content.source_url)}
                                                 <ExternalLink className="w-5 h-5" />
                                             </motion.button>
                                         )}

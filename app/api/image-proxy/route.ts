@@ -22,7 +22,12 @@ const ALLOWED_DOMAINS = [
     'thumbs3.redgifs.com',
     'thumbs4.redgifs.com',
     'i.imgur.com',
+    // Reddit domains
     'preview.redd.it',
+    'i.redd.it',
+    'external-preview.redd.it',
+    'a.thumbs.redditmedia.com',
+    'b.thumbs.redditmedia.com',
     // No proxy para Unsplash (ya funciona bien)
 ];
 

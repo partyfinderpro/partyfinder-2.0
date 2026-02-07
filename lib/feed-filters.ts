@@ -9,6 +9,13 @@ export const BLOCKED_SOURCES = [
     'porngeek',
     'porndude',
     'porn dude',
+    // 🚫 Bloquear fuentes de noticias
+    'news.google.com',
+    'gestion.pe',
+    'eluniversal.com.mx',
+    'milenio.com',
+    'excelsior.com.mx',
+    'jornada.com.mx',
 ];
 
 export const BLOCKED_TITLE_PATTERNS = [
@@ -30,6 +37,17 @@ export const BLOCKED_TITLE_PATTERNS = [
     /chubby.*girls.*sex/i,
     /visit\s+live\s+bbw/i,
     /top\s+rated\s+adult/i,
+    // 🚫 Bloquear noticias
+    /temblor.*(m[ée]xico|hoy)/i,
+    /sismo.*(m[ée]xico|hoy)/i,
+    /terremoto/i,
+    /magnitud.*richter/i,
+    /epicentro.*ssn/i,
+    /hora.*magnitud.*epicentro/i,
+    /noticias.*hoy/i,
+    /breaking.*news/i,
+    /\bssn\b/i, // Servicio Sismológico Nacional
+    /gesti[oó]n/i, // Periódico Gestión
 ];
 
 export const BLOCKED_DESCRIPTION_PATTERNS = [

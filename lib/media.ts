@@ -13,6 +13,28 @@ const BLOCKED_IMAGE_DOMAINS = [
     'i.theporndude.com',
 ];
 
+// 🔗 DOMAINS que necesitan proxy para evitar CORS/hotlink issues
+const PROXY_NEEDED_DOMAINS = [
+    'i.redd.it',
+    'preview.redd.it',
+    'external-preview.redd.it',
+    'redditmedia.com',
+    'redgifs.com',
+];
+
+/**
+ * Genera URL de proxy para imágenes que lo necesitan
+ */
+export const getProxiedImageUrl = (url: string): string => {
+    if (!url) return DEFAULT_PLACEHOLDER;
+
+    // Solo proxear si es de un dominio que lo necesita
+    if (PROXY_NEEDED_DOMAINS.some(domain => url.includes(domain))) {
+        return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+};
+
 /**
  * Sanitiza una URL de imagen para manejar placeholders rotos o genéricos
  * 🔥 AHORA TAMBIÉN BLOQUEA IMÁGENES DE THEPORNDUDE
@@ -36,6 +58,11 @@ export const sanitizeImageUrl = (url: string | null | undefined, affiliateSource
         return DEFAULT_PLACEHOLDER;
     }
 
+    // 🔗 Proxear imágenes de Reddit para evitar 403/CORS
+    if (PROXY_NEEDED_DOMAINS.some(domain => url.includes(domain))) {
+        return getProxiedImageUrl(url);
+    }
+
     // Limpieza de URLs de Google si vienen con tokens temporales
     if (url.includes('googleusercontent.com') || url.includes('googleapis.com')) {
         return url.replace('http://', 'https://');
@@ -55,7 +82,9 @@ export const isProblematicSource = (url: string): boolean => {
         'chaturbate.com',
         'googleusercontent.com',
         'googleapis.com',
-        'porndude.com'
+        'porndude.com',
+        'i.redd.it',
+        'preview.redd.it',
     ];
     return domains.some(d => url.includes(d));
 };
