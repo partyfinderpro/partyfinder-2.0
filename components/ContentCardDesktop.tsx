@@ -1,7 +1,7 @@
 
 "use client";
 
-import { motion } from "framer-motion";
+import { memo, useEffect, useCallback } from "react";
 import {
     Heart,
     Share2,
@@ -14,7 +14,6 @@ import {
 import { useInteractions } from "@/hooks/useInteractions";
 import { sanitizeImageUrl } from "@/lib/media";
 import { VideoPlayer } from "./ContentCard";
-import { useEffect } from "react";
 
 interface ContentItem {
     id: string;
@@ -76,9 +75,8 @@ export default function ContentCardDesktop({
 
     return (
         <div className="venuz-card group overflow-hidden shadow-2xl">
-            <motion.div
-                whileHover={{ y: -10 }}
-                className="relative h-[450px] xl:h-[500px] overflow-hidden bg-[#121214] rounded-[2.5rem] border border-white/5 shadow-2xl transition-all duration-500"
+            <div
+                className="relative h-[450px] xl:h-[500px] overflow-hidden bg-[#121214] rounded-[2.5rem] border border-white/5 shadow-2xl transition-all duration-300 hover:-translate-y-2"
             >
                 {content.video_url && isActive ? (
                     <VideoPlayer
@@ -88,10 +86,8 @@ export default function ContentCardDesktop({
                         className="w-full h-full"
                     />
                 ) : (
-                    <motion.div
-                        className="w-full h-full"
-                        whileHover={{ scale: 1.05 }}
-                        transition={{ duration: 1.5, ease: [0.33, 1, 0.68, 1] }}
+                    <div
+                        className="w-full h-full transition-transform duration-500 group-hover:scale-105"
                     >
                         <img
                             src={imageUrl}
@@ -103,7 +99,7 @@ export default function ContentCardDesktop({
                             }}
                             referrerPolicy="no-referrer"
                         />
-                    </motion.div>
+                    </div>
                 )}
 
                 {/* Gradient Overlays */}
@@ -158,9 +154,9 @@ export default function ContentCardDesktop({
                 {/* Info en la parte inferior */}
                 <div className="absolute bottom-0 left-0 right-0 p-8 z-20">
                     <div className="max-w-2xl">
-                        <motion.h2 className="text-xl md:text-2xl font-bold mb-3 text-white leading-tight group-hover:text-pink-400 transition-colors duration-300 line-clamp-2">
+                        <h2 className="text-xl md:text-2xl font-bold mb-3 text-white leading-tight group-hover:text-pink-400 transition-colors duration-300 line-clamp-2">
                             {content.title}
-                        </motion.h2>
+                        </h2>
                         <p className="text-white/60 text-lg mb-6 line-clamp-2 font-medium leading-relaxed">
                             {content.description}
                         </p>
@@ -183,19 +179,17 @@ export default function ContentCardDesktop({
                                 )}
                             </div>
 
-                            <motion.button
-                                whileHover={{ scale: 1.05, x: 5 }}
-                                whileTap={{ scale: 0.95 }}
+                            <button
                                 onClick={() => onClick?.(content.id)}
-                                className="flex items-center gap-3 px-8 py-3 bg-white text-black rounded-full font-bold text-sm tracking-wider hover:bg-pink-500 hover:text-white transition-all duration-300 shadow-xl"
+                                className="flex items-center gap-3 px-8 py-3 bg-white text-black rounded-full font-bold text-sm tracking-wider hover:bg-pink-500 hover:text-white hover:scale-105 active:scale-95 transition-all duration-200 shadow-xl"
                             >
                                 Explorar Perfil
                                 <span className="text-xl">→</span>
-                            </motion.button>
+                            </button>
                         </div>
                     </div>
                 </div>
-            </motion.div>
+            </div>
 
             {/* Quick Actions (Barra inferior separada) */}
             <div className="mt-4 px-6 py-4 bg-white/[0.02] backdrop-blur-sm border border-white/5 rounded-[1.5rem] flex items-center justify-between">
@@ -221,21 +215,28 @@ export default function ContentCardDesktop({
 
                 {/* Botón CTA - Siempre visible si hay destino */}
                 {(content.affiliate_url || content.source_url) && (
-                    <motion.a
+                    <a
                         href={content.affiliate_url ? `/api/go?id=${content.id}` : content.source_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        whileHover={{ scale: 1.05 }}
-                        className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-[0.15em] shadow-lg transition-all duration-300 ${content.affiliate_url
+                        className={`flex items-center gap-2.5 px-6 py-2.5 rounded-full font-black text-xs uppercase tracking-[0.15em] shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 ${content.affiliate_url
                             ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-pink-500/20'
                             : 'bg-white/10 text-white hover:bg-white/20 border border-white/20'
                             }`}
                     >
                         {content.affiliate_url ? 'Entrar Live' : 'Visitar Sitio'}
                         <ExternalLink className="w-4 h-4" />
-                    </motion.a>
+                    </a>
                 )}
             </div>
         </div>
     );
 }
+
+// 🚀 Memoized version for better performance
+export const MemoizedContentCardDesktop = memo(ContentCardDesktop, (prevProps, nextProps) => {
+    return (
+        prevProps.content.id === nextProps.content.id &&
+        prevProps.isActive === nextProps.isActive
+    );
+});

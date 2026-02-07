@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
-import ContentCard, { VideoPlayer } from "@/components/ContentCard";
-import ContentCardDesktop from "@/components/ContentCardDesktop";
+import ContentCard, { VideoPlayer, MemoizedContentCard } from "@/components/ContentCard";
+import ContentCardDesktop, { MemoizedContentCardDesktop } from "@/components/ContentCardDesktop";
 import Image from "next/image";
 import ContentPreviewModal from "@/components/ContentPreviewModal";
 import MegaMenu from "@/components/MegaMenu";
@@ -692,7 +692,7 @@ export default function HomePage() {
               ) : (
                 <div className="space-y-6">
                   {filteredContent.map((item, index) => (
-                    <motion.article
+                    <article
                       key={item.id}
                       data-index={index}
                       ref={(el) => {
@@ -701,15 +701,12 @@ export default function HomePage() {
                         }
                       }}
                       className="venuz-card group overflow-hidden snap-center lg:snap-align-none"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
                     >
                       {/* ====================================
-                          CARD DESKTOP
+                          CARD DESKTOP (Optimizado)
                           ==================================== */}
                       <div className="hidden lg:block">
-                        <ContentCardDesktop
+                        <MemoizedContentCardDesktop
                           content={item}
                           isActive={activeIndex === index}
                           onClick={handleContentClick}
@@ -719,10 +716,10 @@ export default function HomePage() {
 
 
                       {/* ====================================
-                          CARD MOBILE - Estilo TikTok
+                          CARD MOBILE - Estilo TikTok (Optimizado)
                           ==================================== */}
                       <div className="lg:hidden">
-                        <ContentCard
+                        <MemoizedContentCard
                           content={item}
                           isActive={activeIndex === index}
                           onLike={handleLike}
@@ -730,7 +727,7 @@ export default function HomePage() {
                           onClick={handleContentClick}
                         />
                       </div>
-                    </motion.article>
+                    </article>
                   ))}
 
                   {/* Infinite Scroll Trigger */}

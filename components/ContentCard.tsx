@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useEffect, memo, useCallback, useMemo } from "react";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import {
   MapPin,
@@ -354,3 +354,13 @@ export default function ContentCard({
     </motion.div>
   );
 }
+
+// 🚀 Memoized version to prevent re-renders
+export const MemoizedContentCard = memo(ContentCard, (prevProps, nextProps) => {
+  // Only re-render if these specific props change
+  return (
+    prevProps.content.id === nextProps.content.id &&
+    prevProps.isActive === nextProps.isActive &&
+    prevProps.content.likes === nextProps.content.likes
+  );
+});
