@@ -271,6 +271,23 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
 
             console.log(`[VENUZ Fetch] Loop finished. Requested: ${targetCount}, Got: ${accumulatedItems.length}, Loops: ${loops}`);
 
+            // 🔀 Light shuffle: Mantener calidad pero variar el orden
+            // Solo para refresh (no append), mezclar los primeros 30 items ligeramente
+            if (!append && accumulatedItems.length > 5) {
+                // Dividir en grupos: top 5 intocable, resto con shuffle ligero
+                const top = accumulatedItems.slice(0, 5);
+                const rest = accumulatedItems.slice(5);
+
+                // Shuffle ligero del resto (Fisher-Yates parcial)
+                for (let i = Math.min(rest.length - 1, 20); i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [rest[i], rest[j]] = [rest[j], rest[i]];
+                }
+
+                accumulatedItems = [...top, ...rest];
+                console.log('[VENUZ] Applied light shuffle to content');
+            }
+
             if (append) {
                 setContent(prev => [...prev, ...accumulatedItems]);
             } else {
@@ -290,13 +307,14 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
         }
     }, [fetchBatch]);
 
-    // Initial fetch
+    // Initial fetch - Ahora también se dispara cuando cambia la ubicación
     useEffect(() => {
+        console.log('[VENUZ] Initial fetch triggered. Mode:', mode, 'City:', city, 'Lat:', options.latitude, 'Lng:', options.longitude);
         setContent([]);
         dbOffsetRef.current = 0;
         fetchUntilFulfilled(limit, false);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [category, mode, city, search, limit]); // Removed fetchUntilFulfilled to avoid recursive deps if not memoized deeply
+    }, [category, mode, city, search, limit, options.latitude, options.longitude]); // Added lat/lng
 
     // Load more
     const loadMore = useCallback(async () => {
@@ -305,8 +323,11 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
         await fetchUntilFulfilled(limit, true);
     }, [isLoading, hasMore, limit, fetchUntilFulfilled]);
 
-    // Refresh
+    // Refresh - Limpia contenido y recarga con shuffle
     const refresh = useCallback(async () => {
+        console.log('[VENUZ] Refreshing feed...');
+        setContent([]); // Limpiar para feedback visual
+        setHasMore(true);
         dbOffsetRef.current = 0;
         await fetchUntilFulfilled(limit, false);
     }, [limit, fetchUntilFulfilled]);
