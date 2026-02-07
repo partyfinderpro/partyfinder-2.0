@@ -255,7 +255,8 @@ export function trackABEvent(
 }
 
 /**
- * Enviar eventos a backend (TODO: implementar endpoint)
+ * Enviar eventos a backend
+ * ✅ ACTIVADO - Ahora envía a /api/analytics/ab
  */
 async function flushAnalytics(): Promise<void> {
     if (analyticsQueue.length === 0) return;
@@ -264,12 +265,13 @@ async function flushAnalytics(): Promise<void> {
     analyticsQueue.length = 0;
 
     try {
-        // TODO: Enviar a /api/analytics/ab
-        // await fetch('/api/analytics/ab', {
-        //     method: 'POST',
-        //     body: JSON.stringify({ events }),
-        // });
-        console.log(`[A/B Analytics] Would flush ${events.length} events`);
+        // ✅ Enviando a la API de analytics
+        await fetch('/api/analytics/ab', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ events }),
+        });
+        console.log(`[A/B Analytics] Flushed ${events.length} events`);
     } catch (error) {
         console.error('[A/B Analytics] Error flushing:', error);
         // Re-queue fallidos

@@ -242,8 +242,8 @@ export default function AdminDashboard() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as typeof activeTab)}
                             className={`px-6 py-4 font-medium transition-colors ${activeTab === tab.id
-                                    ? 'text-pink-400 border-b-2 border-pink-400 bg-gray-700/50'
-                                    : 'text-gray-400 hover:text-white'
+                                ? 'text-pink-400 border-b-2 border-pink-400 bg-gray-700/50'
+                                : 'text-gray-400 hover:text-white'
                                 }`}
                         >
                             {tab.label}
@@ -289,6 +289,18 @@ export default function AdminDashboard() {
 
             {/* Actions */}
             <section className="flex flex-wrap gap-4">
+                <a
+                    href="/admin/analytics"
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg font-medium hover:opacity-90 transition-opacity"
+                >
+                    📊 Analytics Dashboard
+                </a>
+                <a
+                    href="/admin/upload"
+                    className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg font-medium hover:opacity-90 transition-opacity"
+                >
+                    ⬆️ Subir Contenido
+                </a>
                 <button
                     onClick={handleExportCSV}
                     className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg font-medium hover:opacity-90 transition-opacity"

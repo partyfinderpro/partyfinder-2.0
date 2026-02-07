@@ -8,16 +8,24 @@ let supabaseInstance: SupabaseClient | null = null;
 
 function getSupabase(): SupabaseClient {
     if (!supabaseInstance) {
-        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-        if (!url || !key) {
-            throw new Error('Missing Supabase environment variables');
-        }
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jbrmziwosyeructvlvrq.supabase.co';
+        const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
         supabaseInstance = createClient(url, key);
     }
     return supabaseInstance;
+}
+
+// Hash IP for privacy
+function hashIP(ip: string): string {
+    if (!ip) return '';
+    let hash = 0;
+    for (let i = 0; i < ip.length; i++) {
+        const char = ip.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return Math.abs(hash).toString(16);
 }
 
 /**
@@ -37,10 +45,12 @@ export async function GET(request: NextRequest) {
     }
 
     try {
+        const supabase = getSupabase();
+
         // 1. Buscar en la base de datos
-        const { data: item, error } = await getSupabase()
+        const { data: item, error } = await supabase
             .from('content')
-            .select('affiliate_url, source_url')
+            .select('affiliate_url, source_url, affiliate_source')
             .eq('id', contentId)
             .single();
 
@@ -55,14 +65,25 @@ export async function GET(request: NextRequest) {
             return NextResponse.redirect(new URL('/', request.url));
         }
 
-        // 2. Lógica para saltar directorios (PornDude, etc)
-        // Nota: El script de limpieza masiva se encargará de que targetUrl ya sea el dominio final.
-        // Pero aquí por seguridad inyectamos el código de afiliado.
-
+        // 2. Inyectar código de afiliado
         const finalUrl = injectAffiliateCode(targetUrl);
 
-        // 3. Log del clic (Opcional: podrías guardarlo en una tabla 'analytics_clicks')
-        console.log(`[Redirect] Click on ${contentId} -> ${finalUrl}`);
+        // 3. 📊 Trackear conversión (click)
+        try {
+            await supabase
+                .from('affiliate_conversions')
+                .insert({
+                    content_id: contentId,
+                    affiliate_source: item.affiliate_source || extractDomain(targetUrl),
+                    event_type: 'click',
+                    user_agent: request.headers.get('user-agent') || '',
+                    ip_hash: hashIP(request.headers.get('x-forwarded-for') || ''),
+                });
+            console.log(`[Redirect] ✅ Click tracked: ${contentId} -> ${finalUrl}`);
+        } catch (trackError) {
+            // No fallar si el tracking falla
+            console.error('[Redirect] Tracking error (non-fatal):', trackError);
+        }
 
         // 4. Redirección 303 (See Other) para evitar cacheo de redirección
         return NextResponse.redirect(finalUrl, { status: 303 });
@@ -70,5 +91,15 @@ export async function GET(request: NextRequest) {
     } catch (error) {
         console.error('[Redirect] Unexpected error:', error);
         return NextResponse.redirect(new URL('/', request.url));
+    }
+}
+
+// Extraer dominio de URL
+function extractDomain(url: string): string {
+    try {
+        const domain = new URL(url).hostname.replace('www.', '');
+        return domain;
+    } catch {
+        return 'unknown';
     }
 }
