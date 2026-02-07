@@ -7,10 +7,13 @@ import { createClient } from '@supabase/supabase-js';
 
 export const maxDuration = 60;
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Fallback credentials
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jbrmziwosyeructvlvrq.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_emVwFBH19Vn54SrEegsWxg_WKU9MaHR';
+
+function getSupabase() {
+    return createClient(SUPABASE_URL, SUPABASE_KEY);
+}
 
 export async function GET(request: NextRequest) {
     // Verificar autorización
@@ -28,6 +31,7 @@ export async function GET(request: NextRequest) {
         const dayAfter = new Date(now.getTime() + 48 * 60 * 60 * 1000);
 
         // Obtener eventos temporales (no permanentes) próximos
+        const supabase = getSupabase();
         const { data: upcomingEvents, error: eventsError } = await supabase
             .from('content')
             .select('id, title, location, event_date, category, image_url')

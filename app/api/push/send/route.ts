@@ -2,27 +2,28 @@
 // Endpoint para enviar notificaciones push (usado por crons)
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import webpush from 'web-push';
 
-// Configurar VAPID keys
-const vapidKeys = {
-    publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-    privateKey: process.env.VAPID_PRIVATE_KEY!,
-};
+// Fallback credentials
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jbrmziwosyeructvlvrq.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_emVwFBH19Vn54SrEegsWxg_WKU9MaHR';
 
-if (vapidKeys.publicKey && vapidKeys.privateKey) {
+// Configurar VAPID keys (solo si están disponibles)
+const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+
+if (vapidPublicKey && vapidPrivateKey) {
     webpush.setVapidDetails(
         'mailto:admin@venuz.app',
-        vapidKeys.publicKey,
-        vapidKeys.privateKey
+        vapidPublicKey,
+        vapidPrivateKey
     );
 }
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabase(): SupabaseClient {
+    return createClient(SUPABASE_URL, SUPABASE_KEY);
+}
 
 export async function POST(req: NextRequest) {
     // Verificar autorización
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Obtener suscripciones
+        const supabase = getSupabase();
         let query = supabase.from('push_subscriptions').select('*');
 
         // Si hay userIds específicos, filtrar
@@ -73,7 +75,7 @@ export async function POST(req: NextRequest) {
 
         // Enviar a todos los suscriptores
         const results = await Promise.allSettled(
-            subscriptions.map(async (sub) => {
+            subscriptions.map(async (sub: any) => {
                 try {
                     await webpush.sendNotification(sub.subscription, payload);
                     return { success: true, endpoint: sub.endpoint };
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest) {
             })
         );
 
-        const successful = results.filter(r => r.status === 'fulfilled' && (r.value as any).success).length;
+        const successful = results.filter((r: any) => r.status === 'fulfilled' && r.value?.success).length;
         const failed = results.length - successful;
 
         return NextResponse.json({
