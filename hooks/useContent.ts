@@ -183,6 +183,25 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
                 return { data: [], count: 0, error: null };
             }
         }
+        else if (mode === 'cerca') {
+            // Cerca de mí: Si no hay coordenadas (el RPC falló o no hay ubicación),
+            // filtrar por ciudad seleccionada o mostrar contenido con ubicación
+            query = query
+                .not('image_url', 'is', null)
+                .neq('image_url', '')
+                .not('location', 'is', null)  // Solo contenido con ubicación
+                .neq('location', '');
+
+            // Si hay ciudad seleccionada, filtrar por ella
+            if (city && city !== 'Todas') {
+                query = query.ilike('location', `%${city}%`);
+            }
+
+            // Priorizar por distancia si hay coordenadas, sino por calidad
+            query = query
+                .order('quality_score', { ascending: false })
+                .order('created_at', { ascending: false });
+        }
         else {
             // Modo 'inicio' o default
             query = query

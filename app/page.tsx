@@ -528,16 +528,77 @@ export default function HomePage() {
                 </div>
               ) : filteredContent.length === 0 ? (
                 <div className="text-center py-20 venuz-card">
-                  <Sparkles className="w-16 h-16 text-venuz-pink mx-auto mb-4" />
-                  <p className="text-2xl text-gray-500 mb-4">
-                    No hay contenido en esta categoría
-                  </p>
-                  <button
-                    onClick={() => handleCategorySelect('')}
-                    className="venuz-button"
-                  >
-                    Ver todo
-                  </button>
+                  {activeMenu === 'favoritos' ? (
+                    <>
+                      <Heart className="w-16 h-16 text-venuz-pink mx-auto mb-4" />
+                      <p className="text-2xl text-gray-400 mb-2">
+                        No tienes favoritos aún
+                      </p>
+                      <p className="text-gray-500 mb-6">
+                        Dale ❤️ a lo que te gusta y aparecerá aquí
+                      </p>
+                      <button
+                        onClick={() => setActiveMenu('inicio')}
+                        className="venuz-button"
+                      >
+                        Explorar contenido
+                      </button>
+                    </>
+                  ) : activeMenu === 'cerca' ? (
+                    <>
+                      <MapPin className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+                      <p className="text-2xl text-gray-400 mb-2">
+                        No hay contenido cerca de ti
+                      </p>
+                      <p className="text-gray-500 mb-6">
+                        {selectedCity === 'Todas'
+                          ? 'Selecciona una ciudad o activa tu ubicación'
+                          : `No encontramos contenido en ${selectedCity}`
+                        }
+                      </p>
+                      <button
+                        onClick={() => detectLocation()}
+                        className="venuz-button mr-2"
+                      >
+                        📍 Usar mi ubicación
+                      </button>
+                      <button
+                        onClick={() => setActiveMenu('inicio')}
+                        className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
+                      >
+                        Ver todo
+                      </button>
+                    </>
+                  ) : activeMenu === 'tendencias' ? (
+                    <>
+                      <Flame className="w-16 h-16 text-orange-400 mx-auto mb-4" />
+                      <p className="text-2xl text-gray-400 mb-2">
+                        Sin tendencias esta semana
+                      </p>
+                      <p className="text-gray-500 mb-6">
+                        Vuelve pronto para ver el contenido más popular
+                      </p>
+                      <button
+                        onClick={() => setActiveMenu('inicio')}
+                        className="venuz-button"
+                      >
+                        Ver todo el contenido
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-16 h-16 text-venuz-pink mx-auto mb-4" />
+                      <p className="text-2xl text-gray-500 mb-4">
+                        No hay contenido en esta categoría
+                      </p>
+                      <button
+                        onClick={() => handleCategorySelect('')}
+                        className="venuz-button"
+                      >
+                        Ver todo
+                      </button>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-6">
