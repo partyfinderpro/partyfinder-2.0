@@ -121,15 +121,27 @@ export default async function ContentDetailPage({ params }: { params: { id: stri
 
                         {/* Actions */}
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <a
-                                href={content.affiliate_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex-1 py-5 bg-gradient-to-r from-pink-500 to-purple-600 rounded-3xl text-white font-bold text-center flex items-center justify-center gap-3 hover:shadow-[0_0_40px_rgba(236,72,153,0.4)] transition-all"
+                            {(content.source_url || content.affiliate_url) ? (
+                                <a
+                                    href={content.affiliate_url || content.source_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 py-5 bg-gradient-to-r from-pink-500 to-purple-600 rounded-3xl text-white font-bold text-center flex items-center justify-center gap-3 hover:shadow-[0_0_40px_rgba(236,72,153,0.4)] transition-all"
+                                >
+                                    VISITAR SITIO
+                                    <ExternalLink className="w-5 h-5" />
+                                </a>
+                            ) : (
+                                <div className="flex-1 py-5 bg-gray-800/50 rounded-3xl text-white/50 font-bold text-center flex items-center justify-center gap-3 cursor-not-allowed">
+                                    Sin enlace disponible
+                                </div>
+                            )}
+                            <button
+                                className="p-5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-3xl transition-colors"
+                                title="Guardar"
                             >
-                                VER PERFIL COMPLETO
-                                <ExternalLink className="w-5 h-5" />
-                            </a>
+                                <Heart className="w-6 h-6" />
+                            </button>
                             <button
                                 className="p-5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-3xl transition-colors"
                                 title="Compartir"
@@ -138,9 +150,25 @@ export default async function ContentDetailPage({ params }: { params: { id: stri
                             </button>
                         </div>
 
-                        <p className="text-center text-white/20 text-xs">
-                            Al hacer clic en "Ver perfil completo", serás redirigido a nuestro socio oficial ({content.affiliate_source}).
-                        </p>
+                        {/* Source Info */}
+                        {content.source_site && (
+                            <div className="flex items-center gap-3 text-white/40 text-sm">
+                                <span>Fuente:</span>
+                                <span className="px-3 py-1 bg-white/10 rounded-full font-medium text-white/60">
+                                    {content.source_site.toUpperCase()}
+                                </span>
+                                {content.source_url && (
+                                    <a
+                                        href={content.source_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-pink-400 hover:text-pink-300 underline"
+                                    >
+                                        Ver original
+                                    </a>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
