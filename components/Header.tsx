@@ -31,6 +31,7 @@ export default function Header({
     const [showSearch, setShowSearch] = useState(false);
     const [city, setCity] = useState("Todas");
     const [showCitySelector, setShowCitySelector] = useState(false);
+    const [showNotifications, setShowNotifications] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -139,19 +140,82 @@ export default function Header({
                             <Search className="w-5 h-5 text-white/70 group-hover:text-pink-400 transition-colors" />
                         </motion.button>
 
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={onNotificationClick}
-                            className="relative p-2.5 sm:p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 group transition-all"
-                        >
-                            <Bell className="w-5 h-5 text-white/70 group-hover:text-pink-400 transition-colors" />
-                            {notificationCount > 0 && (
-                                <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 flex items-center justify-center text-xs font-bold text-white bg-pink-500 rounded-full shadow-lg">
-                                    {notificationCount}
-                                </span>
-                            )}
-                        </motion.button>
+                        {/* Notifications Button + Panel */}
+                        <div className="relative">
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setShowNotifications(!showNotifications)}
+                                className="relative p-2.5 sm:p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 group transition-all"
+                            >
+                                <Bell className="w-5 h-5 text-white/70 group-hover:text-pink-400 transition-colors" />
+                                {notificationCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 flex items-center justify-center text-xs font-bold text-white bg-pink-500 rounded-full shadow-lg">
+                                        {notificationCount}
+                                    </span>
+                                )}
+                            </motion.button>
+
+                            {/* Notifications Dropdown */}
+                            <AnimatePresence>
+                                {showNotifications && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        className="absolute right-0 top-full mt-2 w-80 bg-black/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50"
+                                    >
+                                        {/* Header */}
+                                        <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+                                            <h3 className="font-bold text-white flex items-center gap-2">
+                                                <Bell className="w-4 h-4 text-pink-500" />
+                                                Notificaciones
+                                            </h3>
+                                            <button
+                                                onClick={() => setShowNotifications(false)}
+                                                className="text-white/50 hover:text-white"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+
+                                        {/* Placeholder Content */}
+                                        <div className="p-6 text-center">
+                                            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center">
+                                                <Bell className="w-8 h-8 text-pink-400" />
+                                            </div>
+                                            <p className="text-white/70 mb-2">
+                                                No hay notificaciones nuevas
+                                            </p>
+                                            <p className="text-white/40 text-sm">
+                                                Próximamente recibirás alertas de:
+                                            </p>
+                                            <div className="mt-4 space-y-2 text-left">
+                                                <div className="flex items-center gap-2 text-xs text-white/50">
+                                                    <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
+                                                    Eventos cerca de ti
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs text-white/50">
+                                                    <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                                                    Ofertas especiales
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs text-white/50">
+                                                    <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                                    Nuevo contenido de tus favoritos
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Footer */}
+                                        <div className="px-4 py-3 border-t border-white/10 bg-white/5">
+                                            <p className="text-center text-xs text-white/30">
+                                                🔔 Activa las notificaciones para no perderte nada
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
 
                         <motion.button
                             whileHover={{ scale: 1.05 }}

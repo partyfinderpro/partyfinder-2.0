@@ -689,7 +689,12 @@ export default function HomePage() {
             <div className="sticky top-24 space-y-4">
 
               {/* Banner publicitario 1 */}
-              <div className="venuz-card h-[250px] bg-gradient-to-br from-venuz-pink to-venuz-gold flex items-center justify-center overflow-hidden relative">
+              <a
+                href="https://wa.me/523221234567?text=Hola%2C%20quiero%20anunciar%20mi%20negocio%20en%20VENUZ"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="venuz-card h-[250px] bg-gradient-to-br from-venuz-pink to-venuz-gold flex items-center justify-center overflow-hidden relative block hover:scale-[1.02] transition-transform cursor-pointer"
+              >
                 <div className="absolute inset-0 bg-black/20" />
                 <div className="text-center p-4 relative z-10">
                   <p className="text-white font-bold text-lg mb-2">
@@ -698,11 +703,11 @@ export default function HomePage() {
                   <p className="text-white/80 text-sm mb-4">
                     Promociona tu negocio aquí
                   </p>
-                  <button className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-full text-white text-sm transition">
-                    Contratar ahora
-                  </button>
+                  <span className="inline-block px-4 py-2 bg-white/20 hover:bg-white/30 rounded-full text-white text-sm transition">
+                    💬 Contáctanos
+                  </span>
                 </div>
-              </div>
+              </a>
 
               {/* Top Rated & Trending Ranking */}
               <TopRatedSidebar
