@@ -82,27 +82,39 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
     }, [category, mode, city, search]);
 
     const fetchBatch = useCallback(async (startOffset: number, batchSize: number) => {
-        // 🚀 SMART GEO-QUERIES (Prioridad 1)
-        if (options.latitude && options.longitude && !search && (!mode || mode === 'cerca')) {
+        // 🚀 SMART GEO-QUERIES usando PostGIS (Prioridad 1 para modo "cerca")
+        if (options.latitude && options.longitude && !search && mode === 'cerca') {
             try {
-                // Usar la función RPC optimizada para geo-búsqueda
-                const { data, error } = await supabase.rpc('nearby_events', {
+                // Usar la función RPC optimizada con PostGIS para geo-búsqueda
+                const { data, error } = await supabase.rpc('get_nearby_content', {
                     user_lat: options.latitude,
-                    user_lon: options.longitude,
-                    max_distance_km: options.radius || 50, // 50km por defecto
-                    cat_ids: null // TODO: mapear category string a UUID si es necesario
+                    user_lng: options.longitude,
+                    radius_km: options.radius || 50, // 50km por defecto
+                    result_limit: 100 // Traer más para poder filtrar
                 });
 
-                if (error) throw error;
+                if (error) {
+                    console.error('[VENUZ] RPC get_nearby_content error:', error);
+                    throw error;
+                }
 
-                // RPC devuelve todos los resultados, paginamos en memoria o ajustamos RPC
-                // Por ahora, como es 'nearby', asumimos que el RPC devuelve los top X ordenados por distancia
-                // Simulamos paginación slice
-                const paginated = (data || []).slice(startOffset, startOffset + batchSize);
-                return { data: paginated as ContentItem[], error: null, count: (data || []).length };
+                console.log(`[VENUZ] Nearby content found: ${(data || []).length} items within ${options.radius || 50}km`);
+
+                // Mapear los campos del RPC a nuestro ContentItem
+                const mappedData = (data || []).map((item: any) => ({
+                    ...item,
+                    // Asegurar que image_url existe
+                    image_url: item.image_url || item.thumbnail_url,
+                    // El RPC devuelve distance_km que puede ser útil para UI
+                    distance_km: item.distance_km
+                }));
+
+                // Paginación en memoria
+                const paginated = mappedData.slice(startOffset, startOffset + batchSize);
+                return { data: paginated as ContentItem[], error: null, count: mappedData.length };
             } catch (rpcError) {
-                console.error('RPC Error, falling back to basic query:', rpcError);
-                // Fallback continúa abajo
+                console.error('[VENUZ] RPC Error, falling back to location text query:', rpcError);
+                // Fallback: usar query por texto de location en lugar de coordenadas
             }
         }
 

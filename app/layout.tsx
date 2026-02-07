@@ -15,7 +15,7 @@ const inter = Inter({ subsets: ["latin"] });
 const APP_NAME = "VENUZ";
 const APP_DEFAULT_TITLE = "VENUZ - Entretenimiento Adulto México";
 const APP_TITLE_TEMPLATE = "%s | VENUZ";
-const APP_DESCRIPTION = "Descubre la mejor vida nocturna, escorts verificadas, clubs y eventos en México. Tu guía definitiva con geolocalización e inteligencia artificial.";
+const APP_DESCRIPTION = "Descubre la mejor vida nocturna, perfiles verificados, clubs y eventos en México. Tu guía definitiva con geolocalización e inteligencia artificial.";
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     description: APP_DESCRIPTION,
     images: ["/og-image.png"],
   },
-  keywords: ["México", "vida nocturna", "escorts", "clubs", "PWA", "nightlife", "VENUZ"],
+  keywords: ["México", "vida nocturna", "escorts", "escorts México", "clubs", "webcams", "eventos", "antros", "PWA", "nightlife", "VENUZ", "entretenimiento adulto", "acompañantes"],
   authors: [{ name: "VENUZ", url: "https://venuz.app" }],
   robots: { index: true, follow: true },
   icons: {

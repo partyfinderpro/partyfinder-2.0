@@ -66,6 +66,14 @@ export function AlgorithmBadge({
     const config = intentConfig[intentLevel]
     const Icon = config.icon
 
+    // A/B Variant display
+    const variantDisplay = variant ? {
+        'control': { label: 'Base', color: 'text-gray-400' },
+        'A': { label: 'A', color: 'text-green-400' },
+        'B': { label: 'B', color: 'text-blue-400' },
+        'C': { label: 'C', color: 'text-purple-400' },
+    }[variant] || { label: variant, color: 'text-gray-400' } : null;
+
     return (
         <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -81,8 +89,16 @@ export function AlgorithmBadge({
             <span className="opacity-60">•</span>
             <span className="flex items-center gap-1 opacity-70">
                 <Brain size={10} />
-                Highway v2.0
+                Highway v4
             </span>
+            {variantDisplay && (
+                <>
+                    <span className="opacity-60">•</span>
+                    <span className={`font-bold ${variantDisplay.color}`}>
+                        {variantDisplay.label}
+                    </span>
+                </>
+            )}
         </motion.div>
     )
 }

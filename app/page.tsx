@@ -499,6 +499,48 @@ export default function HomePage() {
             {/* Trust Signals Banner - SEO & Trust */}
             <TrustSignalsBanner variant="compact" className="mb-6 rounded-xl overflow-hidden shadow-lg border border-white/5" />
 
+            {/* 📍 Location Indicator - Solo visible en modo "Cerca de mí" */}
+            {activeMenu === 'cerca' && (
+              <div className="mb-6 p-3 bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-500/30 rounded-xl flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${lat && lng ? 'bg-green-500/20' : 'bg-amber-500/20'}`}>
+                    <MapPin className={`w-5 h-5 ${lat && lng ? 'text-green-400' : 'text-amber-400'}`} />
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">
+                      {lat && lng
+                        ? `📍 ${selectedCity !== 'Todas' && selectedCity !== 'Ubicación Actual' ? selectedCity : 'Tu ubicación'}`
+                        : '📍 Ubicación no detectada'
+                      }
+                    </p>
+                    <p className="text-gray-400 text-xs">
+                      {lat && lng
+                        ? `Radio: 50km · ${filteredContent.length} lugares encontrados`
+                        : selectedCity !== 'Todas' ? `Buscando en: ${selectedCity}` : 'Activa GPS para mejores resultados'
+                      }
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {!lat && (
+                    <button
+                      onClick={() => detectLocation()}
+                      className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-lg text-xs transition flex items-center gap-1"
+                    >
+                      <MapPin className="w-3 h-3" />
+                      Activar GPS
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setManualCity('Todas')}
+                    className="px-3 py-1.5 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 rounded-lg text-xs transition"
+                  >
+                    Ver todo
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Error Display for Debugging */}
             {error && (
               <div className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm">
@@ -550,24 +592,71 @@ export default function HomePage() {
                       <p className="text-2xl text-gray-400 mb-2">
                         No hay contenido cerca de ti
                       </p>
-                      <p className="text-gray-500 mb-6">
-                        {selectedCity === 'Todas'
-                          ? 'Selecciona una ciudad o activa tu ubicación'
-                          : `No encontramos contenido en ${selectedCity}`
+
+                      {/* Status de ubicación */}
+                      <div className="bg-gray-800/50 rounded-lg px-4 py-3 mb-4 inline-block">
+                        {locLoading ? (
+                          <p className="text-gray-400 text-sm flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Detectando tu ubicación...
+                          </p>
+                        ) : lat && lng ? (
+                          <p className="text-green-400 text-sm flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            GPS activo: {selectedCity !== 'Todas' ? selectedCity : 'Ubicación detectada'}
+                            <span className="text-gray-500 text-xs">
+                              ({lat.toFixed(2)}, {lng.toFixed(2)})
+                            </span>
+                          </p>
+                        ) : locError ? (
+                          <p className="text-amber-400 text-sm flex items-center gap-2">
+                            ⚠️ {locError}
+                          </p>
+                        ) : (
+                          <p className="text-gray-500 text-sm">
+                            {selectedCity === 'Todas'
+                              ? 'Selecciona una ciudad o activa tu ubicación'
+                              : `Buscando en: ${selectedCity}`
+                            }
+                          </p>
+                        )}
+                      </div>
+
+                      <p className="text-gray-500 mb-6 text-sm max-w-md mx-auto">
+                        {lat && lng
+                          ? 'No encontramos lugares o eventos dentro de 50km de tu ubicación. Prueba aumentar el radio o ver todo el contenido.'
+                          : 'Activa tu GPS para ver contenido cercano a ti, o selecciona una ciudad manual.'
                         }
                       </p>
-                      <button
-                        onClick={() => detectLocation()}
-                        className="venuz-button mr-2"
-                      >
-                        📍 Usar mi ubicación
-                      </button>
-                      <button
-                        onClick={() => setActiveMenu('inicio')}
-                        className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition"
-                      >
-                        Ver todo
-                      </button>
+
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {!lat && (
+                          <button
+                            onClick={() => detectLocation()}
+                            className="venuz-button"
+                          >
+                            📍 Activar GPS
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setManualCity('CDMX')}
+                          className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition text-sm"
+                        >
+                          🏙️ Ver CDMX
+                        </button>
+                        <button
+                          onClick={() => setManualCity('Guadalajara')}
+                          className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition text-sm"
+                        >
+                          🌮 Ver Guadalajara
+                        </button>
+                        <button
+                          onClick={() => setActiveMenu('inicio')}
+                          className="px-4 py-2 bg-venuz-pink/20 text-venuz-pink rounded-lg hover:bg-venuz-pink/30 transition text-sm"
+                        >
+                          Ver todo
+                        </button>
+                      </div>
                     </>
                   ) : activeMenu === 'tendencias' ? (
                     <>

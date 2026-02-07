@@ -26,6 +26,10 @@ export async function GET(request: NextRequest) {
         sessionId: searchParams.get('session_id') || Date.now().toString()
     };
 
+    // A/B Testing - obtener variante del request
+    const abVariant = searchParams.get('ab_variant') || null;
+    const intentScore = parseFloat(searchParams.get('intent_score') || '0.5');
+
     const pageSize = parseInt(searchParams.get('limit') || '20');
 
     try {
@@ -40,7 +44,11 @@ export async function GET(request: NextRequest) {
                 city: context.city,
                 count: feed.length,
                 source: 'highway',
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                // A/B Testing info
+                ab_variant: abVariant,
+                intent_score: intentScore,
+                ab_active: abVariant !== null
             }
         }, {
             headers: {

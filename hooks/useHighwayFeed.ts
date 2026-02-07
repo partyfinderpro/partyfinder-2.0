@@ -81,7 +81,19 @@ export function useHighwayFeed(options: UseHighwayFeedOptions = {}): UseHighwayF
 
         const startTime = performance.now();
 
-        const response = await fetch(`/api/feed?device_id=${userId}&intent_score=${intentScore}&limit=${batchSize}&offset=${currentOffset}&city=${location?.lat ? 'geo' : 'cdmx'}&lat=${location?.lat || ''}&lng=${location?.lng || ''}`);
+        // Construir URL con todos los parámetros incluyendo A/B variant
+        const params = new URLSearchParams({
+            device_id: userId,
+            intent_score: intentScore.toString(),
+            limit: batchSize.toString(),
+            offset: currentOffset.toString(),
+            city: location?.lat ? 'geo' : 'cdmx',
+            ...(location?.lat && { lat: location.lat.toString() }),
+            ...(location?.lng && { lng: location.lng.toString() }),
+            ...(abVariant && { ab_variant: abVariant })
+        });
+
+        const response = await fetch(`/api/feed?${params.toString()}`);
         const result = await response.json();
 
         const responseTime = performance.now() - startTime;
@@ -89,7 +101,7 @@ export function useHighwayFeed(options: UseHighwayFeedOptions = {}): UseHighwayF
 
         return { data: result.data || [], error: result.error || null };
 
-    }, [getUserId, isHighwayActive, intentScore, location]);
+    }, [getUserId, isHighwayActive, intentScore, location, abVariant]);
 
     // Recursive fetch until fulfilled
     const fetchUntilFulfilled = useCallback(async (targetCount: number, append: boolean) => {
