@@ -739,12 +739,12 @@ export default function HomePage() {
                           CARD MOBILE - Estilo TikTok (Optimizado)
                           ==================================== */}
                       <div className="lg:hidden">
-                        <MemoizedContentCard
-                          content={item}
+                        <FeedCardDynamic
+                          item={item}
                           isActive={activeIndex === index}
-                          onLike={handleLike}
-                          onShare={handleShare}
                           onClick={handleContentClick}
+                          onShare={handleShare}
+                          className="h-[calc(100vh-140px)] w-full rounded-xl"
                         />
                       </div>
                     </article>

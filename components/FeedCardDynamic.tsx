@@ -4,7 +4,7 @@
 import { useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { cn } from "@/lib/utils";
-import { Heart, Share2, ExternalLink, MapPin, Sparkles, BadgeCheck, Eye } from 'lucide-react';
+import { Heart, Share2, ExternalLink, MapPin, Sparkles, BadgeCheck, Eye, ThumbsDown } from 'lucide-react';
 import { useInteractions } from '@/hooks/useInteractions';
 import type { ContentItem } from '@/hooks/useContent';
 
@@ -28,8 +28,10 @@ export default function FeedCardDynamic({
     // Hook de interacciones (Likes, Views, Shares)
     const {
         liked,
+        disliked,
         likesCount,
         toggleLike,
+        toggleDislike,
         registerShare
     } = useInteractions({
         contentId: item.id,
@@ -146,6 +148,19 @@ export default function FeedCardDynamic({
                         Share
                     </span>
                 </button>
+
+                {/* Dislike Button */}
+                <button
+                    onClick={(e) => { e.stopPropagation(); toggleDislike(); }}
+                    className="group/btn flex flex-col items-center gap-1"
+                >
+                    <div className={`p-3 rounded-full backdrop-blur-md transition-all duration-300 ${disliked ? 'bg-red-500 text-white shadow-lg shadow-red-500/40' : 'bg-black/40 text-white hover:bg-black/60'}`}>
+                        <ThumbsDown className={`w-6 h-6 ${disliked ? 'fill-current' : ''} transition-transform group-hover/btn:scale-110`} />
+                    </div>
+                    <span className="text-white text-xs font-bold shadow-black drop-shadow-md">
+                        Pass
+                    </span>
+                </button>
             </div>
 
             {/* Info Inferior */}
@@ -188,7 +203,7 @@ export default function FeedCardDynamic({
                         <ExternalLink className="w-4 h-4" />
                     </button>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

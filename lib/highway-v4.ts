@@ -81,8 +81,12 @@ export class HighwayAlgorithm {
         // Fallback a defaults si no hay config
         if (!this.config.base_ratios) {
             this.config.base_ratios = {
-                eventos: 25, clubs: 20, soltero: 25,
-                bares: 15, shows: 10, experiencias: 5
+                eventos: 40,  // ⬆️ PRIORIDAD ALTA (Conciertos, fiestas, eventos)
+                clubs: 20,    // 🟡 PRIORIDAD MEDIA (Antros)
+                soltero: 15,  // 🟡 PRIORIDAD MEDIA (Monetización)
+                shows: 15,    // 🟡 PRIORIDAD MEDIA
+                bares: 5,     // ⬇️ PRIORIDAD BAJA (Google Places genérico)
+                experiencias: 5 // ⬇️ PRIORIDAD BAJA
             }
         }
     }

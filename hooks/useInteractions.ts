@@ -22,6 +22,7 @@ export function useInteractions({
 }: UseInteractionsProps) {
     const [liked, setLiked] = useState(false);
     const [likesCount, setLikesCount] = useState(initialLikes);
+    const [disliked, setDisliked] = useState(false);
     const [viewsCount, setViewsCount] = useState(initialViews);
     const [sharesCount, setSharesCount] = useState(initialShares);
     const [loading, setLoading] = useState(false);
@@ -53,6 +54,14 @@ export function useInteractions({
             if (data) setLiked(true);
         } catch (error) {
             console.error('[VENUZ] Error loading like status:', error);
+        }
+    }, [contentId]);
+
+    // Cargar estado inicial de DISLIKE
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const localDislikes = JSON.parse(localStorage.getItem('venuz_dislikes') || '{}');
+            if (localDislikes[contentId]) setDisliked(true);
         }
     }, [contentId]);
 
@@ -128,6 +137,52 @@ export function useInteractions({
             setLoading(false);
         }
     }, [contentId, liked, userId, loading, lastInteraction]);
+
+    // Toggle DISLIKE
+    const toggleDislike = useCallback(async () => {
+        if (!contentId || loading) return;
+
+        const now = Date.now();
+        if (now - lastInteraction < RATE_LIMIT_MS) return;
+        setLastInteraction(now);
+        setLoading(true);
+
+        // Optimistic update
+        const newDisliked = !disliked;
+        setDisliked(newDisliked);
+
+        try {
+            const effectiveUserId = userId || localStorage.getItem('venuz_user_id') || 'anon';
+
+            // Guardar en localStorage
+            const localDislikes = JSON.parse(localStorage.getItem('venuz_dislikes') || '{}');
+            if (newDisliked) {
+                localDislikes[contentId] = true;
+                // Si damos dislike, quitamos like si existía
+                if (liked) {
+                    setLiked(false);
+                    setLikesCount(prev => Math.max(0, prev - 1));
+                    const localLikes = JSON.parse(localStorage.getItem('venuz_likes') || '{}');
+                    delete localLikes[contentId];
+                    localStorage.setItem('venuz_likes', JSON.stringify(localLikes));
+                }
+            } else {
+                delete localDislikes[contentId];
+            }
+            localStorage.setItem('venuz_dislikes', JSON.stringify(localDislikes));
+
+            // Llamar RPC solo si es dislike activo (para entrenar algo)
+            if (newDisliked) {
+                await supabase.rpc('increment_dislikes', { p_content_id: contentId });
+            }
+
+        } catch (error) {
+            console.error('[VENUZ] Error toggling dislike:', error);
+            setDisliked(!newDisliked); // Revert
+        } finally {
+            setLoading(false);
+        }
+    }, [contentId, disliked, liked, userId, loading, lastInteraction]);
 
     // Registrar SHARE
     const registerShare = useCallback(async () => {
@@ -206,6 +261,8 @@ export function useInteractions({
         viewsCount,
         sharesCount,
         toggleLike,
+        toggleDislike,
+        disliked,
         registerShare,
         registerView,
         loading

@@ -11,7 +11,7 @@
 
 const CLASSIFY_URL = process.env.NEXT_PUBLIC_APP_URL
     ? `${process.env.NEXT_PUBLIC_APP_URL}/api/cognitive/classify`
-    : 'https://partyfinder-2-0-tbf2.vercel.app/api/cognitive/classify';
+    : 'https://partyfinder-2-0.vercel.app/api/cognitive/classify';
 
 interface RawScrapedItem {
     title?: string;

@@ -10,9 +10,9 @@
 import { NextResponse } from 'next/server';
 
 // NOTA: En Edge Runtime no podemos usar el SDK de Anthropic ni supabase-js
-// porque requieren Node.js APIs. Usamos fetch directo.
-
 export const runtime = 'edge';
+
+import { notifyHighScoreItem } from '@/lib/telegram-notify';
 
 // System prompt con la misión VENUZ inyectada
 const SYSTEM_PROMPT = `Eres el cerebro clasificador de VENUZ, la plataforma definitiva de entretenimiento y diversión en México. Tu misión es evaluar contenido scrapeado y decidir si vale la pena mostrarlo a usuarios que buscan pasarla bien.
@@ -235,6 +235,17 @@ export async function POST(req: Request) {
                 );
             }
             action = 'inserted_pending';
+
+            // Notificar si es high score
+            if ((classification.quality_score as number) > 85) {
+                // Fire and forget (no await para no bloquear respuesta)
+                notifyHighScoreItem({
+                    title: (classification.title as string),
+                    category: (classification.category as string),
+                    score: (classification.quality_score as number),
+                    id: 'pending' // ID real se genera en DB, aquí es conceptual
+                }).catch(console.error);
+            }
         }
 
         return NextResponse.json({
@@ -294,6 +305,16 @@ export async function PUT(req: Request) {
                         score: classification.quality_score,
                         category: classification.category,
                     });
+
+                    // Notificar High Score
+                    if ((classification.quality_score as number) > 85) {
+                        notifyHighScoreItem({
+                            title: (classification.title as string),
+                            category: (classification.category as string),
+                            score: (classification.quality_score as number),
+                            id: 'pending'
+                        }).catch(console.error);
+                    }
                 } else {
                     results.push({
                         title: item.title,

@@ -13,9 +13,11 @@ import { NextResponse } from 'next/server';
 export const runtime = 'edge';
 export const maxDuration = 60; // 60 segundos max en Edge
 
+import { notifyScrapeComplete } from '@/lib/telegram-notify';
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://partyfinder-2-0-tbf2.vercel.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://partyfinder-2-0.vercel.app';
 
 // Fuentes de scraping configuradas
 // Aquí es donde Antigravity agrega nuevas fuentes
@@ -41,9 +43,10 @@ const SCRAPE_SOURCES = [
 async function scrapeGooglePlaces(config: Record<string, unknown>): Promise<Record<string, unknown>[]> {
     const apiKey = process.env.GOOGLE_PLACES_API_KEY;
     if (!apiKey) {
-        console.log('[INGEST] Google Places API key not configured, skipping');
+        console.log('[INGEST] Google Places API key MISSING or empty');
         return [];
     }
+    console.log('[INGEST] Google Places API Key Status:', apiKey ? 'EXISTS (Length: ' + apiKey.length + ')' : 'MISSING');
 
     try {
         const { query, lat, lng, radius } = config;
@@ -155,8 +158,19 @@ export async function GET(req: Request) {
                 scraped: items.length,
                 cognitive: cognitiveResult,
             });
+
+            // Notificar a Telegram
+            await notifyScrapeComplete({
+                source: source.name,
+                scraped: items.length,
+                approved: (cognitiveResult as any).approved || 0,
+                rejected: (cognitiveResult as any).rejected || 0, // Ajustar según respuesta real
+                duplicates: (cognitiveResult as any).duplicates || 0, // Ajustar según respuesta real
+            });
         } else {
             results.push({ source: source.name, scraped: 0, note: 'No items found' });
+            // Notificar a Telegram también si no hubo items, opcional pero útil
+            console.log(`[INGEST] No items found for source: ${source.name}`);
         }
     }
 

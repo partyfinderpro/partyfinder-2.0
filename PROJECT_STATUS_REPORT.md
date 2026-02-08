@@ -1,46 +1,47 @@
 # 📋 REPORTE DE ESTADO DEL PROYECTO VENUZ
-**Fecha:** 8 de Febrero, 2026 (Noche - AI Brain Integration)
-**Versión:** 4.8 (Phase 0: Cognitive Brain + Telegram)
-**Estado del Despliegue:** 🟡 En Configuración (Bot Remoto)
+**Fecha:** 8 de Febrero, 2026 (Sesión Mañana - 9:00 AM)
+**Versión:** 5.0 (Correcciones Críticas y Preparación Highway)
+**Estado:** � Código Listo | � SQL Pendiente de Ejecución
 **URL de Producción:** https://partyfinder-2-0.vercel.app
 
-## 🚀 Hitos Alcanzados (Creator + AI)
+## 🚀 Hitos Alcanzados (Sesión Actual)
 
-### 1. "Creator Engine" (Uploads)
-*   **Storage Activo:** Bucket `content-media` funcionando.
-*   **Upload Page:** `/admin/upload` permite subir fotos y videos reales (9:16 optimized).
+### 1. Fixes Críticos Infraestructura 🔴
+*   **URL Fix:** Corregido hardcodeo viejo `partyfinder-2-0-tbf2` → `partyfinder-2-0` en:
+    *   `app/api/telegram/webhook/route.ts`
+    *   `app/api/cron/ingest-events/route.ts` (esto debería solucionar el 404 del webhook)
+    *   `lib/cognitive-connector.ts`
+*   **Google Places Debug:** Agregado log de API key en cron job para diagnóstico rápido.
 
-### 2. Infraestructura AI (Gemini)
-*   **API Key:** Integrada (`.env.local`).
-*   **Cerebro (Classify):** Endpoint `/api/cognitive/classify` creado. Usa Gemini 2.0 Flash para evaluar contenido.
+### 2. Highway Algorithm & Feed ⚡
+*   **Ajuste Pesos:** Configurado `highway-v4.ts` para priorizar Eventos (40%) y Clubs (20%), reduciendo Bares/Genéricos (5%).
+*   **Feed Móvil:** Integrado `FeedCardDynamic` en `app/page.tsx` (reemplaza card estática).
+*   **Dislikes:** Implementada lógica completa de "Pass" (👎) en UI y hook `useInteractions`.
 
-### 3. Telegram Bot (Control Remoto)
-*   **Bot:** `@venuz_brain_bot` configurado.
-*   **Webhook:** Endpoint `/api/telegram/webhook` creado para recibir comandos.
-*   **Capacidad:** Aprobar/Rechazar contenido desde Telegram con botones rápidos.
+### 3. Notificaciones Proactivas 🔔
+*   **Telegram:** Integradas notificaciones automáticas para:
+    *   Scraping completado (resumen).
+    *   High Score items (>85).
+    *   Daily Summary (nuevo endpoint `/api/cron/daily-summary`).
 
-## ⚠️ PENDIENTES CRÍTICOS (Acción Inmediata)
+## 📂 Archivos SQL Preparados (LISTOS PARA EJECUTAR)
 
-### 1. Base de Datos (Supabase)
-*   **Falta Ejecutar:** El script `supabase/migrations/20260207_sce_phase0.sql` NO se ha ejecutado aún. Este crea la tabla `pending_events` y las funciones vitales para el bot.
+He generado los scripts SQL faltantes del reporte de Claude. **Debes ejecutarlos en Supabase SQL Editor:**
 
-### 2. Despliegue (Vercel)
-*   **Variables de Entorno:**
-    *   `GEMINI_API_KEY` (Lista)
-    *   `TELEGRAM_BOT_TOKEN` (Falta verificar en Vercel dashboard)
-    *   `TELEGRAM_OWNER_ID` (Falta verificar en Vercel dashboard)
+1.  **Infraestructura Highway:** `supabase/migrations/20260208_highway_infra.sql`
+    *   Crea tablas: `algorithm_config`, `cities`, `feed_cache`, `user_engagement`.
+    *   Crea RPCs: `get_category_counts`, `increment_cache_hit`.
 
-## ✅ Estado de Componentes
+2.  **Contenido Premium Demo:** `supabase/seeds/20260208_premium_content.sql`
+    *   Convierte items de Stripchat/Camsoda a Premium con Video.
+    *   Verifica eventos top.
 
-| Componente | Estado | Notas |
-| :--- | :--- | :--- |
-| **Brain API** | 🟢 Código Listo | Falta deploy y DB |
-| **Telegram Bot** | 🟢 Código Listo | Falta webhook setup |
-| **Pending Table** | 🔴 Pendiente SQL | Ejecutar `20260207_sce_phase0.sql` |
-| **Storage** | 🟢 Activo | OK |
+## ⚠️ PRÓXIMOS PASOS (LUZ VERDE)
 
-## 🏁 Próximos Pasos Requeridos
-1.  **Ejecutar SQL:** Correr el script de `pending_events` en Supabase.
-2.  **Verificar Vercel:** Asegurar que las 3 variables de entorno estén puestas.
-3.  **Deploy:** `git push` para subir los nuevos endpoints.
-4.  **Activar Webhook:** Visitar la URL de setup una vez desplegado.
+1.  **Ejecutar SQL:** Ir a Supabase y correr los 2 scripts mencionados arriba.
+2.  **Deploy:** Hacer push de los cambios para que Vercel actualice (ya corregí las URLs que daban error).
+3.  **Verificar Webhook:** Una vez desplegado, visitar `.../api/telegram/webhook?action=setup` (ahora debería funcionar).
+
+---
+**Mensaje para el Usuario:**
+"He completado todas las tareas de código y corrección de URLs. También he generado los archivos SQL que faltaban según el reporte de Claude. ¡Estamos listos para ejecutar SQL y desplegar!"
