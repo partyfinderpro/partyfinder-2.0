@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
 import ContentCard, { VideoPlayer, MemoizedContentCard } from "@/components/ContentCard";
 import FeedCardDynamic from "@/components/FeedCardDynamic";
-import ContentCardDesktop, { MemoizedContentCardDesktop } from "@/components/ContentCardDesktop";
+// import ContentCardDesktop from '@/components/ContentCardDesktop'; // Removed legacy
 import Image from "next/image";
 import ContentPreviewModal from "@/components/ContentPreviewModal";
 import AdvancedFiltersModal, { FilterOptions } from '@/components/AdvancedFiltersModal';

@@ -1,5 +1,7 @@
 // /lib/highway-v4.ts
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { FEED_WEIGHTS } from './feed-config';
+
 
 // Credenciales directas de Supabase como fallback
 const SUPABASE_URL = 'https://jbrmziwosyeructvlvrq.supabase.co';
@@ -296,8 +298,10 @@ export class HighwayAlgorithm {
 
         // 🚨 PENALIZACIONES DE FUENTE (Anti-Spam)
         const lowQualitySources = ['predicthq', 'porndude', 'generic_scraper'];
-        if (item.source_site && lowQualitySources.some(s => item.source_site.toLowerCase().includes(s))) {
-            score -= 20; // Penalización fuerte a fuentes automáticas masivas
+        if (item.source_type === 'google_places' && !item.has_real_offer) {
+            score += FEED_WEIGHTS.main_feed.google_places_penalty;
+        } else if (item.source_site && lowQualitySources.some(s => item.source_site.toLowerCase().includes(s))) {
+            score -= 20; // Penalización manual
         }
 
         // Popularidad (engagement histórico)
@@ -319,6 +323,13 @@ export class HighwayAlgorithm {
             else if (item.days_until_event <= 7) score += 5
             else if (item.days_until_event > 30) score -= 10 // Muy lejano = penalización
         }
+
+        // Feed Boosts (Keywords)
+        if (item.category === 'concierto') score += FEED_WEIGHTS.main_feed.concert_boost;
+        if (item.category.includes('evento')) score += FEED_WEIGHTS.main_feed.event_boost;
+        if (item.description?.toLowerCase().includes('2x1')) score += FEED_WEIGHTS.main_feed.offer_2x1_boost;
+        if (item.description?.toLowerCase().includes('barra libre')) score += FEED_WEIGHTS.main_feed.barra_libre_boost;
+        if (item.description?.toLowerCase().includes('ladies night')) score += FEED_WEIGHTS.main_feed.ladies_night_boost;
 
         // Trending (pico reciente de engagement)
         if ((item.trending_score || 0) > 0) score += item.trending_score * 0.3
