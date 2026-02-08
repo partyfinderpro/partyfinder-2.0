@@ -27,6 +27,14 @@
     {
       "path": "/api/cron/daily-summary",
       "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/ingest-events-external",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/health-check",
+      "schedule": "0 * * * *"
     }
   ]
 }
