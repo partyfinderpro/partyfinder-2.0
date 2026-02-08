@@ -89,7 +89,7 @@ async function callLLM(rawData: Record<string, unknown>): Promise<Record<string,
 // Insertar en Supabase via REST API (Edge compatible)
 async function insertPending(
     classification: Record<string, unknown>,
-    rawData: Record<string, unknown>,
+    rawData: any,
     sourceScraper: string
 ): Promise<{ error: string | null }> {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
