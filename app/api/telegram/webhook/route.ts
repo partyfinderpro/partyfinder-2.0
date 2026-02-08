@@ -1,5 +1,5 @@
 // ============================================
-// VENUZ SCE: Bot de Telegram — Ingeniero Jefe IA
+// VENUZ SCE: Bot de Telegram — Ingeniero Jefe IA (FORCE REFRESH V2.1)
 // /app/api/telegram/webhook/route.ts
 //
 // Pablo controla VENUZ desde Telegram:
@@ -15,7 +15,6 @@ export const runtime = 'edge';
 // CONFIGURACIÓN
 // ============================================
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
-const OWNER_CHAT_ID = process.env.TELEGRAM_OWNER_ID!;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const APP_URL = 'https://partyfinder-2-0.vercel.app';
@@ -41,7 +40,7 @@ async function sendMessage(chatId: string, text: string, parseMode: string = 'HT
 // CHAT IA CEREBRO (GEMINI FLASH)
 // ============================================
 async function askAI(question: string, context: string): Promise<string> {
-    if (!GEMINI_API_KEY) return "⚠️ No tengo cerebro (Falta GEMINI_API_KEY).";
+    if (!GEMINI_API_KEY) return "⚠️ Error crítico: Me falta la GEMINI_API_KEY en Vercel.";
 
     const SYSTEM_PROMPT = `Eres VENUZ SYSTEM, el Ingeniero Jefe IA de la plataforma VENUZ.
     Tu creador es Pablo. Le hablas con respeto pero con confianza técnica total.
@@ -78,7 +77,7 @@ async function askAI(question: string, context: string): Promise<string> {
             }
         );
         const data = await response.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || "⚠️ Cerebro IA sin respuesta.";
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || "⚠️ Cerebro IA mudo (Sin respuesta).";
     } catch (e) {
         return "⚠️ Error de conexión neuronal (Gemini API failed).";
     }
@@ -95,10 +94,9 @@ async function getSystemStats() {
         const [contentRes, pendingRes, logsRes] = await Promise.all([
             fetch(`${SUPABASE_URL}/rest/v1/content?select=count`, { headers, method: 'HEAD' }),
             fetch(`${SUPABASE_URL}/rest/v1/pending_events?status=eq.pending&select=count`, { headers, method: 'HEAD' }),
-            fetch(`${SUPABASE_URL}/rest/v1/system_logs?select=level&limit=5&order=created_at.desc`, { headers }) // Últimos 5 logs
+            fetch(`${SUPABASE_URL}/rest/v1/system_logs?select=level&limit=5&order=created_at.desc`, { headers })
         ]);
 
-        // Get counts from Content-Range header "0-0/42" -> 42
         const getCount = (res: Response) => {
             const range = res.headers.get('Content-Range');
             return range ? range.split('/')[1] : '0';
@@ -121,10 +119,7 @@ export async function POST(req: Request) {
         const update = await req.json();
 
         // --- Callback queries (botones) ---
-        // (Simplificado: si necesitas botones, agrega lógica aquí)
-        if (update.callback_query) {
-            return NextResponse.json({ ok: true });
-        }
+        if (update.callback_query) return NextResponse.json({ ok: true });
 
         // --- Mensajes de texto ---
         const message = update.message;
@@ -133,34 +128,29 @@ export async function POST(req: Request) {
         const chatId = String(message.chat.id);
         const text = message.text.trim();
 
-        // 🔒 Seguridad: Solo responde al dueño
-        // if (chatId !== OWNER_CHAT_ID) return NextResponse.json({ ok: true }); 
-
         // 🧠 COMANDOS DIRECTOS
         if (text.startsWith('/')) {
             if (text === '/start') {
-                await sendMessage(chatId, `🧠 <b>VENUZ SYSTEM ONLINE</b>\n\nHola Pablo. Soy tu Ingeniero IA.\nTodos los sistemas (Highway, EventBrain, Guardian) están nominales.\n\n¿En qué puedo ayudarte?`);
+                await sendMessage(chatId, `🧠 <b>VENUZ SYSTEM v2.1</b>\n\nHola Pablo. Soy tu Ingeniero IA.\nSistemas nominales. ¡Háblame!`, "HTML");
             }
             else if (text === '/status') {
                 const stats = await getSystemStats();
-                await sendMessage(chatId, `📊 <b>Estado del Sistema</b>\n\n${stats}\n\n✅ Todo operativo.`);
+                await sendMessage(chatId, `📊 <b>Estado del Sistema</b>\n\n${stats}\n\n✅ Operativo.`, "HTML");
             }
-            else if (text === '/help') {
-                await sendMessage(chatId, `🛠 <b>Comandos</b>\n/status - Reporte rápido\n/scrape - Forzar EventBrain\n\nO simplemente pregúntame algo: "¿Cómo está el tráfico hoy?" o "Analiza los logs".`);
+            // Forzar respuesta a otros comandos no reconocidos
+            else {
+                await sendMessage(chatId, `⚠️ Comando desconocido. Mejor háblame natural o usa /start.`, "HTML");
             }
-            // Agregar más comandos si es necesario
             return NextResponse.json({ ok: true });
         }
 
         // 🗣️ MODO CHAT IA (Cualquier otro texto)
-        // 1. Obtener contexto rápido del sistema
-        const context = await getSystemStats();
+        // Feedback visual inmediato
+        await sendMessage(chatId, "<i>Procesando...</i> 🧠", "HTML");
 
-        // 2. Preguntar a Gemini
-        await sendMessage(chatId, "<i>Pensando...</i> 🧠"); // Feedback inmediato
+        const context = await getSystemStats();
         const aiResponse = await askAI(text, context);
 
-        // 3. Responder
         await sendMessage(chatId, aiResponse, 'Markdown');
 
         return NextResponse.json({ ok: true });
@@ -172,12 +162,11 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-    // Setup webhook logic (igual que antes)
     const url = new URL(req.url);
     if (url.searchParams.get('action') === 'setup') {
         const webhookUrl = `${APP_URL}/api/telegram/webhook`;
         await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/setWebhook?url=${encodeURIComponent(webhookUrl)}`);
         return NextResponse.json({ setup: 'ok', url: webhookUrl });
     }
-    return NextResponse.json({ status: 'active' });
+    return NextResponse.json({ status: 'active_v2.1' });
 }
