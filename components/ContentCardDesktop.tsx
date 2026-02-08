@@ -95,7 +95,16 @@ export default function ContentCardDesktop({
                             className="w-full h-full object-cover"
                             loading="lazy"
                             onError={(e) => {
-                                (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800";
+                                const target = e.target as HTMLImageElement;
+                                // Fallback inteligente según categoría
+                                const fallbacks: Record<string, string> = {
+                                    'evento': "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80",
+                                    'club': "https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=800&q=80",
+                                    'bar': "https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=800&q=80",
+                                    'soltero': "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80",
+                                    'default': "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80"
+                                };
+                                target.src = fallbacks[content.category] || fallbacks.default;
                             }}
                             referrerPolicy="no-referrer"
                         />

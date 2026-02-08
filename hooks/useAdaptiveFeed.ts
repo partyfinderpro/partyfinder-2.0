@@ -19,6 +19,11 @@ interface UseAdaptiveFeedOptions {
     latitude?: number | null;
     longitude?: number | null;
     radius?: number;
+    // Advanced Filters
+    priceMin?: number;
+    priceMax?: number;
+    verifiedOnly?: boolean;
+    openNow?: boolean;
 }
 
 /**
@@ -61,13 +66,20 @@ export function useAdaptiveFeed(options: UseAdaptiveFeedOptions) {
         // Pass location to useContent
         latitude: options.latitude,
         longitude: options.longitude,
-        radius: options.radius
+        radius: options.radius,
+        // Pass Advanced Filters
+        priceMin: options.priceMin,
+        priceMax: options.priceMax,
+        verifiedOnly: options.verifiedOnly,
+        openNow: options.openNow
     });
 
     // 🔧 FIX 4: Seleccionar el feed activo
     // Si hay una categoría seleccionada, usamos Legacy para garantizar el filtrado correcto
     // El modo Highway actualmente se enfoca en el "Main Feed" (mix de contenido)
-    const useHighwayNow = highwayEnabled && !options.category;
+    // También desactivamos Highway si hay búsqueda o filtros activos
+    const hasActiveFilters = !!options.search || !!options.priceMax || !!options.verifiedOnly || !!options.openNow;
+    const useHighwayNow = highwayEnabled && !options.category && !hasActiveFilters;
 
     const activeFeed = useHighwayNow ? {
         content: highway.feed as unknown as ContentItem[],

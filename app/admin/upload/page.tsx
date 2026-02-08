@@ -4,13 +4,20 @@
 
 'use client';
 
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { useState, useRef } from 'react';
-import { Upload, X, Check, Image as ImageIcon, Film, Loader2, MapPin, Tag } from 'lucide-react';
+import { Upload, X, Check, Image as ImageIcon, Film, Loader2, MapPin, Tag, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Cliente Supabase Frontend
+// Cliente Supabase Frontend
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 export default function UploadPage() {
-    const supabase = createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('escort');
@@ -48,30 +55,48 @@ export default function UploadPage() {
             // 1. Subir a Storage
             const fileExt = file.name.split('.').pop();
             const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-            const filePath = `content/${fileName}`;
+            const filePath = `user_uploads/${fileName}`; // Carpeta user_uploads para orden
 
+            // Detectar bucket "content-media"
             const { error: uploadError } = await supabase.storage
-                .from('content-media') // AsegÃºrate de crear este bucket en el dashboard de Supabase
-                .upload(filePath, file);
+                .from('content-media')
+                .upload(filePath, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
 
-            if (uploadError) throw uploadError;
+            if (uploadError) {
+                console.error('Storage Error:', uploadError);
+                throw new Error('Error al subir archivo. Verifica tu conexión.');
+            }
 
-            // 2. Obtener URL pÃºblica
+            // 2. Obtener URL pública
             const { data: { publicUrl } } = supabase.storage
                 .from('content-media')
                 .getPublicUrl(filePath);
 
+            console.log('File uploaded:', publicUrl);
+
             // 3. Insertar en tabla Content
             const isVideo = file.type.startsWith('video');
+
+            // Determinar tipo de preview para el campo nuevo
+            const previewType = isVideo ? 'video' : 'image';
+
             const { error: dbError } = await supabase.from('content').insert({
                 title,
                 description,
                 category,
                 location,
-                image_url: isVideo ? undefined : publicUrl,
-                video_url: isVideo ? publicUrl : undefined,
+                // Lógica dual para compatibilidad con versiones anteriores
+                image_url: isVideo ? 'https://via.placeholder.com/400x600?text=Video+Preview' : publicUrl, // Fallback image for video
+                video_url: isVideo ? publicUrl : null,
+                preview_video_url: isVideo ? publicUrl : null,
+                preview_type: previewType,
                 is_verified: false,
-                created_at: new Date().toISOString()
+                content_tier: 'user_generated', // Nuevo tier para usuarios
+                created_at: new Date().toISOString(),
+                status: 'active' // O 'pending' si quieres moderación
             });
 
             if (dbError) throw dbError;

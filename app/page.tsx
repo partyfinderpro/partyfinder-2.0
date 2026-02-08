@@ -4,9 +4,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
 import ContentCard, { VideoPlayer, MemoizedContentCard } from "@/components/ContentCard";
+import FeedCardDynamic from "@/components/FeedCardDynamic";
 import ContentCardDesktop, { MemoizedContentCardDesktop } from "@/components/ContentCardDesktop";
 import Image from "next/image";
 import ContentPreviewModal from "@/components/ContentPreviewModal";
+import AdvancedFiltersModal, { FilterOptions } from '@/components/AdvancedFiltersModal';
 import MegaMenu from "@/components/MegaMenu";
 import { useAdaptiveFeed } from "@/hooks/useAdaptiveFeed";
 import type { ContentItem } from "@/hooks/useContent";
@@ -88,6 +90,15 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   // const [selectedCity, setSelectedCity] = useState("Todas"); // Reemplazado por SmartLocation
 
+  // Filter State
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    radius: 50,
+    priceRange: [1, 4],
+    verifiedOnly: false,
+    openNow: false,
+    hasVideo: false
+  });
+
   // 🚀 Smart Location Hook
   const { city: selectedCity, lat, lng, detectLocation, setManualCity, isLoading: locLoading, error: locError } = useSmartLocation();
 
@@ -112,7 +123,12 @@ export default function HomePage() {
     // Pass coordinates specifically for geo-queries
     latitude: lat,
     longitude: lng,
-    radius: 50
+    radius: filterOptions.radius,
+    // Advanced params
+    priceMin: filterOptions.priceRange[0],
+    priceMax: filterOptions.priceRange[1] < 4 ? filterOptions.priceRange[1] : undefined,
+    verifiedOnly: filterOptions.verifiedOnly,
+    openNow: filterOptions.openNow
   });
 
   // Centralized Device Detection
@@ -705,12 +721,16 @@ export default function HomePage() {
                       {/* ====================================
                           CARD DESKTOP (Optimizado)
                           ==================================== */}
-                      <div className="hidden lg:block">
-                        <MemoizedContentCardDesktop
-                          content={item}
+                      {/* ====================================
+                          CARD DESKTOP (Optimizado - Dynamic)
+                          ==================================== */}
+                      <div className="hidden lg:block w-full">
+                        <FeedCardDynamic
+                          item={item}
                           isActive={activeIndex === index}
                           onClick={handleContentClick}
                           onShare={handleShare}
+                          className="max-w-md mx-auto shadow-2xl hover:shadow-venuz-pink/20 transition-shadow duration-300"
                         />
                       </div>
 
@@ -858,7 +878,20 @@ export default function HomePage() {
         onClose={handleCloseModal}
         onLike={handleLike}
         onShare={handleShare}
+
         relatedContent={getRelatedContent(selectedContent)}
+      />
+
+      {/* Advanced Filters Modal */}
+      <AdvancedFiltersModal
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        onApply={(newFilters) => {
+          setFilterOptions(newFilters);
+          // Opcional: Feedback visual o toast
+          console.log('[VENUZ] Filtros aplicados:', newFilters);
+        }}
+        currentFilters={filterOptions}
       />
     </div >
   );

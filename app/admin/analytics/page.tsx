@@ -42,7 +42,7 @@ export default function AdminAnalyticsPage() {
             const abData = await abRes.json();
 
             if (abData.error && abData.message?.includes('SQL migration')) {
-                setError('⚠️ FALTAN TABLAS EN SUPABASE: Ejecuta el archivo VENUZ_COMPLETE_SQL.sql');
+                setError('⚠️ FALTAN TABLAS EN SUPABASE: Ejecuta el archivo supabase/migrations/20260207_interactions_rpc.sql');
                 return;
             }
 

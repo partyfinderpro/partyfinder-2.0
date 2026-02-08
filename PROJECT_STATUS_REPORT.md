@@ -1,36 +1,46 @@
 # 📋 REPORTE DE ESTADO DEL PROYECTO VENUZ
-**Fecha:** 4 de Febrero, 2026 (22:50)
-**Versión:** 4.0 (Highway Algorithm Full Integration)
-**Estado del Despliegue:** 🟢 Activo (venuz-app.vercel.app)
+**Fecha:** 8 de Febrero, 2026 (Noche - AI Brain Integration)
+**Versión:** 4.8 (Phase 0: Cognitive Brain + Telegram)
+**Estado del Despliegue:** 🟡 En Configuración (Bot Remoto)
+**URL de Producción:** https://partyfinder-2-0.vercel.app
 
-## 🏗️ Arquitectura Highway v4.0
-Hemos completado la integración del algoritmo de personalización profunda:
-*   **API Centralizada:** `/api/feed` centraliza la lógica de selección de contenido.
-*   **Tracking de Engagement:** Nuevo sistema de medición de tiempo real por ítem (Personalización Dinámica).
-*   **Bypass de Caché:** Implementado `no-store` en la API para evitar el problema de "no veo cambios" por la PWA.
+## 🚀 Hitos Alcanzados (Creator + AI)
 
-## ✅ Tareas Completadas (Crisis Presentation Ready)
+### 1. "Creator Engine" (Uploads)
+*   **Storage Activo:** Bucket `content-media` funcionando.
+*   **Upload Page:** `/admin/upload` permite subir fotos y videos reales (9:16 optimized).
 
-### 1. Rebranding "Estoy Soltero" (100%)
-*   Se eliminaron todas las referencias a "Escorts" en el Head, Footer, Sidebar, MegaMenu y SearchBar.
-*   **Base de Datos Actualizada:** Todos los registros migrados de `escort` -> `soltero`.
+### 2. Infraestructura AI (Gemini)
+*   **API Key:** Integrada (`.env.local`).
+*   **Cerebro (Classify):** Endpoint `/api/cognitive/classify` creado. Usa Gemini 2.0 Flash para evaluar contenido.
 
-### 2. Eliminación de Bloqueos (100%)
-*   **AgeGate Desactivado:** El acceso es inmediato tanto en `layout.tsx` como en `page.tsx`.
-*   **Resiliencia de UI:** Se silenciaron los errores de RPC (toasts rojos) para una experiencia fluida.
+### 3. Telegram Bot (Control Remoto)
+*   **Bot:** `@venuz_brain_bot` configurado.
+*   **Webhook:** Endpoint `/api/telegram/webhook` creado para recibir comandos.
+*   **Capacidad:** Aprobar/Rechazar contenido desde Telegram con botones rápidos.
 
-### 3. Visual & Trending Ahora (100%)
-*   **Imágenes Fijas:** Mandala, Stripchat, Luna VIP y CamSoda ahora muestran imágenes reales de Unsplash.
-*   **Categorías Pobladadas:** Fix de pluralización ('eventos' vs 'evento') resuelto. El feed ahora muestra 1000+ registros activos.
+## ⚠️ PENDIENTES CRÍTICOS (Acción Inmediata)
 
-### 4. Geolocalización (📍 Smart Location)
-*   **Estado:** Operativo. El sistema detecta ciudad y ajusta el feed Highway automáticamente.
+### 1. Base de Datos (Supabase)
+*   **Falta Ejecutar:** El script `supabase/migrations/20260207_sce_phase0.sql` NO se ha ejecutado aún. Este crea la tabla `pending_events` y las funciones vitales para el bot.
 
-## 🔄 Próximos Pasos (Post-Presentación)
-1.  **Limpieza de RPCs:** Crear oficialmente las funciones `increment_views` y `increment_likes` en Supabase para habilitar contadores reales nuevamente.
-2.  **Proxy de Imágenes:** Implementar un middleware para evitar bloqueos de hotlinking (403) en imágenes externas de webcams.
-3.  **A/B Testing:** Habilitar las variantes de pesos del algoritmo tras recolectar 48h de datos de engagement.
+### 2. Despliegue (Vercel)
+*   **Variables de Entorno:**
+    *   `GEMINI_API_KEY` (Lista)
+    *   `TELEGRAM_BOT_TOKEN` (Falta verificar en Vercel dashboard)
+    *   `TELEGRAM_OWNER_ID` (Falta verificar en Vercel dashboard)
 
----
-**Pablo:** El sistema está "limpio" y listo para la presentación. Los cambios ya son visibles en `localhost:3000`. 
-**¡Mucho éxito con VENUZ!** 🥂
+## ✅ Estado de Componentes
+
+| Componente | Estado | Notas |
+| :--- | :--- | :--- |
+| **Brain API** | 🟢 Código Listo | Falta deploy y DB |
+| **Telegram Bot** | 🟢 Código Listo | Falta webhook setup |
+| **Pending Table** | 🔴 Pendiente SQL | Ejecutar `20260207_sce_phase0.sql` |
+| **Storage** | 🟢 Activo | OK |
+
+## 🏁 Próximos Pasos Requeridos
+1.  **Ejecutar SQL:** Correr el script de `pending_events` en Supabase.
+2.  **Verificar Vercel:** Asegurar que las 3 variables de entorno estén puestas.
+3.  **Deploy:** `git push` para subir los nuevos endpoints.
+4.  **Activar Webhook:** Visitar la URL de setup una vez desplegado.

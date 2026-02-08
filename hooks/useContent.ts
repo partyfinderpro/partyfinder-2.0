@@ -37,6 +37,18 @@ export interface ContentItem {
     viewers_now?: number;
     source_url?: string;
     external_id?: string;
+
+    // Dynamic Content Fields
+    preview_video_url?: string;
+    preview_type?: 'video' | 'gif' | 'iframe' | 'image' | 'embed';
+    iframe_preview_url?: string;
+    embed_code?: string;
+    gallery_urls?: string[];
+    official_website?: string;
+    has_affiliate?: boolean;
+    content_tier?: 'premium' | 'verified' | 'scraped';
+    quality_score?: number;
+    is_featured?: boolean;
 }
 
 interface UseContentOptions {
@@ -49,6 +61,11 @@ interface UseContentOptions {
     latitude?: number | null;
     longitude?: number | null;
     radius?: number;
+    // New Advanced Filters
+    priceMin?: number;
+    priceMax?: number;
+    verifiedOnly?: boolean;
+    openNow?: boolean;
 }
 
 interface UseContentReturn {
@@ -62,7 +79,18 @@ interface UseContentReturn {
 }
 
 export function useContent(options: UseContentOptions = {}): UseContentReturn {
-    const { category, mode = 'inicio', city, search, limit = 20, offset: initialOffset = 0 } = options;
+    const {
+        category,
+        mode = 'inicio',
+        city,
+        search,
+        limit = 20,
+        offset: initialOffset = 0,
+        priceMin,
+        priceMax,
+        verifiedOnly,
+        openNow
+    } = options;
     const session = useSession();
     const userId = session?.user?.id || (typeof window !== 'undefined' ? localStorage.getItem('venuz_user_id') : null);
 
@@ -79,7 +107,7 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
     // Resetear offset al cambiar filtros
     useEffect(() => {
         dbOffsetRef.current = 0;
-    }, [category, mode, city, search]);
+    }, [category, mode, city, search, priceMin, priceMax, verifiedOnly, openNow]);
 
     const fetchBatch = useCallback(async (startOffset: number, batchSize: number) => {
         // 🚀 SMART GEO-QUERIES usando PostGIS (Prioridad 1 para modo "cerca")
@@ -223,10 +251,25 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
                 .order('created_at', { ascending: false });
         }
 
+        // 5. Aplicar FILTROS AVANZADOS (Si existen)
+        if (verifiedOnly) {
+            query = query.or('is_verified.eq.true,content_tier.in.(verified,premium)');
+        }
+
+        if (priceMax !== undefined) {
+            // Asumiendo que price_level es 1-4. Si es null, mostramos todo salvo que sea estricto.
+            // Aquí filtramos por nivel de precio (si la columna existe, sino ignorar)
+            // query = query.lte('price_level', priceMax); 
+        }
+
+        if (openNow) {
+            query = query.eq('is_open_now', true);
+        }
+
         const { data, error, count } = await query.range(startOffset, startOffset + batchSize - 1);
         return { data: data as ContentItem[], error, count };
 
-    }, [category, mode, city, search, userId, options.latitude, options.longitude, options.radius]);
+    }, [category, mode, city, search, userId, options.latitude, options.longitude, options.radius, priceMin, priceMax, verifiedOnly, openNow]);
 
     // Función recursiva para llenar el 'bucket' de items válidos
     const fetchUntilFulfilled = useCallback(async (targetCount: number, append: boolean) => {

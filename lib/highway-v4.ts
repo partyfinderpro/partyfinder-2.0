@@ -243,6 +243,8 @@ export class HighwayAlgorithm {
             .select('*')
             .eq('category', dbCategory)
             .eq('active', true)
+            .not('image_url', 'is', null) // 🔒 STRICT FILTER: No images = No show
+            .neq('image_url', '')
 
         // Búsqueda por ciudad (opcional para soltero/webcams/tabledance)
         if (!['soltero', 'webcam', 'tabledance'].includes(dbCategory)) {
@@ -288,13 +290,21 @@ export class HighwayAlgorithm {
     private calculateItemScore(item: any): number {
         let score = 50 // Base
 
+        // 🚨 PENALIZACIONES DE FUENTE (Anti-Spam)
+        const lowQualitySources = ['predicthq', 'porndude', 'generic_scraper'];
+        if (item.source_site && lowQualitySources.some(s => item.source_site.toLowerCase().includes(s))) {
+            score -= 20; // Penalización fuerte a fuentes automáticas masivas
+        }
+
         // Popularidad (engagement histórico)
         if ((item.avg_time_spent || 0) > 20) score += 15
         if ((item.clicks_count || 0) > 100) score += 10
         if ((item.completion_rate || 0) > 0.5) score += 10
 
         // Calidad del contenido
-        if (item.image_url) score += 5
+        if (item.image_url) score += 20 // ⬆️ Boost crucial para imágenes reales
+        else score -= 30; // ⬇️ Penalización si se coló sin imagen
+
         if ((item.description?.length || 0) > 100) score += 5
         if (item.quality_score) score += item.quality_score * 0.2
 
@@ -309,7 +319,11 @@ export class HighwayAlgorithm {
         // Trending (pico reciente de engagement)
         if ((item.trending_score || 0) > 0) score += item.trending_score * 0.3
 
-        return Math.min(score, 100)
+        // 🔒 BOOST PARA CONTENIDO VERIFICADO/PREMIUM
+        if (item.is_verified) score += 15;
+        if (item.is_premium) score += 20;
+
+        return Math.max(10, Math.min(score, 100)) // Min 10, Max 100
     }
 
     // =============================================
