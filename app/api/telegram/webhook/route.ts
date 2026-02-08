@@ -131,11 +131,11 @@ export async function POST(req: Request) {
         // 🧠 COMANDOS DIRECTOS
         if (text.startsWith('/')) {
             if (text === '/start') {
-                await sendMessage(chatId, `🧠 <b>VENUZ SYSTEM v2.1</b>\n\nHola Pablo. Soy tu Ingeniero IA.\nSistemas nominales. ¡Háblame!`, "HTML");
+                await sendMessage(chatId, `🧠 <b>VENUZ SYSTEM v3.0 (FORCE REFRESH)</b>\n\nHola Pablo. Soy tu Ingeniero IA.\nSistemas nominales. ¡Háblame!`, "HTML");
             }
             else if (text === '/status') {
                 const stats = await getSystemStats();
-                await sendMessage(chatId, `📊 <b>Estado del Sistema</b>\n\n${stats}\n\n✅ Operativo.`, "HTML");
+                await sendMessage(chatId, `📊 <b>Estado del Sistema v3.0</b>\n\n${stats}\n\n✅ Operativo.`, "HTML");
             }
             // Forzar respuesta a otros comandos no reconocidos
             else {
