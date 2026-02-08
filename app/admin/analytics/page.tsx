@@ -40,6 +40,12 @@ export default function AdminAnalyticsPage() {
             // Fetch A/B stats
             const abRes = await fetch('/api/analytics/ab');
             const abData = await abRes.json();
+
+            if (abData.error && abData.message?.includes('SQL migration')) {
+                setError('⚠️ FALTAN TABLAS EN SUPABASE: Ejecuta el archivo VENUZ_COMPLETE_SQL.sql');
+                return;
+            }
+
             if (abData.stats) {
                 setAbStats(abData.stats);
             }

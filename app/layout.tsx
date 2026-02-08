@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
 import AuthProvider from "@/components/AuthProvider";
 import Footer from "@/components/Footer";
 import AgeGate from "@/components/AgeGate";
@@ -135,6 +136,7 @@ export default function RootLayout({
           <Footer />
           {/* </AgeGate> */}
           <PWAInstallPrompt />
+          <PushNotificationPrompt />
         </AuthProvider>
       </body>
 

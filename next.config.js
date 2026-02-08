@@ -13,6 +13,8 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   },
   workboxOptions: {
     disableDevLogs: true,
+    // Importar worker personalizado para Push Notifications
+    importScripts: ["/push-worker.js"],
     runtimeCaching: [
       {
         urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|webp|gif|svg|ico)$/i,
