@@ -4,6 +4,16 @@
 **Estado:** 🟢 STABLE / PRE-PRODUCTION
 **URL de Producción:** https://partyfinder-2-0.vercel.app
 
+## 🚨 DIAGNÓSTICO CRÍTICO: POR QUÉ VERCEL NO ACTUALIZA
+**Problema:** El usuario reporta que Vercel "se duerme" y no actualiza los cambios del bot.
+**Causa Técnica:** El comando `tsc` (TypeScript Compiler) está fallando en el despliegue. Vercel **cancela** la actualización silenciosamente si detecta errores de compilación, para proteger el sitio.
+**SOLUCIÓN DEFINITIVA (REGLA DE ORO):**
+Antes de hacer `git push`, **SIEMPRE** se debe ejecutar:
+```bash
+npm run build
+```
+Si este comando falla localmente, **FALLARÁ en Vercel**. No subir código roto.
+
 ---
 
 ## ✅ CONFIRMADO Y REALIZADO
@@ -69,11 +79,12 @@ Deuda técnica y optimizaciones necesarias para la siguiente sesión de codifica
 ---
 
 ## 🔥 ESTADO DE ARQUITECTURA (ACTUALIZADO)
-**Telegram Task Queue (Control Remoto) - ✅ CÓDIGO LISTO**
-*   **Estado:** Implementado en `app/api/telegram/webhook/route.ts` (v3.1).
-*   **Falta:** Ejecutar la migración SQL en Supabase.
-*   **Archivo SQL:** `supabase/migrations/20260209_telegram_task_queue.sql`
-*   **Próximo paso (Claude):** Ejecutar SQL para crear tabla `dev_tasks`.
+**Telegram Task Queue (Control Remoto) - 🟢 OPERATIVO**
+*   **Estado:** Completado (Código + SQL).
+*   **Funcionamiento:**
+    *   Pablo envía `/tarea` en Telegram.
+    *   Se guarda en Supabase `dev_tasks`.
+    *   **Próximo paso (Claude):** Al iniciar sesión, REVISAR la tabla `dev_tasks` para ver si hay órdenes pendientes.
 
 **Integración de Grok (xAI) para Búsquedas**
 
