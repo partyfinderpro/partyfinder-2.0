@@ -97,12 +97,31 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/:path*",
+        // 🚨 FIX: Excluir API de cache agresivo
+        source: "/api/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate, proxy-revalidate",
+          },
+          {
+            key: "Pragma",
+            value: "no-cache",
+          },
+          {
+            key: "Expires",
+            value: "0",
+          },
+        ],
+      },
+      {
+        // Aplicar cache solo a rutas NO-API
+        source: "/((?!api|_next/static|_next/image).*)",
         headers: [
           // Cache de assets estáticos
           {
             key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
+            value: "public, max-age=3600, must-revalidate", // Reducido a 1h por seguridad
           },
           // Seguridad
           {

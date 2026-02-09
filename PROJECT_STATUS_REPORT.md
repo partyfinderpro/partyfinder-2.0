@@ -8,11 +8,12 @@
 **Problema:** El usuario reporta que Vercel "se duerme" y no actualiza los cambios del bot.
 **Causa Técnica:** El comando `tsc` (TypeScript Compiler) está fallando en el despliegue. Vercel **cancela** la actualización silenciosamente si detecta errores de compilación, para proteger el sitio.
 **SOLUCIÓN DEFINITIVA (REGLA DE ORO):**
-Antes de hacer `git push`, **SIEMPRE** se debe ejecutar:
-```bash
-npm run build
-```
-Si este comando falla localmente, **FALLARÁ en Vercel**. No subir código roto.
+Antes de hacer `git push`, **SIEMPRE** se debe ejecutar `npm run build`.
+
+**STATUS ACTUAL (FIX DEPLOYMENT):**
+1.  **Variables de Entorno:** ✅ Confirmadas por screenshot (TELEGRAM_BOT_TOKEN, GEMINI_API_KEY, etc. están OK).
+2.  **Runtime Change:** Se cambió de `edge` a `nodejs` en `route.ts` para evitar fallos silenciosos en Vercel.
+3.  **Deploy:** Commit `66b4f4d` enviado. Esperando propagación (2 mins).
 
 ---
 
@@ -68,6 +69,13 @@ Deuda técnica y optimizaciones necesarias para la siguiente sesión de codifica
     *   **Problema:** Reportes anteriores indican posibles credenciales de Supabase hardcodeadas en `app/api/feed/route.ts` como fallback.
     *   **Solución:** Auditar y eliminar cualquier credencial explícita en el código; forzar el uso de variables de entorno (`process.env`).
 
+## 🎯 PRÓXIMA SESIÓN
+1.  **Verificar Bot en Producción:**
+    *   Confirmar si Pablo pudo crear tareas con `/tarea`.
+    *   Confirmar si el chat IA responde correctamente y sin errores.
+2.  **Ejecutar Tareas Pendientes:**
+    *   Revisar la tabla `dev_tasks` y empezar a trabajar en lo que el usuario haya pedido desde Telegram.
+3.  **Integrar FeedCardDynamic:** Continuar con la mejora visual del feed si el bot ya está estable.
 3.  **Optimización de Carga de Videos (Core Web Vitals)**
     *   **Problema:** Con `FeedCardDynamic` en el feed principal, el consumo de datos y memoria aumenta.
     *   **Solución:** Verificar que los videos tengan `loading="lazy"` o usar un Observer más estricto para solo cargar el video cuando está 100% visible (actualmente usa `IntersectionObserver`, revisar threshold).
