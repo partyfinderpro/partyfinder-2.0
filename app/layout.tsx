@@ -6,6 +6,7 @@ import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
 import AuthProvider from "@/components/AuthProvider";
 import Footer from "@/components/Footer";
 import AgeGate from "@/components/AgeGate";
+import DynamicCasinoBackground from "@/components/ui/DynamicCasinoBackground";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -129,12 +130,19 @@ export default function RootLayout({
           crossOrigin=""
         />
       </head>
-      <body className={`${inter.className} bg-black text-white antialiased`}>
+      <body className={`${inter.className} bg-venuz-black text-white antialiased`}>
         <AuthProvider>
-          {/* <AgeGate> */}
-          {children}
-          <Footer />
-          {/* </AgeGate> */}
+          {/* FONDO DINÁMICO DE CASINO (Global) */}
+          <DynamicCasinoBackground />
+
+          {/* CONTENEDOR PRINCIPAL (Relativo para estar sobre el video) */}
+          <div className="relative z-10 flex flex-col min-h-screen">
+            {/* <AgeGate> */}
+            {children}
+            <Footer />
+            {/* </AgeGate> */}
+          </div>
+
           <PWAInstallPrompt />
           <PushNotificationPrompt />
         </AuthProvider>

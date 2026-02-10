@@ -496,8 +496,10 @@ export async function POST(req: Request) {
             else if (textLower === '/health') { await cmdHealth(chatId); }
             else if (textLower === '/help') { await cmdHelp(chatId); }
             else if (textLower === '/tareas') { await cmdTareas(chatId); }
-            else if (textLower.startsWith('/tarea ')) {
-                await cmdTarea(chatId, text.replace(/\/tarea /i, '').trim());
+            else if (textLower.startsWith('/tarea')) {
+                // Regex flexible: acepta "/tarea", "/tarea ", "/tarea: desc"
+                const description = text.replace(/^\/tarea[:\s]*/i, '').trim();
+                await cmdTarea(chatId, description);
             } else if (textLower.startsWith('/aprobar ')) {
                 await cmdAprobar(chatId, text.replace(/\/aprobar /i, '').trim());
             } else if (textLower.startsWith('/rechazar ')) {
