@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
-    siteUrl: process.env.SITE_URL || 'https://venuz.app',
+    siteUrl: process.env.SITE_URL || 'https://labelbabel.com',
     generateRobotsTxt: true,
     exclude: ['/admin/*', '/api/*'],
     robotsTxtOptions: {
@@ -16,7 +16,7 @@ module.exports = {
         ],
         additionalSitemaps: [
             // Añadir sitemaps por ciudad en el futuro
-            'https://venuz.app/sitemap-cities.xml',
+            'https://labelbabel.com/sitemap-cities.xml',
         ],
     },
 }

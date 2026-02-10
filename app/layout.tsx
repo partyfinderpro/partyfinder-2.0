@@ -20,6 +20,7 @@ const APP_TITLE_TEMPLATE = "%s | VENUZ";
 const APP_DESCRIPTION = "Descubre la mejor vida nocturna, perfiles verificados, clubs y eventos en México. Tu guía definitiva con geolocalización e inteligencia artificial.";
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://labelbabel.com'),
   applicationName: APP_NAME,
   title: {
     default: APP_DEFAULT_TITLE,
@@ -56,7 +57,7 @@ export const metadata: Metadata = {
     images: ["/og-image.png"],
   },
   keywords: ["México", "vida nocturna", "escorts", "escorts México", "clubs", "webcams", "eventos", "antros", "PWA", "nightlife", "VENUZ", "entretenimiento adulto", "acompañantes"],
-  authors: [{ name: "VENUZ", url: "https://venuz.app" }],
+  authors: [{ name: "VENUZ", url: "https://labelbabel.com" }],
   robots: { index: true, follow: true },
   icons: {
     icon: [{ url: "/icons/icon-32x32.png", sizes: "32x32", type: "image/png" }],
@@ -89,8 +90,8 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "Organization",
               "name": "VENUZ",
-              "url": "https://venuz.com",
-              "logo": "https://venuz.com/logo.png",
+              "url": "https://labelbabel.com",
+              "logo": "https://labelbabel.com/logo.png",
               "description": "La plataforma líder de entretenimiento adulto y vida nocturna en México",
               "foundingDate": "2025",
               "address": {
@@ -113,10 +114,10 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebSite",
               "name": "VENUZ",
-              "url": "https://venuz.com",
+              "url": "https://labelbabel.com",
               "potentialAction": {
                 "@type": "SearchAction",
-                "target": "https://venuz.com/search?q={search_term_string}",
+                "target": "https://labelbabel.com/search?q={search_term_string}",
                 "query-input": "required name=search_term_string"
               }
             })

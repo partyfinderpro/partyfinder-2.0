@@ -20,7 +20,7 @@ const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const OWNER_CHAT_ID = process.env.TELEGRAM_OWNER_ID || '8539603941';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://partyfinder-2-0.vercel.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://labelbabel.com';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
 // ============================================
