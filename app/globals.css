@@ -4,221 +4,135 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Montserrat:wght@300;400;500;600;700&display=swap');
 
-/* ============================================
-   VENUZ - Estilos Globales VIP
-   Paleta: Dorado/Morado Premium
-   ============================================ */
-
 @layer base {
-  * {
-    border-color: rgba(191, 149, 63, 0.15); /* Bordes dorados sutiles */
-  }
-  
   body {
-    @apply bg-vip-black text-white font-body;
+    @apply bg-black text-white font-body;
     font-feature-settings: "kern" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: linear-gradient(180deg, #050505 0%, #0a0a0a 50%, #050505 100%);
+    /* VIP Black Background */
+    background-color: #050505;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
+
+  /* HEADINGS - Use font-display but keep color flexible unless specified */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-display;
-    color: #fcf6ba; /* Títulos en dorado brillante */
-    text-shadow: 0 0 20px rgba(191, 149, 63, 0.3);
   }
 }
 
 @layer components {
-  /* ===== CARDS PREMIUM ===== */
-  .venuz-card {
-    @apply rounded-2xl overflow-hidden;
-    background: rgba(5, 5, 5, 0.7); /* Negro profundo con opacidad */
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(191, 149, 63, 0.3); /* Borde dorado */
-    box-shadow: 
-      0 10px 40px rgba(0, 0, 0, 0.6),
-      0 0 20px rgba(191, 149, 63, 0.15),
-      inset 0 1px 0 rgba(252, 246, 186, 0.1); /* Brillo interno */
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .venuz-card:hover {
-    border-color: rgba(191, 149, 63, 0.6);
-    box-shadow: 
-      0 20px 60px rgba(0, 0, 0, 0.7),
-      0 0 40px rgba(191, 149, 63, 0.3);
-    transform: translateY(-4px);
+
+  /* Restoring Glassmorphism with VIP Colors */
+  .venuz-glass {
+    background: rgba(5, 5, 5, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(191, 149, 63, 0.2);
+    /* Gold border subtle */
   }
 
-  /* ===== BOTONES DORADOS ===== */
-  .venuz-button {
-    @apply px-8 py-4 rounded-full font-bold uppercase tracking-wider transition-all duration-300;
+  /* VIP Gradient - Gold/Purple */
+  .venuz-gradient {
     background: linear-gradient(135deg, #fcf6ba 0%, #bf953f 40%, #aa771c 100%);
-    background-size: 200% auto;
-    color: #0a0a0a; /* Texto negro sobre oro */
-    box-shadow: 
-      0 4px 20px rgba(191, 149, 63, 0.4),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    letter-spacing: 0.08em;
+  }
+
+  .venuz-gradient-purple {
+    background: linear-gradient(135deg, #7b2cbf 0%, #240046 100%);
+  }
+
+  .venuz-gradient-overlay {
+    background: linear-gradient(180deg,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(0, 0, 0, 0.7) 70%,
+        rgba(5, 5, 5, 0.95) 100%);
+  }
+
+  /* Cards - Restore geometry, apply VIP palette */
+  .venuz-card {
+    @apply rounded-[32px] overflow-hidden transition-all duration-500;
+    background: rgba(10, 10, 10, 0.8);
+    /* Darker, less transparent */
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(191, 149, 63, 0.15);
+    /* Subtle Gold Border */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  }
+
+  .venuz-card:hover {
+    border-color: rgba(191, 149, 63, 0.5);
+    /* Gold Glow on hover */
+    box-shadow: 0 20px 60px rgba(191, 149, 63, 0.15);
+    transform: translateY(-8px) scale(1.02);
+  }
+
+  /* Buttons - Restore geometry, apply VIP Gold */
+  .venuz-button {
+    @apply px-8 py-4 rounded-full font-bold transition-all duration-300;
+    /* Gold Gradient */
+    background: linear-gradient(135deg, #fcf6ba 0%, #bf953f 40%, #aa771c 100%);
+    color: #050505;
+    /* Black text on Gold */
+    box-shadow: 0 4px 15px rgba(191, 149, 63, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
     font-family: 'Playfair Display', serif;
-    border: 2px solid #aa771c;
+    /* Use Premium Font */
   }
-  
+
   .venuz-button:hover {
-    background-position: right center;
-    box-shadow: 
-      0 6px 30px rgba(191, 149, 63, 0.6),
-      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    background: linear-gradient(135deg, #fffcd1 0%, #ca9e44 40%, #b8811f 100%);
+    box-shadow: 0 6px 30px rgba(191, 149, 63, 0.5);
     transform: translateY(-2px);
   }
-  
-  .venuz-button:active {
-    transform: translateY(0);
-    box-shadow: 
-      0 2px 10px rgba(191, 149, 63, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  }
 
-  /* ===== BOTÓN SECUNDARIO (Púrpura) ===== */
+  /* Secondary Button (Purple) */
   .venuz-button-secondary {
-    @apply px-6 py-3 rounded-full font-semibold uppercase tracking-wider transition-all duration-300;
+    @apply px-6 py-3 rounded-full font-semibold transition-all duration-300;
     background: linear-gradient(135deg, #7b2cbf 0%, #240046 100%);
-    color: #fcf6ba; /* Texto dorado sobre púrpura */
-    box-shadow: 
-      0 4px 20px rgba(123, 44, 191, 0.3),
-      inset 0 1px 0 rgba(252, 246, 186, 0.1);
+    color: #fcf6ba;
+    /* Gold text */
     border: 1px solid rgba(123, 44, 191, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
-  
+
   .venuz-button-secondary:hover {
-    box-shadow: 
-      0 6px 30px rgba(123, 44, 191, 0.5),
-      inset 0 1px 0 rgba(252, 246, 186, 0.2);
-    border-color: rgba(123, 44, 191, 0.8);
+    box-shadow: 0 6px 30px rgba(123, 44, 191, 0.4);
     transform: translateY(-2px);
+    border-color: rgba(123, 44, 191, 0.8);
   }
 
-  /* ===== BADGES Y TAGS ===== */
-  .venuz-badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide;
-    background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 100%);
-    color: #0a0a0a;
-    box-shadow: 0 2px 8px rgba(191, 149, 63, 0.3);
-  }
-  
-  .venuz-badge-purple {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide;
-    background: linear-gradient(135deg, #7b2cbf 0%, #240046 100%);
-    color: #fcf6ba;
-    border: 1px solid rgba(123, 44, 191, 0.4);
+  /* Scrollbar Ultra-Thin - VIP Gold */
+  ::-webkit-scrollbar {
+    width: 4px;
   }
 
-  /* ===== INPUTS Y FORMS ===== */
-  .venuz-input {
-    @apply px-4 py-3 rounded-xl bg-vip-black/50 border transition-all duration-300;
-    border-color: rgba(191, 149, 63, 0.3);
-    color: #fcf6ba;
-    backdrop-filter: blur(8px);
-  }
-  
-  .venuz-input:focus {
-    @apply outline-none;
-    border-color: rgba(191, 149, 63, 0.7);
-    box-shadow: 
-      0 0 0 3px rgba(191, 149, 63, 0.1),
-      0 4px 12px rgba(191, 149, 63, 0.2);
-  }
-  
-  .venuz-input::placeholder {
-    color: rgba(191, 149, 63, 0.4);
+  ::-webkit-scrollbar-track {
+    background: #050505;
   }
 
-  /* ===== SCROLLBAR CUSTOM ===== */
-  .venuz-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(#bf953f, #aa771c);
+    /* Gold gradient thumb */
+    border-radius: 10px;
   }
-  
-  .venuz-scrollbar::-webkit-scrollbar-track {
-    background: rgba(5, 5, 5, 0.5);
-    border-radius: 4px;
-  }
-  
-  .venuz-scrollbar::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #bf953f 0%, #aa771c 100%);
-    border-radius: 4px;
-  }
-  
-  .venuz-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #fcf6ba 0%, #bf953f 100%);
+}
+
+/* Utilities for convenience */
+@layer utilities {
+  .text-gold {
+    color: #bf953f;
   }
 
-  /* ===== GRADIENTES DE TEXTO ===== */
   .text-gold-gradient {
     background: linear-gradient(135deg, #fcf6ba 0%, #bf953f 50%, #aa771c 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-  }
-  
-  .text-purple-gradient {
-    background: linear-gradient(135deg, #f72585 0%, #7b2cbf 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  /* ===== EFECTOS DE BRILLO ===== */
-  .venuz-glow {
-    box-shadow: 
-      0 0 20px rgba(191, 149, 63, 0.3),
-      0 0 40px rgba(191, 149, 63, 0.15);
-  }
-  
-  .venuz-glow-purple {
-    box-shadow: 
-      0 0 20px rgba(123, 44, 191, 0.3),
-      0 0 40px rgba(123, 44, 191, 0.15);
-  }
-
-  /* ===== DIVIDERS ===== */
-  .venuz-divider {
-    height: 1px;
-    background: linear-gradient(90deg, 
-      transparent 0%, 
-      rgba(191, 149, 63, 0.3) 20%, 
-      rgba(191, 149, 63, 0.5) 50%, 
-      rgba(191, 149, 63, 0.3) 80%, 
-      transparent 100%
-    );
-  }
-}
-
-/* ===== UTILIDADES GLOBALES ===== */
-@layer utilities {
-  .bg-venuz-gradient {
-    background: linear-gradient(180deg, 
-      rgba(5, 5, 5, 0.95) 0%, 
-      rgba(36, 0, 70, 0.3) 50%, 
-      rgba(5, 5, 5, 0.95) 100%
-    );
-  }
-  
-  .border-gold {
-    border-color: rgba(191, 149, 63, 0.3);
-  }
-  
-  .border-gold-light {
-    border-color: rgba(252, 246, 186, 0.2);
-  }
-  
-  .shadow-gold {
-    box-shadow: 0 4px 20px rgba(191, 149, 63, 0.2);
-  }
-  
-  .shadow-gold-lg {
-    box-shadow: 0 10px 40px rgba(191, 149, 63, 0.3);
   }
 }
