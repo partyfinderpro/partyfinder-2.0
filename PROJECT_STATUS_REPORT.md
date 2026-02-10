@@ -10,10 +10,10 @@
 **SOLUCIÓN DEFINITIVA (REGLA DE ORO):**
 Antes de hacer `git push`, **SIEMPRE** se debe ejecutar `npm run build`.
 
-**STATUS ACTUAL (FIX DEPLOYMENT):**
-1.  **Variables de Entorno:** ✅ Confirmadas por screenshot (TELEGRAM_BOT_TOKEN, GEMINI_API_KEY, etc. están OK).
-2.  **Runtime Change:** Se cambió de `edge` a `nodejs` en `route.ts` para evitar fallos silenciosos en Vercel.
-3.  **Deploy:** Commit `66b4f4d` enviado. Esperando propagación (2 mins).
+**STATUS FINAL (CACHE FIX):**
+1.  **Problema Real Detectado:** `next.config.js` tenía una regla `Cache-Control: public, immutable` para TODAS las rutas (`/:path*`), lo que hacía que Vercel sirviera una versión vieja del API del bot indefinidamente.
+2.  **Solución:** Se modificó `next.config.js` para **excluir** `/api/` del caché y forzar `no-store` en las APIs.
+3.  **Deploy:** Commit `5abdb10` enviado. Este fix debería resolver el problema de "versión vieja" definitivamente.
 
 ---
 
