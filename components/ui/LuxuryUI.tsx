@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { cn } from "@/utils/cn"; // Asumo que tienes una utilidad cn, si no, usaré clsx directo
+import { cn } from "../../utils/cn"; // Cambio a ruta relativa para evitar problemas de alias en Vercel
 
 /* ==========================================================================
    LUXURY UI COMPONENTS - VENUZ VIP EDITION
