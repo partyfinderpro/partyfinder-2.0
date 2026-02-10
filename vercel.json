@@ -30,11 +30,11 @@
     },
     {
       "path": "/api/cron/ingest-events-external",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 7 * * *"
     },
     {
       "path": "/api/cron/health-check",
-      "schedule": "0 * * * *"
+      "schedule": "0 8 * * *"
     }
   ]
 }

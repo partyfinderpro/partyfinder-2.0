@@ -7,6 +7,7 @@ import AuthProvider from "@/components/AuthProvider";
 import Footer from "@/components/Footer";
 import AgeGate from "@/components/AgeGate";
 import DynamicCasinoBackground from "@/components/ui/DynamicCasinoBackground";
+import LuxuryBottomNav from "@/components/ui/LuxuryBottomNav";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -136,12 +137,14 @@ export default function RootLayout({
           <DynamicCasinoBackground />
 
           {/* CONTENEDOR PRINCIPAL (Relativo para estar sobre el video) */}
-          <div className="relative z-10 flex flex-col min-h-screen">
+          <div className="relative z-10 flex flex-col min-h-screen pb-20 lg:pb-0"> {/* Padding bottom extra para móvil */}
             {/* <AgeGate> */}
             {children}
             <Footer />
             {/* </AgeGate> */}
           </div>
+
+          <LuxuryBottomNav /> {/* Navegación Flotante VIP */}
 
           <PWAInstallPrompt />
           <PushNotificationPrompt />

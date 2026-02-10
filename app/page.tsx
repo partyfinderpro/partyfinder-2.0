@@ -40,6 +40,7 @@ import { TopRatedSidebar, exampleTopRatedItems } from "@/components/TopRatedSide
 import { TrustSignalsBanner } from "@/components/TrustSignalsBanner";
 import { FeedTabs, filterByMode, type FeedMode } from "@/components/FeedTabs";
 import { AlgorithmBadge } from "@/components/AlgorithmBadge";
+import { LuxuryCard, LuxuryTitle, LuxuryButton } from "@/components/ui/LuxuryUI"; // VIP Components
 
 // ============================================
 // VENUZ - Página Principal HÍBRIDA
@@ -319,8 +320,11 @@ export default function HomePage() {
   // ==========================================
   // MAIN LAYOUT - RESPONSIVE HÃ BRIDO
   // ==========================================
+  // ==========================================
+  // MAIN LAYOUT - RESPONSIVE HÍBRIDO (CASINO MODE)
+  // ==========================================
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-transparent"> {/* Transparente para ver el video */}
       <Header
         notificationCount={notificationCount}
         onSearch={handleSearch}
@@ -354,7 +358,7 @@ export default function HomePage() {
             <div className="sticky top-24 space-y-4">
 
               {/* Menú Principal */}
-              <div className="venuz-card p-4">
+              <div className="bg-vip-black/40 backdrop-blur-md border border-vip-gold/20 rounded-xl p-4">
                 <div className="space-y-2">
                   <button
                     onClick={() => {
@@ -412,7 +416,7 @@ export default function HomePage() {
               </div>
 
               {/* Categorías */}
-              <div className="venuz-card p-4">
+              <div className="bg-vip-black/40 backdrop-blur-md border border-vip-gold/20 rounded-xl p-4">
                 <h3 className="text-sm font-semibold mb-3 text-gradient flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
                   CATEGORÍAS
@@ -719,8 +723,19 @@ export default function HomePage() {
                       className="venuz-card group overflow-hidden snap-center lg:snap-align-none"
                     >
                       {/* ====================================
-                          CARD DESKTOP (Optimizado)
+                          CARD DESKTOP (Optimizado - VIP Wrapper)
                           ==================================== */}
+                      <LuxuryCard className="border-none bg-transparent shadow-none p-0 group-hover:bg-transparent">
+                        <div className="hidden lg:block w-full">
+                          <FeedCardDynamic
+                            item={item}
+                            isActive={activeIndex === index}
+                            onClick={handleContentClick}
+                            onShare={handleShare}
+                            className="max-w-md mx-auto shadow-2xl hover:shadow-vip-gold/20 transition-shadow duration-300"
+                          />
+                        </div>
+                      </LuxuryCard>
                       {/* ====================================
                           CARD DESKTOP (Optimizado - Dynamic)
                           ==================================== */}
@@ -744,7 +759,7 @@ export default function HomePage() {
                           isActive={activeIndex === index}
                           onClick={handleContentClick}
                           onShare={handleShare}
-                          className="h-[calc(100vh-140px)] w-full rounded-xl"
+                          className="h-[calc(100vh-140px)] w-full rounded-xl border border-vip-gold/30 shadow-[0_0_15px_rgba(191,149,63,0.2)]"
                         />
                       </div>
                     </article>
