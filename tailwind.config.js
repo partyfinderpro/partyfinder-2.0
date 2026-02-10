@@ -8,26 +8,27 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // ⚠️ PALETA VIP ACTIVADA - Dorado/Morado Premium
         venuz: {
-          black: '#0a0a0a',
+          black: '#050505',       // Negro absoluto (era #0a0a0a)
           charcoal: '#1a1a1a',
           gray: '#2a2a2a',
-          pink: '#ff1493',
-          'pink-dark': '#c7107a',
-          gold: '#ffd700',
-          'gold-dark': '#b8941e',
-          red: '#dc143c',
-          'red-dark': '#a0102a',
+          pink: '#bf953f',        // CAMBIADO: Era rosa, ahora ORO BASE
+          'pink-dark': '#aa771c', // CAMBIADO: Era rosa oscuro, ahora ORO OSCURO
+          gold: '#bf953f',        // Oro base
+          'gold-dark': '#aa771c', // Oro sombra
+          red: '#f72585',         // CAMBIADO: Ahora magenta neón
+          'red-dark': '#7b2cbf',  // CAMBIADO: Ahora púrpura neón
         },
-        // Paleta Dark Casino VIP (Nuevo)
+        // Paleta VIP Premium (NUEVA - Activada)
         vip: {
-          black: "#050505", // Negro casi absoluto
-          gold: "#bf953f", // Oro base
-          goldLight: "#fcf6ba", // Oro brillo
-          goldDark: "#aa771c", // Oro sombra
-          purple: "#240046", // Púrpura profundo fondo
-          purpleNeon: "#7b2cbf", // Púrpura neón acentos
-          magenta: "#f72585", // Magenta neón vibrante
+          black: "#050505",       // Negro casi absoluto
+          gold: "#bf953f",        // Oro base
+          goldLight: "#fcf6ba",   // Oro brillo
+          goldDark: "#aa771c",    // Oro sombra
+          purple: "#240046",      // Púrpura profundo fondo
+          purpleNeon: "#7b2cbf",  // Púrpura neón acentos
+          magenta: "#f72585",     // Magenta neón vibrante
         },
       },
       fontFamily: {
@@ -35,33 +36,26 @@ module.exports = {
         body: ['Montserrat', 'sans-serif'],
       },
       backgroundImage: {
-        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gold-gradient': 'linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c)',
-        'radial-vignette': 'radial-gradient(circle farthest-corner at center center, transparent 0%, rgba(0,0,0,0.9) 100%)',
+        'gold-gradient': 'linear-gradient(135deg, #fcf6ba 0%, #bf953f 40%, #aa771c 100%)',
+        'purple-gradient': 'linear-gradient(135deg, #7b2cbf 0%, #240046 100%)',
       },
       animation: {
-        'fade-in': 'fadeIn 0.5s ease-in',
-        'slide-up': 'slideUp 0.6s ease-out',
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'float': 'float 6s ease-in-out infinite',
-        'shine': 'shine 3s linear infinite',
+        shine: 'shine 3s linear infinite',
+        float: 'float 6s ease-in-out infinite',
+        glow: 'glow 2s ease-in-out infinite alternate',
       },
       keyframes: {
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%': { transform: 'translateY(20px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
+        shine: {
+          '0%': { backgroundPosition: '200% center' },
+          '100%': { backgroundPosition: '-200% center' },
         },
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-10px)' },
         },
-        shine: {
-          '0%': { backgroundPosition: '200% center' },
-          '100%': { backgroundPosition: '-200% center' },
+        glow: {
+          '0%': { boxShadow: '0 0 20px rgba(191, 149, 63, 0.3)' },
+          '100%': { boxShadow: '0 0 40px rgba(191, 149, 63, 0.6)' },
         },
       },
     },
