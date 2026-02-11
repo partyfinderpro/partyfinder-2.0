@@ -35,7 +35,7 @@ async function checkUrlHealth(url: string): Promise<Omit<HealthCheckResult, 'sou
     const httpStatus = response.status;
 
     let status: 'ok' | 'warning' | 'failed';
-    
+
     if (httpStatus >= 200 && httpStatus < 300) {
       status = 'ok';
     } else if (httpStatus >= 300 && httpStatus < 400) {
@@ -100,12 +100,19 @@ export async function runHealthCheck() {
 
       // Crear alerta si está caída
       if (result.status === 'unreachable' || result.status === 'failed') {
+        const title = `URL no responde: ${source.name}`;
+        const message = `${source.url}\nStatus: ${result.http_status}\nError: ${result.error_message || 'N/A'}`;
+
+        // Log locally
+        console.error(`🚨 ALERT: ${title}\n${message}`);
+
         await supabase.from('sce_alerts').insert({
           type: 'url_failed',
           severity: result.status === 'unreachable' ? 'critical' : 'warning',
-          title: `URL no responde: ${source.name}`,
-          message: `${source.url}\nStatus: ${result.http_status}\nError: ${result.error_message || 'N/A'}`,
+          title: title,
+          message: message,
           source_id: source.id,
+          is_read: false
         });
       }
     }
