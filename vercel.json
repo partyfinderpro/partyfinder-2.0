@@ -1,39 +1,15 @@
 {
   "crons": [
     {
-      "path": "/api/cron/ingest-events",
-      "schedule": "0 2 * * *"
+      "path": "/api/cron/sce-orchestrator",
+      "schedule": "0 */6 * * *"
     },
     {
-      "path": "/api/cron/refresh-venues",
-      "schedule": "0 3 * * 0"
+      "path": "/api/cron/sce-health-check",
+      "schedule": "0 3 * * *"
     },
     {
-      "path": "/api/cron/update-trending",
-      "schedule": "0 6 * * *"
-    },
-    {
-      "path": "/api/cron/cleanup-cache",
-      "schedule": "0 5 * * *"
-    },
-    {
-      "path": "/api/cron/cleanup",
-      "schedule": "0 4 * * *"
-    },
-    {
-      "path": "/api/cron/notify-events",
-      "schedule": "0 16 * * *"
-    },
-    {
-      "path": "/api/cron/daily-summary",
-      "schedule": "0 15 * * *"
-    },
-    {
-      "path": "/api/cron/ingest-events-external",
-      "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/cron/health-check",
+      "path": "/api/cron/sce-daily-report",
       "schedule": "0 8 * * *"
     }
   ]
