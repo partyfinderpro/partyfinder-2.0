@@ -8,6 +8,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // OVERRIDE DEFAULT PINK TO GOLD (For components using text-pink-500)
+        pink: {
+          50: '#fcf6ba',
+          100: '#fcf6ba',
+          200: '#edd889',
+          300: '#dfba58',
+          400: '#bf953f',
+          500: '#bf953f', // Main Gold
+          600: '#aa771c',
+          700: '#aa771c',
+          800: '#8a5d12',
+          900: '#5c3d09',
+        },
         // ⚠️ PALETA VIP ACTIVADA - Dorado/Morado Premium
         venuz: {
           black: '#050505',       // Negro absoluto (era #0a0a0a)

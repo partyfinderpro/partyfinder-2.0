@@ -4,6 +4,29 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Montserrat:wght@300;400;500;600;700&display=swap');
 
+/* ============================================
+   VENUZ - SOLO CAMBIOS DE COLOR
+   NO TOCAR ESTRUCTURA, SOLO PALETA
+   ============================================ */
+
+/* NUEVOS COLORES VIP PARA AGREGAR: */
+:root {
+  /* Oro Premium */
+  --vip-oro-brillo: #fcf6ba;
+  --vip-oro-base: #bf953f;
+  --vip-oro-oscuro: #aa771c;
+
+  /* Púrpura Profundo */
+  --vip-purpura-fondo: #240046;
+  --vip-purpura-neon: #7b2cbf;
+
+  /* Magenta Vibrante */
+  --vip-magenta: #f72585;
+
+  /* Negro Absoluto */
+  --vip-negro: #050505;
+}
+
 @layer base {
   body {
     @apply bg-black text-white font-body;
@@ -123,10 +146,17 @@
   }
 }
 
-/* Utilities for convenience */
 @layer utilities {
   .text-gold {
     color: #bf953f;
+  }
+
+  .bg-gold-gradient {
+    background: linear-gradient(135deg, #fcf6ba 0%, #bf953f 40%, #aa771c 100%);
+  }
+
+  .bg-purple-gradient {
+    background: linear-gradient(135deg, #7b2cbf 0%, #240046 100%);
   }
 
   .text-gold-gradient {
@@ -134,5 +164,27 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  .border-gold {
+    border-color: rgba(191, 149, 63, 0.3);
+  }
+
+  .border-gold-light {
+    border-color: rgba(252, 246, 186, 0.2);
+  }
+
+  .shadow-gold {
+    box-shadow: 0 4px 20px rgba(191, 149, 63, 0.2);
+  }
+
+  .shadow-gold-lg {
+    box-shadow: 0 10px 40px rgba(191, 149, 63, 0.3);
+  }
+
+  .glow-gold {
+    box-shadow:
+      0 0 20px rgba(191, 149, 63, 0.3),
+      0 0 40px rgba(191, 149, 63, 0.15);
   }
 }
