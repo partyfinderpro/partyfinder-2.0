@@ -139,6 +139,7 @@ export default function RootLayout({
               {/* <AgeGate> */}
               {children}
               <Footer />
+              {/* v3.0-GOLD-VIP-DEPLOY - Force Cache Purge */}
               {/* </AgeGate> */}
             </div>
           </CasinoThemeWrapper>
