@@ -341,16 +341,15 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* 🔥 Banner Publicitario Rotativo (Full Width Body) */}
+      <div className="w-full mt-14 sm:mt-16 lg:mt-20">
+        <BannerRotator />
+      </div>
+
       {/* ====================================
           MAIN CONTENT AREA
           ==================================== */}
-      <div className="max-w-[1800px] mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-6">
-
-        {/* 🔥 Banner Publicitario Rotativo (Full Width Top) */}
-        {/* Se usa mt-16/mt-20 para compensar el header fixed y pegarse justo debajo */}
-        <div className="w-full mt-[60px] sm:mt-[70px] lg:mt-[80px] mb-6">
-          <BannerRotator />
-        </div>
+      <div className="max-w-[1800px] mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-6 relative z-10">
 
         <div className="grid grid-cols-12 gap-6 bg-transparent px-4 sm:px-0">
 
