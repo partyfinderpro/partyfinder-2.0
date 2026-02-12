@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
 import ContentCard, { VideoPlayer, MemoizedContentCard } from "@/components/ContentCard";
 import FeedCardDynamic from "@/components/FeedCardDynamic";
+import BannerRotator from "@/components/ui/BannerRotator";
 // import ContentCardDesktop from '@/components/ContentCardDesktop'; // Removed legacy
 import Image from "next/image";
 import ContentPreviewModal from "@/components/ContentPreviewModal";
@@ -460,6 +461,9 @@ export default function HomePage() {
               Mobile: col-span-12 (full width)
               ==================================== */}
           <main className="col-span-12 lg:col-span-7 xl:col-span-7">
+
+            {/* 🔥 Banner Publicitario Rotativo (Top of Feed) */}
+            <BannerRotator />
 
             {/* Filtros móviles - Solo visible en móvil */}
             <div className="lg:hidden mb-4 overflow-x-auto scrollbar-hide">
