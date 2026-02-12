@@ -342,7 +342,8 @@ export default function HomePage() {
       )}
 
       {/* 🔥 Banner Publicitario Rotativo (Full Width Body) */}
-      <div className="w-full mt-14 sm:mt-16 lg:mt-20">
+      {/* Ajustado milimétricamente al header: h-14(56px), sm:h-16(64px), lg:h-18(72px) */}
+      <div className="w-full mt-14 sm:mt-16 lg:mt-[72px]">
         <BannerRotator />
       </div>
 
