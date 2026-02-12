@@ -93,7 +93,7 @@ export default function DynamicCasinoBackground() {
     );
 
     return (
-        <div className="fixed inset-0 w-full h-full -z-50 bg-vip-black overflow-hidden pointer-events-none">
+        <div className="fixed inset-0 w-full h-full z-[-10] bg-vip-black overflow-hidden pointer-events-none">
 
             {/* 1. LAYER DE IMÁGENES CON TRANSICIÓN SUAVE */}
             <AnimatePresence mode="popLayout">
@@ -101,7 +101,7 @@ export default function DynamicCasinoBackground() {
                     key={currentIndex}
                     src={BACKGROUND_IMAGES[currentIndex]}
                     initial={{ opacity: 0, scale: 1.05 }}
-                    animate={{ opacity: 0.6, scale: 1 }} // Opacidad y zoom suave
+                    animate={{ opacity: 0.9, scale: 1 }} // Opacidad y zoom suave
                     exit={{ opacity: 0 }}
                     transition={{ duration: 2.5, ease: "easeInOut" }} // Fade lento (2.5s)
                     className="absolute inset-0 w-full h-full object-cover"

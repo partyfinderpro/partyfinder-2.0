@@ -140,6 +140,10 @@ export default function RootLayout({
             color: #e6d9ff; /* Blanco lavanda suave */
             font-family: 'Playfair Display', serif;
             /* margin: 0; padding: 20px; Eliminados para no afectar layout nextjs */
+            min-height: 100vh;
+            background-attachment: fixed;
+            position: relative;
+          }
 
           /* ==================== MEJORA ZONA SUPERIOR ==================== */
 
@@ -179,10 +183,6 @@ export default function RootLayout({
               box-shadow: 0 0 20px #00ff88;
               color: #000 !important;
               font-weight: bold;
-          }
-            min-height: 100vh;
-            background-attachment: fixed;
-            position: relative;
           }
 
           /* Pulso neón overlay */
