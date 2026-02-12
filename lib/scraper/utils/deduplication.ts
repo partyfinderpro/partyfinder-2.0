@@ -3,10 +3,16 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+const getSupabase = () => {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+
+  if (!url || !key) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+  }
+
+  return createClient(url, key);
+};
 
 /**
  * Normaliza un título para comparación
@@ -62,6 +68,8 @@ function calculateSimilarity(str1: string, str2: string): number {
 export async function deduplicateEvents(events: any[], sourceId?: string): Promise<any[]> {
   if (events.length === 0) return [];
 
+  const supabase = getSupabase();
+
   try {
     // Obtener eventos existentes de esta fuente (últimos 30 días)
     const thirtyDaysAgo = new Date();
@@ -85,7 +93,7 @@ export async function deduplicateEvents(events: any[], sourceId?: string): Promi
     // Filtrar eventos que ya existen
     const uniqueEvents = events.filter(event => {
       const key = generateEventKey(event.title, event.event_date);
-      
+
       // Si existe exactamente igual, descartar
       if (existingSet.has(key)) {
         return false;
@@ -93,7 +101,7 @@ export async function deduplicateEvents(events: any[], sourceId?: string): Promi
 
       // Verificar similitud con eventos existentes de la misma fecha
       const sameDate = existing?.filter(e => e.event_date === event.event_date) || [];
-      
+
       for (const existing of sameDate) {
         const similarity = calculateSimilarity(event.title, existing.title);
         if (similarity > 0.85) { // 85% similar → considerar duplicado
@@ -124,14 +132,14 @@ export async function deduplicateEvents(events: any[], sourceId?: string): Promi
  */
 export function deduplicateLocalEvents(events: any[]): any[] {
   const seen = new Set<string>();
-  
+
   return events.filter(event => {
     const key = generateEventKey(event.title, event.event_date);
-    
+
     if (seen.has(key)) {
       return false;
     }
-    
+
     seen.add(key);
     return true;
   });

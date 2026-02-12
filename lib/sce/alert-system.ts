@@ -1,10 +1,16 @@
 // lib/sce/alert-system.ts
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+const getSupabase = () => {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+
+  if (!url || !key) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+  }
+
+  return createClient(url, key);
+};
 
 /**
  * Enviar alerta a Telegram
@@ -50,6 +56,8 @@ export async function sendTelegramAlert(message: string, severity: 'info' | 'war
  * Enviar reporte diario
  */
 export async function sendDailyReport() {
+  const supabase = getSupabase();
+
   const { data: alerts } = await supabase
     .from('sce_alerts')
     .select('*')
@@ -84,6 +92,8 @@ ${failedSources.length > 0 ? `\n⚠️ <b>Fuentes con problemas:</b>\n${failedSo
  * Procesar alertas pendientes y enviarlas
  */
 export async function processAlerts() {
+  const supabase = getSupabase();
+
   const { data: alerts } = await supabase
     .from('sce_alerts')
     .select('*')

@@ -8,10 +8,16 @@ import { parseDateSpanish, isValidEventDate } from './utils/date-parser';
 import { matchKeywords, getKeywordsMap, shouldIncludeEvent } from './utils/keywords';
 import { deduplicateEvents, deduplicateLocalEvents } from './utils/deduplication';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+const getSupabase = () => {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+
+  if (!url || !key) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+  }
+
+  return createClient(url, key);
+};
 
 const CONFIG = {
   timeout: 25000,
@@ -148,6 +154,8 @@ export async function scrapeGobierno(source: any): Promise<ScrapedEvent[]> {
   // === FASE 3: Deduplicación local + base de datos ===
   let uniqueEvents = deduplicateLocalEvents(bestEvents);
   uniqueEvents = await deduplicateEvents(uniqueEvents, source.id);
+
+  const supabase = getSupabase();
 
   // === FASE 4: Insertar en pending_events ===
   if (uniqueEvents.length > 0) {

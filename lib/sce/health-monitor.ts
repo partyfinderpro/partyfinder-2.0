@@ -2,10 +2,16 @@
 import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
+const getSupabase = () => {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+
+  if (!url || !key) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+  }
+
+  return createClient(url, key);
+};
 
 interface HealthCheckResult {
   source_id: string;
@@ -65,6 +71,7 @@ async function checkUrlHealth(url: string): Promise<Omit<HealthCheckResult, 'sou
  */
 export async function runHealthCheck() {
   console.log('🏥 Health Monitor - Iniciando');
+  const supabase = getSupabase();
 
   const { data: sources } = await supabase
     .from('sce_sources')
