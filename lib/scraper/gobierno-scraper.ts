@@ -45,14 +45,14 @@ export async function scrapeGobierno(source: any): Promise<ScrapedEvent[]> {
   console.log(`[Gobierno v4.0] → ${source.name}`);
 
   let html = '';
-  
+
   // === FASE 1: Descarga con retries exponenciales ===
   for (let attempt = 1; attempt <= CONFIG.maxRetries; attempt++) {
     try {
       if (attempt > 1) {
         await new Promise(r => setTimeout(r, (attempt - 1) * CONFIG.baseRetryDelay));
       }
-      
+
       const response = await axios.get(source.url, {
         timeout: CONFIG.timeout,
         headers: { 'User-Agent': CONFIG.userAgent },
@@ -95,7 +95,7 @@ export async function scrapeGobierno(source: any): Promise<ScrapedEvent[]> {
       if (events.length >= CONFIG.maxEventsPerSource) return false; // Break
 
       const $elem = $(elem);
-      
+
       // Extraer información
       const title = extractBestTitle($elem);
       if (!title || title.length < 8) return;
@@ -105,7 +105,7 @@ export async function scrapeGobierno(source: any): Promise<ScrapedEvent[]> {
       if (!parsed) return;
       if (!isValidEventDate(parsed.date)) return;
 
-      const description = extractBestDescription($elem);
+      const description = extractBestDescription($elem, $);
       const location = extractBestLocation($elem) || source.municipality || source.state;
 
       // Matching de keywords
@@ -187,7 +187,7 @@ export async function scrapeGobierno(source: any): Promise<ScrapedEvent[]> {
 
 // === Funciones auxiliares robustas ===
 
-function extractBestTitle($elem: cheerio.Cheerio): string {
+function extractBestTitle($elem: cheerio.Cheerio<any>): string {
   const candidates = [
     $elem.find('h1, h2, h3, h4, .title, .titulo, .nombre, .event-title').first().text().trim(),
     $elem.find('strong, b').first().text().trim(),
@@ -198,7 +198,7 @@ function extractBestTitle($elem: cheerio.Cheerio): string {
   return candidates.find(t => t.length >= 8 && t.length <= 200) || '';
 }
 
-function extractBestDate($elem: cheerio.Cheerio): string {
+function extractBestDate($elem: cheerio.Cheerio<any>): string {
   const candidates = [
     $elem.find('time, .fecha, .date, .dia, span[class*="date"]').first().text().trim(),
     $elem.find('[datetime]').attr('datetime') || '',
@@ -209,7 +209,7 @@ function extractBestDate($elem: cheerio.Cheerio): string {
   return candidates.find(t => t && t.length > 0) || '';
 }
 
-function extractBestDescription($elem: cheerio.Cheerio): string {
+function extractBestDescription($elem: cheerio.Cheerio<any>, $: cheerio.CheerioAPI): string {
   return $elem
     .find('p, .description, .desc, .info, .contenido, .resumen')
     .filter((_, p) => $(p).text().length > 40)
@@ -219,7 +219,7 @@ function extractBestDescription($elem: cheerio.Cheerio): string {
     .substring(0, 500) || '';
 }
 
-function extractBestLocation($elem: cheerio.Cheerio): string {
+function extractBestLocation($elem: cheerio.Cheerio<any>): string {
   return $elem
     .find('.lugar, .location, .venue, .direccion, .lugar-evento, .sitio')
     .first()
