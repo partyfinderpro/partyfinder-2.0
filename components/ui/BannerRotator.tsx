@@ -51,7 +51,7 @@ export default function BannerRotator() {
 
     return (
         <div
-            className="relative w-full h-[140px] md:h-[220px] overflow-hidden group mb-4 z-20"
+            className="relative w-full h-[140px] md:h-[220px] overflow-hidden group z-20"
             style={{
                 boxShadow: '0 4px 30px rgba(0, 255, 255, 0.15)', // Sombra Cyan sutil
                 borderBottom: '1px solid rgba(0, 255, 255, 0.3)' // Borde Cyan sutil

@@ -344,8 +344,15 @@ export default function HomePage() {
       {/* ====================================
           MAIN CONTENT AREA
           ==================================== */}
-      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-12 gap-6">
+      <div className="max-w-[1800px] mx-auto px-0 sm:px-6 lg:px-8 py-0 sm:py-6">
+
+        {/* 🔥 Banner Publicitario Rotativo (Full Width Top) */}
+        {/* Se usa mt-16/mt-20 para compensar el header fixed y pegarse justo debajo */}
+        <div className="w-full mt-[60px] sm:mt-[70px] lg:mt-[80px] mb-6">
+          <BannerRotator />
+        </div>
+
+        <div className="grid grid-cols-12 gap-6 bg-transparent px-4 sm:px-0">
 
           {/* ====================================
               SIDEBAR IZQUIERDO - Solo Desktop (lg+)
@@ -461,9 +468,6 @@ export default function HomePage() {
               Mobile: col-span-12 (full width)
               ==================================== */}
           <main className="col-span-12 lg:col-span-7 xl:col-span-7">
-
-            {/* 🔥 Banner Publicitario Rotativo (Top of Feed) */}
-            <BannerRotator />
 
             {/* Filtros móviles - Solo visible en móvil */}
             <div className="lg:hidden mb-4 overflow-x-auto scrollbar-hide">
