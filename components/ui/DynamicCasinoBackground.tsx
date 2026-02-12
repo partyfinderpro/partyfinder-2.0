@@ -109,8 +109,8 @@ export default function DynamicCasinoBackground() {
                 />
             </AnimatePresence>
 
-            {/* 2. OVERLAY DE COLOR ATMOSFÉRICO (Gradients) */}
-            <div className="absolute inset-0 bg-gradient-to-b from-vip-black/80 via-vip-purple/30 to-vip-black/90" />
+            {/* 2. OVERLAY DE COLOR ATMOSFÉRICO (Gradients) - Ajustado para más visibilidad */}
+            <div className="absolute inset-0 bg-gradient-to-b from-vip-black/40 via-vip-purple/10 to-vip-black/60" />
 
             {/* 3. TEXTURA DE RUIDO (Efecto Film Grain / Terciopelo) */}
             <div

@@ -14,7 +14,7 @@ export default function CasinoThemeWrapper({ children }: CasinoThemeWrapperProps
             <DynamicCasinoBackground />
 
             {/* Contenido original con z-index para quedar encima */}
-            <div className="relative z-10 min-h-screen bg-vip-black/70 backdrop-blur-sm">
+            <div className="relative z-10 min-h-screen bg-black/30 backdrop-blur-[2px]">
                 {children}
             </div>
         </>
