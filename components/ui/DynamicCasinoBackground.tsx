@@ -4,7 +4,7 @@
    DYNAMIC CASINO BACKGROUND - VENUZ LUXURY EDITION
    Inspirado en: "Gates of Olympus" x "High-End Nightclub"
    Características:
-   - Rotación suave de videos cinemáticos (4k/HD)
+   - Rotación suave de IMÁGENES o VIDEOS
    - Overlay de texturas (Ruido + Viñeta)
    - Partículas doradas flotantes (Champagne bubbles effect)
    ========================================================================== */
@@ -15,22 +15,22 @@ import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
 import { type Container, type Engine } from "@tsparticles/engine";
 
-// 🎥 VIDEOS SELECCIONADOS (Royalty Free - Pexels/Coverr/Mixkit)
-// Estos URLs son directos a CDNs de alta velocidad.
-const LUXURY_VIDEOS = [
-    // 1. Humo Púrpura y Luces (Vibe místico/Madame Destiny)
-    "https://cdn.coverr.co/videos/coverr-colorful-neon-lights-in-dark-room-2759/1080p.mp4",
-    // 2. Chispas Doradas / Champagne (Vibe Olympus)
-    "https://cdn.coverr.co/videos/coverr-pouring-champagne-5544/1080p.mp4",
-    // 3. Cartas de Poker en Slow Motion (Vibe Casino Clásico)
-    "https://cdn.coverr.co/videos/coverr-playing-cards-in-casino-5546/1080p.mp4",
-    // 4. Luces desenfocadas de ciudad nocturna (Vibe Nightlife Checkin)
-    "https://cdn.coverr.co/videos/coverr-night-city-lights-bokeh-5677/1080p.mp4"
+// 🖼️ TUS IMÁGENES DE FONDO (Poner en carpeta public/backgrounds/)
+// Ejemplo: "/backgrounds/imagen1.jpg"
+const BACKGROUND_IMAGES = [
+    "/backgrounds/Gemini_Generated_Image_161hu0161hu0161h.png",
+    "/backgrounds/Gemini_Generated_Image_acy9fvacy9fvacy9.png",
+    "/backgrounds/Gemini_Generated_Image_as7lv3as7lv3as7l.png",
+    "/backgrounds/Gemini_Generated_Image_pzgojzpzgojzpzgo.png",
+    "/backgrounds/Gemini_Generated_Image_r5594gr5594gr559.png"
 ];
+
+// ⏱️ TIEMPO DE ROTACIÓN (en milisegundos)
+const ROTATION_INTERVAL = 8000; // 8 segundos
 
 export default function DynamicCasinoBackground() {
     const [init, setInit] = useState(false);
-    const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+    const [currentIndex, setCurrentIndex] = useState(0);
 
     // Inicializar motor de partículas (solo una vez al montar)
     useEffect(() => {
@@ -41,11 +41,14 @@ export default function DynamicCasinoBackground() {
         });
     }, []);
 
-    // Rotar videos cada 20 segundos (Loop Infinito)
+    // Rotar imágenes cada X segundos (Loop Infinito)
     useEffect(() => {
+        if (BACKGROUND_IMAGES.length <= 1) return;
+
         const interval = setInterval(() => {
-            setCurrentVideoIndex((prev) => (prev + 1) % LUXURY_VIDEOS.length);
-        }, 20000); // 20 seg por video
+            setCurrentIndex((prev) => (prev + 1) % BACKGROUND_IMAGES.length);
+        }, ROTATION_INTERVAL);
+
         return () => clearInterval(interval);
     }, []);
 
@@ -92,25 +95,22 @@ export default function DynamicCasinoBackground() {
     return (
         <div className="fixed inset-0 w-full h-full -z-50 bg-vip-black overflow-hidden pointer-events-none">
 
-            {/* 1. LAYER DE VIDEOS CON TRANSICIÓN SUAVE */}
+            {/* 1. LAYER DE IMÁGENES CON TRANSICIÓN SUAVE */}
             <AnimatePresence mode="popLayout">
-                <motion.video
-                    key={currentVideoIndex}
-                    src={LUXURY_VIDEOS[currentVideoIndex]}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.4 }} // Opacidad baja para que el texto resalte
+                <motion.img
+                    key={currentIndex}
+                    src={BACKGROUND_IMAGES[currentIndex]}
+                    initial={{ opacity: 0, scale: 1.05 }}
+                    animate={{ opacity: 0.6, scale: 1 }} // Opacidad y zoom suave
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 3, ease: "easeInOut" }} // Fade muy lento (3s)
-                    className="absolute inset-0 w-full h-full object-cover mix-blend-luminosity"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
+                    transition={{ duration: 2.5, ease: "easeInOut" }} // Fade lento (2.5s)
+                    className="absolute inset-0 w-full h-full object-cover"
+                    alt="Casino Background"
                 />
             </AnimatePresence>
 
             {/* 2. OVERLAY DE COLOR ATMOSFÉRICO (Gradients) */}
-            <div className="absolute inset-0 bg-gradient-to-b from-vip-black/90 via-vip-purple/40 to-vip-black/90" />
+            <div className="absolute inset-0 bg-gradient-to-b from-vip-black/80 via-vip-purple/30 to-vip-black/90" />
 
             {/* 3. TEXTURA DE RUIDO (Efecto Film Grain / Terciopelo) */}
             <div

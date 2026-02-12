@@ -130,6 +130,62 @@ export default function RootLayout({
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossOrigin=""
         />
+        <style dangerouslySetInnerHTML={{
+          __html: `
+          @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Playfair+Display:wght@700&display=swap');
+
+          body {
+            /* Púrpura oscuro neón casino - Fallback si el componente react falla */
+            background: linear-gradient(135deg, #0a0015 0%, #1a0033 50%, #330022 100%);
+            color: #e6d9ff; /* Blanco lavanda suave */
+            font-family: 'Playfair Display', serif;
+            /* margin: 0; padding: 20px; Eliminados para no afectar layout nextjs */
+            min-height: 100vh;
+            background-attachment: fixed;
+            position: relative;
+          }
+
+          /* Pulso neón overlay */
+          body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 30% 70%, rgba(147,0,255,0.12), transparent 40%),
+                        radial-gradient(circle at 70% 30%, rgba(255,215,0,0.10), transparent 40%);
+            animation: neonPulse 12s infinite alternate ease-in-out;
+            z-index: -1;
+            pointer-events: none;
+          }
+
+          @keyframes neonPulse {
+            0% { opacity: 0.5; }
+            100% { opacity: 0.85; }
+          }
+
+          /* Estilos para Headers Específicos (si se usan esas etiquetas) */
+          h1, h2, h3 {
+            color: #ffcc00; /* Oro vibrante */
+            text-shadow: 0 0 12px #ff00aa, 0 0 24px #ffcc00, 0 0 36px #cc00ff; /* Glow multi neón */
+            font-family: 'Orbitron', sans-serif;
+          }
+
+          /* Efectos Globales de Botones */
+          button.venuz-neon-btn {
+            background: linear-gradient(135deg, #ff0066, #cc00ff, #ff3399);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(255,0,102,0.7);
+            transition: all 0.3s;
+          }
+
+          button.venuz-neon-btn:hover {
+            background: linear-gradient(135deg, #ff3399, #ff00cc, #ff0066);
+            box-shadow: 0 0 40px rgba(255,0,170,1);
+            transform: scale(1.08);
+          }
+        `}} />
       </head>
       <body className={`${inter.className} bg-transparent text-white antialiased`}>
         <AuthProvider>
