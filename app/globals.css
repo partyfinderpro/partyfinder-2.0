@@ -34,7 +34,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     /* VIP Black Background */
-    background-color: #050505;
+    background-color: transparent !important;
   }
 
   /* HEADINGS - Use font-display but keep color flexible unless specified */

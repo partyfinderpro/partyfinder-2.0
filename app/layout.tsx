@@ -135,11 +135,51 @@ export default function RootLayout({
           @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Playfair+Display:wght@700&display=swap');
 
           body {
-            /* Púrpura oscuro neón casino - Fallback si el componente react falla */
-            background: linear-gradient(135deg, #0a0015 0%, #1a0033 50%, #330022 100%);
+            /* Fondo transparente para que se vea el componente DynamicCasinoBackground */
+            background: transparent !important;
             color: #e6d9ff; /* Blanco lavanda suave */
             font-family: 'Playfair Display', serif;
             /* margin: 0; padding: 20px; Eliminados para no afectar layout nextjs */
+
+          /* ==================== MEJORA ZONA SUPERIOR ==================== */
+
+          header, .top-bar, [class*="header"] {
+              background: linear-gradient(90deg, #1a0033, #330022, #1a0033) !important;
+              border-bottom: 3px solid #ff00aa;
+              box-shadow: 0 4px 25px rgba(255, 0, 170, 0.35) !important;
+          }
+
+          /* Logo VENUZ más neón y glow */
+          h1, .logo, [class*="venu"], [class*="VENUZ"] {
+              text-shadow: 
+                  0 0 10px #ff00aa,
+                  0 0 20px #ff00aa,
+                  0 0 40px #cc00ff,
+                  0 0 60px #ffd700 !important;
+              color: #ffcc00 !important;
+              letter-spacing: 2px;
+          }
+
+          /* Barra de stats (2,200+ lugares, rating, etc.) */
+          .stats-bar, .stat-pills, [class*="2,200"], [class*="Rating"] {
+              background: rgba(255, 215, 0, 0.12) !important;
+              border: 1px solid #ffd700;
+              box-shadow: 0 0 15px rgba(255, 215, 0, 0.4) !important;
+          }
+
+          /* Texto de las stats más brillante */
+          .stats-bar span, .stats-bar strong {
+              color: #ffffff !important;
+              text-shadow: 0 0 8px #ffd700;
+          }
+
+          /* Online ahora + badges */
+          .online-badge, [class*="848"], [class*="online"] {
+              background: linear-gradient(45deg, #00ff88, #00cc66) !important;
+              box-shadow: 0 0 20px #00ff88;
+              color: #000 !important;
+              font-weight: bold;
+          }
             min-height: 100vh;
             background-attachment: fixed;
             position: relative;
