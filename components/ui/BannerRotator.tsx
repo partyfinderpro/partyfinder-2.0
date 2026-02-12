@@ -37,16 +37,24 @@ export default function BannerRotator() {
         return () => clearInterval(interval);
     }, []);
 
+    const nextSlide = () => {
+        setCurrentIndex((prev) => (prev + 1) % BANNERS.length);
+    };
+
+    const prevSlide = () => {
+        setCurrentIndex((prev) => (prev === 0 ? BANNERS.length - 1 : prev - 1));
+    };
+
     const banner = BANNERS[currentIndex];
 
     if (!banner) return null; // Safety check
 
     return (
         <div
-            className="relative w-full h-[120px] md:h-[180px] overflow-hidden group mb-6 z-20"
+            className="relative w-full h-[140px] md:h-[220px] overflow-hidden group mb-4 z-20"
             style={{
-                boxShadow: '0 4px 25px rgba(255, 0, 170, 0.25)',
-                borderBottom: '2px solid rgba(255, 0, 170, 0.4)'
+                boxShadow: '0 4px 30px rgba(0, 255, 255, 0.15)', // Sombra Cyan sutil
+                borderBottom: '1px solid rgba(0, 255, 255, 0.3)' // Borde Cyan sutil
             }}
         >
             <a
@@ -71,20 +79,26 @@ export default function BannerRotator() {
                 </span>
             </a>
 
-            {/* Indicadores (Dots) */}
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2 z-30">
-                {BANNERS.map((_, idx) => (
-                    <button
-                        key={idx}
-                        onClick={() => setCurrentIndex(idx)}
-                        className={`w-2 h-2 rounded-full transition-all duration-300 ${idx === currentIndex
-                                ? 'bg-[#ff00aa] w-6 shadow-[0_0_8px_#ff00aa]'
-                                : 'bg-white/30 hover:bg-white/60'
-                            }`}
-                        aria-label={`Ver banner ${idx + 1}`}
-                    />
-                ))}
-            </div>
+            {/* Navegación con Flechas Laterales (Cyan Neón) */}
+            <button
+                onClick={(e) => { e.preventDefault(); prevSlide(); }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/30 hover:bg-black/60 text-cyan-400 hover:text-cyan-200 transition-all hover:scale-110 backdrop-blur-sm border border-cyan-500/30"
+                aria-label="Anterior"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m15 18-6-6 6-6" />
+                </svg>
+            </button>
+
+            <button
+                onClick={(e) => { e.preventDefault(); nextSlide(); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/30 hover:bg-black/60 text-cyan-400 hover:text-cyan-200 transition-all hover:scale-110 backdrop-blur-sm border border-cyan-500/30"
+                aria-label="Siguiente"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m9 18 6-6-6-6" />
+                </svg>
+            </button>
         </div>
     );
 }

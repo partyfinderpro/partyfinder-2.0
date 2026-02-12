@@ -63,40 +63,40 @@ export default function Header({
                 }
       `}
         >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16 sm:h-18 lg:h-20">
+            <div className="w-full px-2 sm:px-4">
+                <div className="flex items-center justify-between h-14 sm:h-16 lg:h-18 px-2 sm:px-4">
 
-                    {/* Logo + Location Selector */}
-                    <div className="flex items-center gap-3 sm:gap-4">
+                    {/* Logo + Location Selector - MOVED TO FAR LEFT */}
+                    <div className="flex items-center gap-1 sm:gap-2">
                         <button
                             onClick={onMenuClick}
-                            className="lg:hidden p-2 -ml-2 text-white/80 hover:text-pink-400 transition-colors"
+                            className="lg:hidden p-1.5 text-white/80 hover:text-pink-400 transition-colors"
                         >
-                            <Menu className="w-6 h-6" />
+                            <Menu className="w-5 h-5" />
                         </button>
 
-                        <div className="flex flex-col">
+                        <div className="flex flex-col leading-tight">
                             <motion.h1
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                className="text-2xl sm:text-3xl font-black tracking-tight"
+                                className="text-xl sm:text-2xl font-black tracking-tight"
                             >
                                 <span className="bg-gradient-to-r from-pink-500 via-rose-400 to-amber-400 bg-clip-text text-transparent">
                                     VENUZ
                                 </span>
                             </motion.h1>
 
-                            {/* Selector de Ciudad */}
-                            <div className="relative">
+                            {/* Selector de Ciudad - Compacto */}
+                            <div className="relative -mt-0.5">
                                 <button
                                     onClick={() => setShowCitySelector(!showCitySelector)}
-                                    className="flex items-center gap-1 text-xs text-white/50 hover:text-white transition-colors"
+                                    className="flex items-center gap-0.5 text-[10px] sm:text-xs text-white/50 hover:text-white transition-colors"
                                 >
-                                    <MapPin className="w-3 h-3 text-pink-500" />
-                                    <span className="truncate max-w-[120px] sm:max-w-none font-medium">
+                                    <MapPin className="w-2.5 h-2.5 text-pink-500" />
+                                    <span className="truncate max-w-[100px] sm:max-w-none font-medium">
                                         {city}
                                     </span>
-                                    <ChevronDown className={`w-3 h-3 transition-transform ${showCitySelector ? 'rotate-180' : ''}`} />
+                                    <ChevronDown className={`w-2.5 h-2.5 transition-transform ${showCitySelector ? 'rotate-180' : ''}`} />
                                 </button>
 
                                 <AnimatePresence>
