@@ -1,10 +1,10 @@
-const SUPABASE_URL = "https://jbrmziwosyeructvlvrq.supabase.co";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 // Usando la llave que vimos que funcionó en el test de conexión anterior
-const SUPABASE_ANON_KEY = "sb_publishable_emVwFBH19Vn54SrEegsWxg_WKU9MaHR";
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 async function testWebhook() {
     const webhookUrl = `${SUPABASE_URL}/functions/v1/apify-webhook`;
-    const secret = "venuz-apify-2026";
+    const secret = process.env.APIFY_WEBHOOK_SECRET || "venuz-apify-2026";
 
     console.log(`Testing Webhook URL: ${webhookUrl}`);
 

@@ -1,12 +1,11 @@
 // lib/supabase.ts
 import { createClient } from '@supabase/supabase-js'
 
-// FALLBACK DEFINITIVO - Inyectado directamente para asegurar conexión en Producción
-const SUPABASE_URL = 'https://jbrmziwosyeructvlvrq.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_emVwFBH19Vn54SrEegsWxg_WKU9MaHR';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-if (typeof window !== 'undefined') {
-    console.log('[VENUZ] Conexión directa a Supabase activada.');
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error('[VENUZ] ⚠️ Missing SUPABASE_URL or SUPABASE_ANON_KEY environment variables');
 }
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

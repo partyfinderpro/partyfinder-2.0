@@ -8,7 +8,7 @@ let supabaseInstance: SupabaseClient | null = null;
 
 function getSupabase(): SupabaseClient {
     if (!supabaseInstance) {
-        const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jbrmziwosyeructvlvrq.supabase.co';
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
         const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
         supabaseInstance = createClient(url, key);

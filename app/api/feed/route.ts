@@ -2,14 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { HighwayAlgorithm, UserContext } from '@/lib/highway-v4';
 import { createClient } from '@supabase/supabase-js';
 
-// Fallback Supabase client - usando credenciales directas para garantizar conexión
-const SUPABASE_URL = 'https://jbrmziwosyeructvlvrq.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_emVwFBH19Vn54SrEegsWxg_WKU9MaHR';
-
+// Supabase client from env variables
 function getFallbackSupabase() {
     return createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || SUPABASE_URL,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || SUPABASE_ANON_KEY
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 }
 

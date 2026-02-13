@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY!;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://labelbabel.com';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL!;
 
 // Coordenadas centrales Puerto Vallarta
 const PVR_LAT = 20.6534;

@@ -2,8 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // CREDENCIALES DIRECTAS PARA EVITAR ERRORES DE .ENV
-const SUPABASE_URL = 'https://jbrmziwosyeructvlvrq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impicm16aXdvc3llcnVjdHZsdnJxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Njk2ODg0MSwiZXhwIjoyMDgyNTQ0ODQxfQ.O20L2R8qZmZ9Cm41rs4FVNCpROQXC9oLO731DlHMZkA';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const MICROLINK_API = 'https://api.microlink.io';

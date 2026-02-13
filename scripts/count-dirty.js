@@ -1,7 +1,7 @@
 
 const { createClient } = require('@supabase/supabase-js');
-const SUPABASE_URL = "https://jbrmziwosyeructvlvrq.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_emVwFBH19Vn54SrEegsWxg_WKU9MaHR";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || require('dotenv').config({ path: '.env.local' }).parsed?.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || require('dotenv').config({ path: '.env.local' }).parsed?.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 

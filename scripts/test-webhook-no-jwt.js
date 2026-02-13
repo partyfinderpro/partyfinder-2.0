@@ -1,8 +1,8 @@
-const SUPABASE_URL = "https://jbrmziwosyeructvlvrq.supabase.co";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
 async function testWebhook() {
     const webhookUrl = `${SUPABASE_URL}/functions/v1/apify-webhook`;
-    const secret = "venuz-apify-2026"; // El secreto que definimos
+    const secret = process.env.APIFY_WEBHOOK_SECRET || "venuz-apify-2026"; // El secreto que definimos
 
     console.log(`Testing Webhook URL: ${webhookUrl}`);
 

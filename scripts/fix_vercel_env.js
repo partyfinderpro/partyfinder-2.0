@@ -1,8 +1,8 @@
 
 const { execSync } = require('child_process');
 
-const url = "https://jbrmziwosyeructvlvrq.supabase.co";
-const key = "sb_publishable_emVwFBH19Vn54SrEegsWxg_WKU9MaHR";
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 function setEnv(name, value) {
     console.log(`Setting ${name}...`);

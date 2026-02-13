@@ -1,7 +1,7 @@
 const { ApifyClient } = require('apify-client');
 
 const client = new ApifyClient({
-    token: 'apify_api_IsgP0A4xI98EfaqtKnnn7z0m11iuE1SiqOs',
+    token: process.env.APIFY_API_TOKEN,
 });
 
 async function listActors() {

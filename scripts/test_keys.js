@@ -1,9 +1,9 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-const url = "https://jbrmziwosyeructvlvrq.supabase.co";
-const key1 = "sb_publishable_emVwFBH19Vn54SrEegsWxg_WKU9MaHR"; // The one from .env.local
-const key2 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impicm16aXdvc3llcnVjdHZsdnJxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Njk2ODg0MSwiZXhwIjoyMDgyNTQ0ODQxfQ.O20L2R8qZmZ9Cm41rs4FVNCpROQXC9oLO731DlHMZkA"; // The service role from .env
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const key1 = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY; // Loaded from env
+const key2 = process.env.SUPABASE_SERVICE_ROLE_KEY; // Loaded from env
 
 async function test(name, key) {
     console.log(`Testing key: ${name}...`);

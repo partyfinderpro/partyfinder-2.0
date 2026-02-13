@@ -1,8 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
 
 // Configuración desde .env.local (simulada aquí con lo que leí)
-const SUPABASE_URL = "https://jbrmziwosyeructvlvrq.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_emVwFBH19Vn54SrEegsWxg_WKU9MaHR"; // Ojo: esta key parece rara en el archivo, normalmente empieza con 'eyJ...', pero usaré lo que vi o pediré al usuario que verifique si falla. 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY; // Ojo: esta key parece rara en el archivo, normalmente empieza con 'eyJ...', pero usaré lo que vi o pediré al usuario que verifique si falla. 
 // REAL CORRECTION: The key in the previous turn output looked like a placeholder or truncated "sb_publishable...". 
 // Usually anon keys are JWTs starting with eyJ. 
 // However, I will try to use process.env if I can run it with dotenv, or just use fetch for the webhook test which only needs the URL.
@@ -10,7 +10,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_emVwFBH19Vn54SrEegsWxg_WKU9MaHR"; // O
 // Test Webhook
 async function testWebhook() {
     const webhookUrl = `${SUPABASE_URL}/functions/v1/apify-webhook`;
-    const secret = "venuz-apify-2026";
+    const secret = process.env.APIFY_WEBHOOK_SECRET || "venuz-apify-2026";
 
     console.log(`Testing Webhook URL: ${webhookUrl}`);
 

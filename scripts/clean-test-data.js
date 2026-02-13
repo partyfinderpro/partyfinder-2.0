@@ -1,11 +1,11 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const SUPABASE_URL = "https://jbrmziwosyeructvlvrq.supabase.co";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || require('dotenv').config({ path: '.env.local' }).parsed?.NEXT_PUBLIC_SUPABASE_URL;
 // OJO: Para borrar necesitamos la SERVICE_ROLE_KEY porque la Anon Key suele tener solo permisos de lectura/escritura propia, no borrado masivo.
 // Como no la tengo "hardcodeada" aquí por seguridad, intentaré usar la Anon Key. Si falla, avisaré.
 // PERO en este entorno de desarrollo local, a veces la Anon Key tiene permisos relajados. Probemos.
 
-const SUPABASE_ANON_KEY = "sb_publishable_emVwFBH19Vn54SrEegsWxg_WKU9MaHR";
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || require('dotenv').config({ path: '.env.local' }).parsed?.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function cleanTestData() {

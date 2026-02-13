@@ -3,18 +3,16 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { FEED_WEIGHTS } from './feed-config';
 
 
-// Credenciales directas de Supabase como fallback
-const SUPABASE_URL = 'https://jbrmziwosyeructvlvrq.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_emVwFBH19Vn54SrEegsWxg_WKU9MaHR';
-
 // Lazy initialization to avoid build-time errors
 let _supabase: SupabaseClient | null = null
 function getSupabase(): SupabaseClient {
     if (!_supabase) {
-        _supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL || SUPABASE_URL,
-            process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || SUPABASE_ANON_KEY
-        )
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (!url || !key) {
+            console.error('[Highway] ⚠️ Missing Supabase environment variables');
+        }
+        _supabase = createClient(url!, key!)
     }
     return _supabase
 }
