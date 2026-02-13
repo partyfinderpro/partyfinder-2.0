@@ -1,0 +1,117 @@
+/* ==================== ESTILOS GLOBALES LAYOUT ==================== */
+
+:root {
+    --color-primary: #ff00aa;
+    --color-secondary: #ffcc00;
+    --color-tertiary: #cc00ff;
+    --color-success: #00ff88;
+    --glow-primary: 0 0 10px var(--color-primary),
+        0 0 20px var(--color-primary),
+        0 0 40px var(--color-tertiary);
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Playfair+Display:wght@700&display=swap');
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background: transparent !important;
+    color: #e6d9ff;
+    font-family: 'Playfair Display', serif;
+    min-height: 100vh;
+    background-attachment: fixed;
+}
+
+/* ========== HEADER / TOP BAR ========== */
+header,
+.top-bar,
+[role="banner"] {
+    background: linear-gradient(90deg, #1a0033, #330022, #1a0033);
+    border-bottom: 3px solid var(--color-primary);
+    box-shadow: 0 4px 25px rgba(255, 0, 170, 0.35);
+}
+
+/* ========== LOGOS & HEADINGS ========== */
+h1,
+h2,
+h3,
+.logo {
+    color: var(--color-secondary);
+    text-shadow: var(--glow-primary);
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
+}
+
+h1 {
+    font-size: clamp(1.5rem, 5vw, 3rem);
+}
+
+/* ========== BADGES & STATS ========== */
+.stats-bar,
+[class*="stat"] {
+    background: rgba(255, 215, 0, 0.12);
+    border: 1px solid var(--color-secondary);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+.online-badge,
+[class*="online"] {
+    background: linear-gradient(45deg, var(--color-success), #00cc66);
+    box-shadow: 0 0 20px var(--color-success);
+    color: #000;
+    font-weight: bold;
+}
+
+/* ========== NEON PULSE EFFECT ========== */
+@keyframes neonPulse {
+    0% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 0.85;
+    }
+}
+
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at 30% 70%, rgba(147, 0, 255, 0.12), transparent 40%),
+        radial-gradient(circle at 70% 30%, rgba(255, 215, 0, 0.1), transparent 40%);
+    animation: neonPulse 12s infinite alternate ease-in-out;
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* ========== BUTTONS ========== */
+.venuz-neon-btn {
+    background: linear-gradient(135deg, #ff0066, #cc00ff, #ff3399);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 0 20px rgba(255, 0, 102, 0.7);
+    transition: all 0.3s ease;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+}
+
+.venuz-neon-btn:hover {
+    background: linear-gradient(135deg, #ff3399, #ff00cc, #ff0066);
+    box-shadow: 0 0 40px rgba(255, 0, 170, 1);
+    transform: scale(1.08);
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    body {
+        padding: 0;
+    }
+}
