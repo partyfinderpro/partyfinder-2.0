@@ -1,8 +1,20 @@
 {
   "crons": [
     {
+      "path": "/api/cron/sce-orchestrator",
+      "schedule": "0 */6 * * *"
+    },
+    {
       "path": "/api/cron/sce-health-check",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/sce-daily-report",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/sce-process-alerts",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

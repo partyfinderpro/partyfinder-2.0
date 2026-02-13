@@ -1,0 +1,9 @@
+# Variables de entorno para desarrollo local
+# Copia esto en tu archivo .env.local existente
+
+# Telegram Bot (agregado 11 feb 2026)
+TELEGRAM_BOT_TOKEN=8486554034:AAFMApxgneQ6XsPp4OiF3l5p8_5eLjYpmDU
+TELEGRAM_CHAT_ID=8539603941
+
+# Las demás variables ya existen en tu .env.local
+# NO borres las que ya tienes (SUPABASE_URL, etc.)
