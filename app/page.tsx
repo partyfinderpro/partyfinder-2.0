@@ -139,8 +139,6 @@ export default function HomePage() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [notificationCount, setNotificationCount] = useState(5);
-  const [ageVerified, setAgeVerified] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
   const [feedMode, setFeedMode] = useState<FeedMode>('all');
 
   // Modal state para interstitial
@@ -152,28 +150,12 @@ export default function HomePage() {
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
-    // Forzamos verificación automática para evitar bloqueos según reporte de usuario
-    setAgeVerified(true)
-    setShowSplash(false)
-
     if (!localStorage.getItem('venuz_user_id')) {
-
       localStorage.setItem('venuz_user_id', `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
     }
-
-    // Cargar ciudad guardada
-    // const storedCity = localStorage.getItem('venuz_user_city');
-    // if (storedCity) setSelectedCity(storedCity); // Handle by useSmartLocation
   }, [])
 
-  const handleAgeVerification = (verified: boolean) => {
-    if (verified) {
-      localStorage.setItem('venuz_age_verified', 'true')
-      setAgeVerified(true)
-    } else {
-      window.location.href = 'https://www.google.com'
-    }
-  }
+
 
   // 🔥 Filtrar contenido por modo (Nightlife vs Adult)
   const filteredContent = filterByMode(content, feedMode);
@@ -291,30 +273,6 @@ export default function HomePage() {
     views: content.reduce((acc, c) => acc + (c.views || 0), 0)
   };
 
-  // ==========================================
-  // SPLASH SCREEN
-  // ==========================================
-  if (showSplash) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-black">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="text-center"
-        >
-          <h1 className="text-7xl md:text-9xl font-display font-bold text-gradient glow-strong mb-4">
-            VENUZ
-          </h1>
-          <p className="text-venuz-pink text-xl md:text-2xl font-semibold">
-            Tu mundo de entretenimiento
-          </p>
-        </motion.div>
-      </div>
-    )
-  }
-
-  // Bloque de verificación de edad removido para fluidez (Urgente)
 
 
   // ==========================================
