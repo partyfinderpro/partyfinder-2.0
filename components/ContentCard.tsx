@@ -79,7 +79,7 @@ const shouldUseUnoptimized = (url: string): boolean => {
   return PROBLEMATIC_DOMAINS.some(domain => url.includes(domain));
 };
 
-// Componente de Video con Lazy Loading
+// Componente de Video con Lazy Loading Avanzado (v4)
 export function VideoPlayer({
   src,
   thumbnail,
@@ -92,28 +92,77 @@ export function VideoPlayer({
   className?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    if (isActive && videoRef.current) {
-      videoRef.current.play().catch(() => {
-        // Autoplay bloqueado por el navegador
-      });
-    } else if (videoRef.current) {
-      videoRef.current.pause();
+    if (!videoRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsIntersecting(entry.isIntersecting);
+        
+        const video = videoRef.current;
+        if (!video) return;
+
+        if (entry.isIntersecting) {
+          // Lazy loading del src: solo cargar cuando está cerca/visible
+          if (!video.src || video.src === '') {
+            video.src = src;
+            video.load();
+          }
+          
+          if (isActive) {
+            video.play().catch(() => {
+              // Bloqueado o error silencioso
+            });
+          }
+        } else {
+          video.pause();
+          // Opcional: si queremos liberar mucha memoria en feeds infinitos:
+          // video.src = "";
+          // video.load();
+        }
+      },
+      {
+        rootMargin: "300px 0px", // Precarga antes de que entre al viewport
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(videoRef.current);
+    return () => observer.disconnect();
+  }, [src, isActive]);
+
+  // Sincronizar play/pause con el estado activo (TikTok style)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isIntersecting) return;
+
+    if (isActive) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
     }
-  }, [isActive]);
+  }, [isActive, isIntersecting]);
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative bg-black/20 ${className}`}>
       <video
         ref={videoRef}
-        src={src}
         poster={thumbnail}
         loop
         muted
         playsInline
-        className="w-full h-full object-cover"
+        preload="none"
+        onLoadedData={() => setIsLoaded(true)}
+        className={`w-full h-full object-cover transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-40'}`}
       />
+      {!isLoaded && isIntersecting && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-pink-500/30 border-t-pink-500 rounded-full animate-spin" />
+        </div>
+      )}
     </div>
   );
 }

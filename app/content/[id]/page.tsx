@@ -66,6 +66,7 @@ export default async function ContentDetailPage({ params }: { params: { id: stri
                                     controls
                                     className="w-full h-full object-cover"
                                     poster={sanitizeImageUrl(content.image_url)}
+                                    preload="none"
                                 />
                             ) : (
                                 <img

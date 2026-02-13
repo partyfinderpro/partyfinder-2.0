@@ -23,7 +23,8 @@ export default function FeedCardDynamic({
     item,
     className = '',
     onClick,
-    onShare
+    onShare,
+    isActive
 }: FeedCardDynamicProps) {
     // Hook de interacciones (Likes, Views, Shares)
     const {
@@ -66,6 +67,7 @@ export default function FeedCardDynamic({
                 officialWebsite={item.official_website || item.source_url}
                 hasAffiliate={item.has_affiliate || !!item.affiliate_url}
                 contentId={item.id}
+                isActive={isActive}
                 className="absolute inset-0"
             />
 

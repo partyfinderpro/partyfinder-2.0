@@ -15,6 +15,7 @@ interface DynamicPreviewProps {
     officialWebsite?: string;
     hasAffiliate?: boolean;
     contentId?: string;
+    isActive?: boolean;
     className?: string;
 }
 
@@ -29,6 +30,7 @@ export default function DynamicPreview({
     officialWebsite,
     hasAffiliate,
     contentId,
+    isActive,
     className = '',
 }: DynamicPreviewProps) {
     const [muted, setMuted] = useState(true);
@@ -43,7 +45,7 @@ export default function DynamicPreview({
         setIsMobile(/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
     }, []);
 
-    // Intersection Observer para autoplay + tracking
+    // Intersection Observer para lazy loading del src + autoplay + tracking
     useEffect(() => {
         const video = videoRef.current;
         const container = containerRef.current;
@@ -52,25 +54,49 @@ export default function DynamicPreview({
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
-                    // Reproducir video si existe
-                    if (video) {
-                        video.play().catch(() => setHasError(true));
+                    // Lazy loading del src: solo cargar cuando está cerca/visible
+                    if (video && videoUrl && (!video.src || video.src === '')) {
+                        video.src = `/api/proxy/video?url=${encodeURIComponent(videoUrl)}`;
+                        video.load();
                     }
+
+                    // Reproducir video si existe Y (no se provee isActive o isActive es true)
+                    if (video && (isActive === undefined || isActive === true)) {
+                        video.play().catch(() => {
+                            // Silently fail if autoplay is blocked
+                        });
+                    }
+
                     // Trackear view (solo una vez por sesión)
                     if (contentId && typeof sessionStorage !== 'undefined' && !sessionStorage.getItem(`viewed_${contentId}`)) {
                         fetch(`/api/track/view?id=${contentId}`).catch(() => { });
                         sessionStorage.setItem(`viewed_${contentId}`, 'true');
                     }
-                } else {
-                    video?.pause();
+                } else if (video) {
+                    video.pause();
                 }
             },
-            { threshold: 0.6 }
+            {
+                rootMargin: '200px 0px', // Precarga 200px antes de entrar
+                threshold: 0.1
+            }
         );
 
         observer.observe(container);
         return () => observer.disconnect();
-    }, [contentId]);
+    }, [contentId, videoUrl, isActive]);
+
+    // Sincronizar play/pause con el estado activo (TikTok style)
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video || isActive === undefined) return;
+
+        if (isActive) {
+            video.play().catch(() => { });
+        } else {
+            video.pause();
+        }
+    }, [isActive]);
 
     // Handler para click → va al sitio/afiliado
     const handleClick = () => {
@@ -111,7 +137,6 @@ export default function DynamicPreview({
                 return (
                     <video
                         ref={videoRef}
-                        src={videoUrl ? `/api/proxy/video?url=${encodeURIComponent(videoUrl)}` : undefined}
                         autoPlay
                         muted={muted}
                         loop
