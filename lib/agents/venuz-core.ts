@@ -1,16 +1,6 @@
-
 // lib/agents/venuz-core.ts
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { llmRouter } from "@/lib/llm-router";
 import { notifyCustom as sendTelegramMessage } from "../telegram-notify";
-
-// Lazy init inside function to ensure env is ready
-// Lazy init inside function to ensure env is ready
-const getModel = () => {
-    const apiKey = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : "";
-    if (!apiKey) console.warn('[VENUZ CORE] Warning: GEMINI_API_KEY is missing');
-    const genAI = new GoogleGenerativeAI(apiKey);
-    return genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-};
 
 const SYSTEM_PROMPT = `Eres VENUZ Core, el cerebro autónomo, proactivo y autosustentable de VENUZ.love.
 Misión: hacer que esta plataforma sea la más inteligente del mercado sin que Pablo tenga que micromanagear.
@@ -41,9 +31,9 @@ export async function runDailyTour(mode: string = 'auto') {
         const prompt = SYSTEM_PROMPT + `\n\nHoy es ${new Date().toLocaleDateString('es-MX')}. Haz el tour matutino (modo: ${mode}) y envíame reporte.`;
 
         console.log("🧠 VENUZ Core: Generando pensamiento...");
-        const model = getModel();
-        const result = await model.generateContent(prompt);
-        const response = result.response.text();
+
+        // Usar LLM Router para inteligencia central
+        const response = await llmRouter.generateContent(prompt, { temperature: 0.8 });
 
         console.log("🧠 VENUZ Core: Pensamiento generado. Enviando a Telegram...");
         await sendTelegramMessage(response);

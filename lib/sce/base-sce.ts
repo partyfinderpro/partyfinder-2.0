@@ -1,7 +1,5 @@
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+import { llmRouter } from "@/lib/llm-router";
 
 export interface SCEOutput {
     id?: string;
@@ -25,15 +23,13 @@ export abstract class BaseSCE {
     abstract scrape(): Promise<any[]>; // implementar por categoría
 
     async classifyAndClean(rawData: any): Promise<SCEOutput> {
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
         const prompt = `
       Eres un clasificador de contenido para VENUZ.
       Categoría objetivo: ${this.category}
 
       Datos crudos: ${JSON.stringify(rawData)}
 
-      Devuelve SOLO JSON:
+      Devuelve SOLO JSON válido, sin markdown ni backticks:
       {
         "title": "título limpio y atractivo",
         "description": "descripción optimizada, 100-200 caracteres",
@@ -45,9 +41,15 @@ export abstract class BaseSCE {
     `;
 
         try {
-            const result = await model.generateContent(prompt);
-            const responseText = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-            const parsed = JSON.parse(responseText);
+            // Usar LLM Router para clasificación
+            const responseText = await llmRouter.generateContent(prompt, {
+                temperature: 0.2, // Baja temperatura para JSON consistente
+                maxTokens: 500
+            });
+
+            // Limpieza robusta de JSON (algunos LLMs envían markdown)
+            const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const parsed = JSON.parse(cleanJson);
 
             return {
                 ...parsed,
