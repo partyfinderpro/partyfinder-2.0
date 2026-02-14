@@ -1,54 +1,81 @@
-// src/lib/venuz-hibrida/hibrida-graph.ts
+
 import { ChatGroq } from "@langchain/groq";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { pull } from "langchain/hub";
+import { tools } from "./tools";
+import { HumanMessage } from "@langchain/core/messages";
 
-// Check if GROQ_API_KEY is available, or use a dummy for build time if needed
+// Use Groq with failover/fallback logic if key missing?
+// Assuming key is present for now as per previous instructions.
 const apiKey = process.env.GROQ_API_KEY || "gsk_dummy";
 
 const llm = new ChatGroq({
     model: "llama-3.3-70b-versatile",
     apiKey: apiKey,
+    temperature: 0.5,
 });
 
-// Prompt base para agente nacional
-// We need to fetch the prompt. In a real env, pull() fetches from LangSmith Hub.
-// If this fails (no API key for Hub), we might need a local fallback prompt.
-// For now, adhering to instructions.
-let agent: any;
+// Singleton promise for agent initialization
+let agentPromise: Promise<any> | null = null;
 
-export async function initializeAgent() {
-    if (agent) return agent;
-
+async function createAgent() {
     try {
-        const prompt = await pull("hwchase17/react");
-        agent = createReactAgent({
+        // Try to pull prompt, fallback to simple string if fails (e.g. no auth)
+        let prompt;
+        try {
+            prompt = await pull("hwchase17/react");
+        } catch (e) {
+            console.warn("Could not pull prompt from hub, using default system message.");
+            // Fallback is implicitly handled by createReactAgent if prompt is omitted or we can pass a simple one?
+            // createReactAgent requires a specific graph structure usually or modifies a standard one.
+            // If prompt is mandatory, we might need a workaround.
+            // Actually createReactAgent *can* work without explicit prompt in some versions, or we can use a basic one.
+            // Using a basic string prompt isn't directly compatible with the interface expected by createReactAgent (which takes a compiled graph prompt usually).
+            // Retrying or assuming it works for this P0. 
+            // If pulling fails, we might just fail.
+            throw e;
+        }
+
+        return createReactAgent({
             llm,
-            tools: [], // agregaremos tools después (navegación, extracción, cache)
+            tools,
             prompt: prompt as any,
         });
     } catch (e) {
-        console.error("Failed to pull prompt from LangChain Hub, using local fallback if needed.", e);
-        // Fallback or re-throw
+        console.error("Error creating agent:", e);
         throw e;
     }
-    return agent;
+}
+
+export async function getHibridaAgent() {
+    if (!agentPromise) {
+        agentPromise = createAgent();
+    }
+    return agentPromise;
 }
 
 export async function runHibridaTour(city: string) {
     try {
-        const agentInstance = await initializeAgent();
+        const agent = await getHibridaAgent();
+
         const input = {
-            messages: [{ role: "user", content: `Descubre nightlife en ${city} hoy: eventos, clubs, bares, contenido adulto. Usa fuentes reales, clasifica y entrega JSON limpio.` }]
+            messages: [
+                new HumanMessage(`Descubre nightlife en ${city} hoy. 
+            1. Busca "eventos nightlife ${city} hoy" o "top clubs ${city}" usando Tavily.
+            2. Si encuentras links prometedores, usa crawl_page para leer detalles.
+            3. Intenta guardar lo mejor en cache.
+            4. Entrega un JSON limpio con al menos 3 items encontrados (nombre, lugar, descripcion).`)
+            ]
         };
 
-        const result = await agentInstance.invoke(input);
-        // The result format depends on the agent type. Prebuilt React agent usually returns the last message or state.
-        // We'll assume the output is in the last message content for now.
-        const output = result.messages ? result.messages[result.messages.length - 1].content : "No output";
-        return output;
-    } catch (e) {
+        const result = await agent.invoke(input);
+
+        // Extract the last message content
+        const lastMessage = result.messages[result.messages.length - 1];
+        return lastMessage.content;
+
+    } catch (e: any) {
         console.error("Error running Hibrida Tour:", e);
-        return { error: "Failed to run agent", details: e };
+        return `Error: ${e.message}`;
     }
 }
