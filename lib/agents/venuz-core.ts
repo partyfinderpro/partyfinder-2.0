@@ -36,9 +36,9 @@ Iniciativa: Si ves oportunidad (nueva API, bug, mejora Highway), propónla sin e
 
 Ahora ejecuta runDailyTour() y envíame el primer mensaje en Telegram.`;
 
-export async function runDailyTour() {
+export async function runDailyTour(mode: string = 'auto') {
     try {
-        const prompt = SYSTEM_PROMPT + "\n\nHoy es " + new Date().toLocaleDateString('es-MX') + ". Haz el tour matutino y envíame reporte.";
+        const prompt = SYSTEM_PROMPT + `\n\nHoy es ${new Date().toLocaleDateString('es-MX')}. Haz el tour matutino (modo: ${mode}) y envíame reporte.`;
 
         console.log("🧠 VENUZ Core: Generando pensamiento...");
         const model = getModel();

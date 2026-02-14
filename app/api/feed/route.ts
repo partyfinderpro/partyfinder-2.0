@@ -14,38 +14,26 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     // Normalizar contexto del usuario
-    const context: UserContext = {
-        city: searchParams.get('city')?.toLowerCase() || 'cdmx',
-        lat: parseFloat(searchParams.get('lat') || '') || undefined,
-        lng: parseFloat(searchParams.get('lng') || '') || undefined,
-        deviceId: searchParams.get('device_id') || 'anonymous',
-        userId: searchParams.get('user_id') || undefined,
-        sessionId: searchParams.get('session_id') || Date.now().toString()
-    };
-
-    // A/B Testing - obtener variante del request
-    const abVariant = searchParams.get('ab_variant') || null;
-    const intentScore = parseFloat(searchParams.get('intent_score') || '0.5');
-
-    const pageSize = parseInt(searchParams.get('limit') || '20');
+    const lat = parseFloat(searchParams.get('lat') || '') || undefined;
+    const lng = parseFloat(searchParams.get('lng') || '') || undefined;
+    const userId = searchParams.get('user_id') || undefined;
+    const city = searchParams.get('city') || 'cdmx';
 
     try {
-        // Intentar Highway Algorithm primero
-        const highway = new HighwayAlgorithm(context);
-        const feed = await highway.generateFeed(pageSize);
+        console.log('[Feed API] Calling Super Cerebro...');
+        // Import dinámico para evitar problemas de build si el archivo no existiera todavía en tiempo de compilación inicial (opcional, pero buena práctica)
+        const { generarFeed } = await import('@/lib/super-cerebro');
+
+        const feed = await generarFeed(userId, (lat && lng) ? { lat, lng } : undefined);
 
         return NextResponse.json({
             success: true,
             data: feed,
             meta: {
-                city: context.city,
+                city,
                 count: feed.length,
-                source: 'highway',
-                timestamp: new Date().toISOString(),
-                // A/B Testing info
-                ab_variant: abVariant,
-                intent_score: intentScore,
-                ab_active: abVariant !== null
+                source: 'super-cerebro-gemini',
+                timestamp: new Date().toISOString()
             }
         }, {
             headers: {
@@ -53,67 +41,35 @@ export async function GET(request: NextRequest) {
             }
         });
 
-    } catch (highwayError: any) {
-        console.error('Highway Feed Error, falling back to legacy:', highwayError.message);
+    } catch (error: any) {
+        console.error('Super Cerebro Error, falling back to legacy:', error);
 
-        // FALLBACK: Query directo a Supabase si Highway falla
+        // FALLBACK: Query directo a Supabase
         try {
             const supabase = getFallbackSupabase();
+            const pageSize = parseInt(searchParams.get('limit') || '20');
 
-            // Primer intento: con filtro active=true y que tengan imagen
-            let { data, error } = await supabase
+            const { data, error: dbError } = await supabase
                 .from('content')
                 .select('*')
                 .eq('active', true)
-                .not('image_url', 'is', null)
-                .neq('image_url', '')
-                .order('quality_score', { ascending: false })  // Mejor contenido primero
-                .order('created_at', { ascending: false })
+                .order('quality_score', { ascending: false })
                 .limit(pageSize);
 
-            // Si no hay datos o hay error, intentar sin filtro active pero SÍ con filtro de imagen
-            if (error || !data || data.length === 0) {
-                console.warn('First fallback attempt failed or empty, trying without active filter');
-                const result = await supabase
-                    .from('content')
-                    .select('*')
-                    .not('image_url', 'is', null)
-                    .neq('image_url', '')
-                    .order('quality_score', { ascending: false })
-                    .order('created_at', { ascending: false })
-                    .limit(pageSize);
-
-                data = result.data;
-                error = result.error;
-            }
-
-            if (error) throw error;
+            if (dbError) throw dbError;
 
             return NextResponse.json({
                 success: true,
                 data: data || [],
                 meta: {
-                    city: context.city,
-                    count: data?.length || 0,
                     source: 'legacy_fallback',
-                    highway_error: highwayError.message,
-                    timestamp: new Date().toISOString()
-                }
-            }, {
-                headers: {
-                    'Cache-Control': 'no-store, max-age=0'
+                    error: error.message
                 }
             });
 
         } catch (fallbackError: any) {
-            console.error('Fallback also failed:', fallbackError.message);
             return NextResponse.json(
-                {
-                    success: false,
-                    error: 'Both Highway and fallback failed',
-                    highway_error: highwayError.message,
-                    fallback_error: fallbackError.message
-                },
+                { success: false, error: 'All feed methods failed' },
                 { status: 500 }
             );
         }
