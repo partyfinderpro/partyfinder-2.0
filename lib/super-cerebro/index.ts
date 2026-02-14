@@ -1,10 +1,7 @@
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// lib/super-cerebro/index.ts
+import { llmRouter } from "@/lib/llm-router";
 import { createClient } from "@supabase/supabase-js";
-
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Updated model name to be safer or use flash-latest if valid
 
 // Initialize Supabase Client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -16,10 +13,9 @@ export async function generarFeed(userId?: string, location?: { lat: number; lng
 
     try {
         // 0. Ejecutar SCEs (Sistemas Cognitivos Encapsulados)
-        // Integración de fuentes vivas/scraped al momento
         let sceContent: any[] = [];
         try {
-            // Importar dinámicamente todos los SCEs para code-splitting
+            // Importar dinámicamente todos los SCEs
             const { SCENightlife } = await import('@/lib/sce/sce-nightlife');
             const { SCEAdult } = await import('@/lib/sce/sce-adult');
             const { SCEClubs } = await import('@/lib/sce/sce-clubs');
@@ -48,7 +44,6 @@ export async function generarFeed(userId?: string, location?: { lat: number; lng
 
             const flatItems = allSCEData.flat();
 
-            // Mapeamos al formato de la DB para unificar
             sceContent = flatItems.map(item => ({
                 id: item.id || `sce-${Math.random().toString(36).substr(2, 9)}`,
                 title: item.title,
@@ -68,10 +63,9 @@ export async function generarFeed(userId?: string, location?: { lat: number; lng
             console.error('[Super Cerebro] Error crítica ejecutando red de SCEs:', sceError);
         }
 
-        // 1. Obtener contenido crudo (eventos, venues, scraped_content, afiliados)
-        // Obtenemos un mix de contenido de alta calidad de la DB
+        // 1. Obtener contenido de DB
         const { data: dbContent, error: contentError } = await supabase
-            .from('content') // Usamos 'content' que es la vista unificada o tabla principal
+            .from('content')
             .select('*')
             .eq('active', true)
             .order('quality_score', { ascending: false })
@@ -79,7 +73,7 @@ export async function generarFeed(userId?: string, location?: { lat: number; lng
 
         if (contentError) throw contentError;
 
-        // Fusionar contenido de DB y de SCEs
+        // Fusionar contenido
         const rawContent = [...sceContent, ...(dbContent || [])];
 
         const { data: affiliates, error: affError } = await supabase
@@ -89,8 +83,7 @@ export async function generarFeed(userId?: string, location?: { lat: number; lng
 
         if (affError) throw affError;
 
-        // 2. Enviar todo al Super Cerebro (Gemini) para que decida el orden final
-        // Preparamos un subset ligero para el prompt para no exceder tokens
+        // 2. Enviar todo al Super Cerebro (LLM Router)
         const contentForPrompt = rawContent?.map(c => ({
             id: c.id,
             title: c.title,
@@ -119,47 +112,45 @@ export async function generarFeed(userId?: string, location?: { lat: number; lng
       - Mezcla equilibrada: 40% Adulto/Party, 25% Eventos locales (prioriza cercanos si hay ubicación), 20% Venues, 15% Afiliados.
       - IMPORTANTE: Intercala afiliados (type: 'affiliate') cada 5-7 items de contenido normal.
       - Variedad: No pongas más de 3 items seguidos de la misma categoría.
-      - Para contenido local (eventos/venues), prioriza lo que parezca estar cerca si tienes ubicación.
+      - Para contenido local lista 3 top.
       
-      Contenido disponible (JSON ligero): 
+      Contenido (JSON ligero): 
       ${JSON.stringify(contentForPrompt)}
       
-      Afiliados disponibles: 
+      Afiliados: 
       ${JSON.stringify(affiliatesForPrompt)}
 
-      Devuelve SOLO un array JSON válido con el orden final de IDs. No incluyas markdown, ni explicaciones.
+      Devuelve SOLO un array JSON válido con el orden final de IDs.
       Formato esperado:
       [ { "id": "uuid", "type": "content" }, { "id": "uuid", "type": "affiliate" }, ... ]
     `;
 
-        const result = await model.generateContent(prompt);
-        const response = result.response.text();
+        // USAR LLM ROUTER
+        const responseText = await llmRouter.generateContent(prompt, 2000, 0.4);
 
-        // Limpieza básica del response por si Gemini incluye markdown blocks
-        const cleanResponse = response.replace(/```json/g, '').replace(/```/g, '').trim();
+        // Limpieza básica
+        const cleanResponse = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
 
-        // Parsear el JSON que devuelve Gemini
         let feedOrder: { id: string, type: string }[] = [];
         try {
             feedOrder = JSON.parse(cleanResponse);
         } catch (e) {
             console.error("Error parseando feed del Super Cerebro", e, "Response was:", cleanResponse);
-            // Fallback: interleave simple
             return interleaveFallback(rawContent, affiliates);
         }
 
-        // 3. Reconstruir el feed con los objetos completos
+        // 3. Reconstruir feed
         const finalFeed = feedOrder.map(item => {
             if (item.type === 'affiliate') {
                 const aff = affiliates?.find(a => a.id === item.id);
-                return aff ? { ...aff, type: 'ad' } : null; // Mapeamos 'affiliate' a 'ad' para el frontend
+                return aff ? { ...aff, type: 'ad' } : null;
             } else {
                 const cont = rawContent?.find(c => c.id === item.id);
                 return cont ? { ...cont, type: 'content' } : null;
             }
         }).filter(item => item !== null);
 
-        // Si el feed generado es muy corto (error de Gemini o filtrado excesivo), rellenar con el resto
+        // Relleno si es necesario
         if (finalFeed.length < 10 && rawContent && rawContent.length > 0) {
             console.log("Feed generado muy corto, rellenando con fallback.");
             const usedIds = new Set(finalFeed.map(i => i.id));
@@ -171,8 +162,7 @@ export async function generarFeed(userId?: string, location?: { lat: number; lng
 
     } catch (err) {
         console.error("Error crítico en Super Cerebro:", err);
-        // Fallback de emergencia: devolver rawContent tal cual
-        return rawContent || [];
+        return [];
     }
 }
 
@@ -187,7 +177,7 @@ function interleaveFallback(content: any[], affiliates: any[]) {
         result.push({ ...content[i], type: 'content' });
         if ((i + 1) % 6 === 0) {
             const aff = affiliates[affIndex % affiliates.length];
-            result.push({ ...aff, type: 'ad' }); // 'ad' para frontend
+            result.push({ ...aff, type: 'ad' });
             affIndex++;
         }
     }
