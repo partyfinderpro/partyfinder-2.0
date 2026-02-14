@@ -19,11 +19,37 @@ export async function generarFeed(userId?: string, location?: { lat: number; lng
         // Integración de fuentes vivas/scraped al momento
         let sceContent: any[] = [];
         try {
+            // Importar dinámicamente todos los SCEs para code-splitting
             const { SCENightlife } = await import('@/lib/sce/sce-nightlife');
+            const { SCEAdult } = await import('@/lib/sce/sce-adult');
+            const { SCEClubs } = await import('@/lib/sce/sce-clubs');
+            const { SCEBares } = await import('@/lib/sce/sce-bares');
+            const { SCEEventos } = await import('@/lib/sce/sce-eventos');
+            const { SCEMasajes } = await import('@/lib/sce/sce-masajes');
+
+            console.log('[Super Cerebro] Activando red neuronal de SCEs...');
+
             const sceNightlife = new SCENightlife();
-            const nightlifeItems = await sceNightlife.run();
+            const sceAdult = new SCEAdult();
+            const sceClubs = new SCEClubs();
+            const sceBares = new SCEBares();
+            const sceEventos = new SCEEventos();
+            const sceMasajes = new SCEMasajes();
+
+            // Ejecutar todos en paralelo
+            const allSCEData = await Promise.all([
+                sceNightlife.run().catch(e => { console.error('SCE Nightlife failed:', e); return []; }),
+                sceAdult.run().catch(e => { console.error('SCE Adult failed:', e); return []; }),
+                sceClubs.run().catch(e => { console.error('SCE Clubs failed:', e); return []; }),
+                sceBares.run().catch(e => { console.error('SCE Bares failed:', e); return []; }),
+                sceEventos.run().catch(e => { console.error('SCE Eventos failed:', e); return []; }),
+                sceMasajes.run().catch(e => { console.error('SCE Masajes failed:', e); return []; })
+            ]);
+
+            const flatItems = allSCEData.flat();
+
             // Mapeamos al formato de la DB para unificar
-            sceContent = nightlifeItems.map(item => ({
+            sceContent = flatItems.map(item => ({
                 id: item.id || `sce-${Math.random().toString(36).substr(2, 9)}`,
                 title: item.title,
                 description: item.description,
@@ -32,12 +58,14 @@ export async function generarFeed(userId?: string, location?: { lat: number; lng
                 quality_score: item.quality_score,
                 active: true,
                 is_premium: false,
-                source: 'sce',
+                source: `sce_${item.source}`,
                 location: item.location ? `POINT(${item.location.lng} ${item.location.lat})` : null
             }));
-            console.log(`[Super Cerebro] SCE Nightlife aportó ${sceContent.length} items`);
+
+            console.log(`[Super Cerebro] Red SCE aportó ${sceContent.length} items de ${allSCEData.length} fuentes`);
+
         } catch (sceError) {
-            console.error('[Super Cerebro] Error ejecutando SCEs:', sceError);
+            console.error('[Super Cerebro] Error crítica ejecutando red de SCEs:', sceError);
         }
 
         // 1. Obtener contenido crudo (eventos, venues, scraped_content, afiliados)
