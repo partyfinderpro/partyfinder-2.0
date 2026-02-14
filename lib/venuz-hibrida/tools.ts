@@ -1,5 +1,5 @@
 
-import { TavilySearchResults } from "@langchain/community/tools/tavily_search";
+import { TavilySearchResults } from "langchain/tools";
 import Redis from "ioredis";
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
