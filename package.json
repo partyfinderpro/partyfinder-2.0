@@ -12,6 +12,9 @@
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
     "@google/generative-ai": "^0.24.1",
+    "@langchain/core": "^1.1.24",
+    "@langchain/groq": "^1.1.0",
+    "@langchain/langgraph": "^1.1.4",
     "@next/bundle-analyzer": "^16.1.4",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/auth-helpers-react": "^0.15.0",
@@ -26,6 +29,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "framer-motion": "^11.18.2",
+    "langchain": "^1.2.24",
     "lucide-react": "^0.417.0",
     "next": "14.2.5",
     "node-cron": "^3.0.3",
@@ -48,7 +52,7 @@
     "autoprefixer": "^10.4.19",
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
-    "playwright": "^1.50.0",
+    "playwright": "^1.58.2",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.6",
     "typescript": "^5"
