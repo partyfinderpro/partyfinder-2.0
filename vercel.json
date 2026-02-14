@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/sce-process-alerts",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/brain",
+      "schedule": "0 15,2 * * *"
     }
   ]
 }

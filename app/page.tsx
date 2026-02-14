@@ -41,6 +41,8 @@ import { TopRatedSidebar, exampleTopRatedItems } from "@/components/TopRatedSide
 import { TrustSignalsBanner } from "@/components/TrustSignalsBanner";
 import { FeedTabs, filterByMode, type FeedMode } from "@/components/FeedTabs";
 import { AlgorithmBadge } from "@/components/AlgorithmBadge";
+import AffiliateAdCard from '@/components/AffiliateAdCard'; // Importar el componente de anuncios
+import { supabase } from '@/lib/supabase'; // Usar cliente singleton
 
 // ============================================
 // VENUZ - Página Principal HÍBRIDA
@@ -145,6 +147,8 @@ export default function HomePage() {
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+
+
   // Refs
   const feedRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -158,7 +162,52 @@ export default function HomePage() {
 
 
   // 🔥 Filtrar contenido por modo (Nightlife vs Adult)
+  // Definir filteredContent ANTES de usarlo en getMixedContent
   const filteredContent = filterByMode(content, feedMode);
+
+  // Affiliate Ads State
+  const [affiliateAds, setAffiliateAds] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Cargar anuncios afiliados
+    const loadAds = async () => {
+      try {
+        const { data } = await supabase
+          .from('affiliate_links')
+          .select('*')
+          .eq('is_active', true)
+          .order('priority', { ascending: false });
+
+        if (data) setAffiliateAds(data);
+      } catch (err) {
+        console.error('Error loading ads:', err);
+      }
+    };
+    loadAds();
+  }, []);
+
+  // Función para mezclar contenido con anuncios
+  const getMixedContent = useCallback(() => {
+    if (affiliateAds.length === 0) return filteredContent;
+
+    const mixed: any[] = [];
+    let adIndex = 0;
+
+    filteredContent.forEach((item, index) => {
+      mixed.push({ ...item, type: 'content' });
+
+      // Inyectar anuncio cada 6 items
+      if ((index + 1) % 6 === 0) {
+        const ad = affiliateAds[adIndex % affiliateAds.length];
+        mixed.push({ ...ad, type: 'ad', id: `ad-${ad.id}-${index}` }); // ID único
+        adIndex++;
+      }
+    });
+
+    return mixed;
+  }, [filteredContent, affiliateAds]);
+
+  const mixedFeed = getMixedContent();
 
   // Intersection Observer para detectar card activo
   useEffect(() => {
@@ -549,7 +598,7 @@ export default function HomePage() {
                     <div key={i} className="venuz-card h-[500px] skeleton" />
                   ))}
                 </div>
-              ) : filteredContent.length === 0 ? (
+              ) : mixedFeed.length === 0 ? (
                 <div className="text-center py-20 venuz-card">
                   {activeMenu === 'favoritos' ? (
                     <>
@@ -672,10 +721,10 @@ export default function HomePage() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {filteredContent.map((item, index) => (
+                  {mixedFeed.map((item, index) => (
                     <article
                       key={item.id}
-                      data-index={index}
+                      data-index={index} // Usamos index del mixed feed
                       ref={(el) => {
                         if (el && observerRef.current) {
                           observerRef.current.observe(el);
@@ -683,72 +732,68 @@ export default function HomePage() {
                       }}
                       className="venuz-card group overflow-hidden snap-center lg:snap-align-none"
                     >
-                      {/* ====================================
-                          CARD DESKTOP (Optimizado)
-                          ==================================== */}
-                      {/* ====================================
-                          CARD DESKTOP (Optimizado - Dynamic)
-                          ==================================== */}
-                      <div className="hidden lg:block w-full">
-                        <FeedCardDynamic
-                          item={item}
-                          isActive={activeIndex === index}
-                          onClick={handleContentClick}
-                          onShare={handleShare}
-                          className="max-w-md mx-auto shadow-2xl hover:shadow-venuz-pink/20 transition-shadow duration-300"
-                        />
-                      </div>
+                      {item.type === 'ad' ? (
+                        <>
+                          <div className="hidden lg:block w-full">
+                            <AffiliateAdCard
+                              {...item}
+                              url={`/api/go?id=${item.id.replace('ad-', '').split('-')[0]}`} // Recuperar ID original
+                            />
+                          </div>
+                          <div className="lg:hidden h-[calc(100vh-140px)] w-full">
+                            <AffiliateAdCard
+                              {...item}
+                              url={`/api/go?id=${item.id.replace('ad-', '').split('-')[0]}`}
+                            />
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="hidden lg:block w-full">
+                            <FeedCardDynamic
+                              item={item}
+                              isActive={activeIndex === index}
+                              onClick={handleContentClick}
+                              onShare={handleShare}
+                              className="max-w-md mx-auto shadow-2xl hover:shadow-venuz-pink/20 transition-shadow duration-300"
+                            />
+                          </div>
 
-
-                      {/* ====================================
-                          CARD MOBILE - Estilo TikTok (Optimizado)
-                          ==================================== */}
-                      <div className="lg:hidden">
-                        <FeedCardDynamic
-                          item={item}
-                          isActive={activeIndex === index}
-                          onClick={handleContentClick}
-                          onShare={handleShare}
-                          className="h-[calc(100vh-140px)] w-full rounded-xl"
-                        />
-                      </div>
+                          <div className="lg:hidden">
+                            <FeedCardDynamic
+                              item={item}
+                              isActive={activeIndex === index}
+                              onClick={handleContentClick}
+                              onShare={handleShare}
+                              className="h-[calc(100vh-140px)] w-full rounded-xl"
+                            />
+                          </div>
+                        </>
+                      )}
                     </article>
                   ))}
 
-                  {/* Infinite Scroll Trigger */}
-                  <div id="infinite-trigger" className="h-20 flex items-center justify-center">
-                    {hasMore && (
-                      <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="w-8 h-8 text-venuz-pink animate-spin" />
-                        <p className="text-xs text-gray-500">Cargando más experiencias...</p>
-                      </div>
-                    )}
-                    {!hasMore && content.length > 0 && (
-                      <p className="text-gray-500 text-sm">Has llegado al final de la noche 🌙</p>
-                    )}
+                  {/* Feed Progress Indicator - Solo móvil */}
+                  <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40 lg:hidden flex flex-col gap-2">
+                    {filteredContent.slice(0, 8).map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          const cards = feedRef.current?.querySelectorAll("[data-index]");
+                          cards?.[index]?.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }}
+                        className={`
+                    w-2 h-6 rounded-full transition-all duration-300
+                    ${activeIndex === index
+                            ? "bg-gradient-to-b from-venuz-pink to-venuz-red scale-110"
+                            : "bg-white/20 hover:bg-white/40"
+                          }
+                  `}
+                      />
+                    ))}
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Feed Progress Indicator - Solo móvil */}
-            <div className="fixed right-4 top-1/2 -translate-y-1/2 z-40 lg:hidden flex flex-col gap-2">
-              {filteredContent.slice(0, 8).map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    const cards = feedRef.current?.querySelectorAll("[data-index]");
-                    cards?.[index]?.scrollIntoView({ behavior: "smooth", block: "center" });
-                  }}
-                  className={`
-                    w-2 h-6 rounded-full transition-all duration-300
-                    ${activeIndex === index
-                      ? "bg-gradient-to-b from-venuz-pink to-venuz-red scale-110"
-                      : "bg-white/20 hover:bg-white/40"
-                    }
-                  `}
-                />
-              ))}
             </div>
           </main>
 

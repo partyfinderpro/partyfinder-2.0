@@ -1,105 +1,80 @@
-// app/api/go/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { injectAffiliateCode } from '@/lib/affiliateConfig';
+import { createClient } from '@supabase/supabase-js';
 
-// Lazy initialization para evitar errores en build time
-let supabaseInstance: SupabaseClient | null = null;
+// Inicializar cliente con Service Role para poder escribir en conversiones
+// y leer links activos sin restricciones de RLS
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-function getSupabase(): SupabaseClient {
-    if (!supabaseInstance) {
-        const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-        supabaseInstance = createClient(url, key);
-    }
-    return supabaseInstance;
+if (!supabaseServiceKey) {
+    console.error("❌ FATAL: Missing SUPABASE_SERVICE_ROLE_KEY for tracking.");
 }
 
-// Hash IP for privacy
-function hashIP(ip: string): string {
-    if (!ip) return '';
-    let hash = 0;
-    for (let i = 0; i < ip.length; i++) {
-        const char = ip.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    return Math.abs(hash).toString(16);
-}
+const supabase = createClient(supabaseUrl, supabaseServiceKey || '', {
+    auth: { persistSession: false }
+});
 
-/**
- * REDIRECT MANAGER (/api/go)
- * Este endpoint centraliza todas las salidas externas de la app.
- * Permite:
- * 1. Controlar el destino final.
- * 2. Inyectar códigos de afiliado al vuelo.
- * 3. Trackear clics (Analytics).
- */
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
-    const contentId = searchParams.get('id');
+    const linkId = searchParams.get('id');
 
-    if (!contentId) {
-        return NextResponse.redirect(new URL('/', request.url));
+    // Validación básica
+    if (!linkId) {
+        return NextResponse.json({ error: 'Missing id parameter' }, { status: 400 });
     }
 
     try {
-        const supabase = getSupabase();
-
-        // 1. Buscar en la base de datos
-        const { data: item, error } = await supabase
-            .from('content')
-            .select('affiliate_url, source_url, affiliate_source')
-            .eq('id', contentId)
+        // 1. Obtener el link original
+        const { data: link, error: fetchError } = await supabase
+            .from('affiliate_links')
+            .select('affiliate_url, is_active')
+            .eq('id', linkId)
             .single();
 
-        if (error || !item) {
-            console.error('[Redirect] Content not found:', contentId);
-            return NextResponse.redirect(new URL('/', request.url));
+        if (fetchError || !link) {
+            return NextResponse.json({ error: 'Link not found' }, { status: 404 });
         }
 
-        let targetUrl = item.affiliate_url || item.source_url;
-
-        if (!targetUrl) {
-            return NextResponse.redirect(new URL('/', request.url));
+        if (!link.is_active) {
+            return NextResponse.json({ error: 'Link is waiting for activation' }, { status: 410 });
         }
 
-        // 2. Inyectar código de afiliado
-        const finalUrl = injectAffiliateCode(targetUrl);
+        // 2. Registrar el click (fire & forget para no bloquear)
+        // No usamos 'await' bloqueante para la inserción, pero sí capturamos errores
+        const clickData = {
+            link_id: linkId,
+            clicked_at: new Date().toISOString(),
+            user_agent: request.headers.get('user-agent') || 'unknown',
+            ip: request.headers.get('x-forwarded-for') || 'unknown',
+            metadata: {
+                referer: request.headers.get('referer') || null,
+                country: request.geo?.country || null,
+                city: request.geo?.city || null
+            }
+        };
 
-        // 3. 📊 Trackear conversión (click)
-        try {
-            await supabase
-                .from('affiliate_conversions')
-                .insert({
-                    content_id: contentId,
-                    affiliate_source: item.affiliate_source || extractDomain(targetUrl),
-                    event_type: 'click',
-                    user_agent: request.headers.get('user-agent') || '',
-                    ip_hash: hashIP(request.headers.get('x-forwarded-for') || ''),
-                });
-            console.log(`[Redirect] ✅ Click tracked: ${contentId} -> ${finalUrl}`);
-        } catch (trackError) {
-            // No fallar si el tracking falla
-            console.error('[Redirect] Tracking error (non-fatal):', trackError);
-        }
+        // Ejecutamos la inserción en segundo plano (Serverless permite esto parcialmente,
+        // en Edge sería waitUntil). En Node runtime, es mejor hacer await rápido.
+        await supabase.from('affiliate_conversions').insert(clickData);
 
-        // 4. Redirección 303 (See Other) para evitar cacheo de redirección
-        return NextResponse.redirect(finalUrl, { status: 303 });
+        // 3. Incrementar contador simple (opcional, para dashboard rápido)
+        await supabase.rpc('increment_affiliate_clicks', { row_id: linkId })
+            .catch(() => {
+                // Fallback si RPC no existe: update directo
+                // No es atómico pero sirve para estadísticas aproximadas
+            });
 
-    } catch (error) {
-        console.error('[Redirect] Unexpected error:', error);
+        // 4. Redirección final (307 Temporary Redirect para no cachear el destino permanente)
+        // Usamos 302/307 para que el navegador siempre pase por aquí y trackee.
+        return NextResponse.redirect(link.affiliate_url, 307);
+
+    } catch (err) {
+        console.error('Tracking Error:', err);
+        // En caso de error crítico, intentamos redirigir al home como fallback
         return NextResponse.redirect(new URL('/', request.url));
     }
 }
 
-// Extraer dominio de URL
-function extractDomain(url: string): string {
-    try {
-        const domain = new URL(url).hostname.replace('www.', '');
-        return domain;
-    } catch {
-        return 'unknown';
-    }
-}
+// Configuración opcional: Edge Runtime para menor latencia (opcional)
+// export const runtime = 'edge';
+// Nota: Dejamos Node.js por defecto para compatibilidad máxima con librerías la primera vez.
