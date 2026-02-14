@@ -32,6 +32,17 @@ export async function runDailyTour(mode: string = 'auto') {
 
         console.log("🧠 VENUZ Core: Generando pensamiento...");
 
+        // Ejecutar análisis de Closed Loop (Self-Correction)
+        try {
+            // Intentar disparar el análisis asíncronamente
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+            fetch(`${appUrl}/api/cron/analyze-improvements`, {
+                headers: { 'Authorization': `Bearer ${process.env.CRON_SECRET || ''}` }
+            }).catch(err => console.error("Error triggering closed loop:", err));
+        } catch (e) {
+            console.warn("Could not trigger closed loop analysis");
+        }
+
         // Usar LLM Router para inteligencia central
         const response = await llmRouter.generateContent(prompt, { temperature: 0.8 });
 

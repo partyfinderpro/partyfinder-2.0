@@ -1,5 +1,12 @@
 
 import { llmRouter } from "@/lib/llm-router";
+import { createClient } from "@supabase/supabase-js";
+
+// Init Supabase for closed loop tracking
+const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export interface SCEOutput {
     id?: string;
@@ -51,11 +58,31 @@ export abstract class BaseSCE {
             const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
             const parsed = JSON.parse(cleanJson);
 
-            return {
+            const result: SCEOutput = {
                 ...parsed,
                 source: rawData.source || 'unknown',
                 id: rawData.id // Mantener ID si existe
             };
+
+            // Closed-Loop: Guardar registro de la "mejora" (transformación)
+            // Solo si tiene ID (aunque al ser scraped nuevo igual no tiene ID de DB aún, 
+            // pero guardamos el rastro para análisis futuro)
+            if (result.quality_score > 60) {
+                await supabase.from('content_improvements').insert({
+                    original_content_id: null, // No hay ID de DB estable aún
+                    improved_title: result.title,
+                    improved_description: result.description,
+                    keywords: result.keywords,
+                    quality_score_before: 0, // Asumimos 0 para scraper raw
+                    quality_score_after: result.quality_score,
+                    provider_used: 'llm-router'
+                }).select().then(({ error }) => {
+                    if (error) console.warn('[BaseSCE] Error saving improvement record:', error.message);
+                });
+            }
+
+            return result;
+
         } catch (e) {
             console.error("Error classifying item:", e);
             // Fallback básico
@@ -72,14 +99,37 @@ export abstract class BaseSCE {
     }
 
     async run(): Promise<SCEOutput[]> {
-        try {
-            const raw = await this.scrape();
-            const processed = await Promise.all(raw.map(item => this.classifyAndClean(item)));
-            // Filtrar items con score bajo
-            return processed.filter(p => p.quality_score > 60);
-        } catch (e) {
-            console.error(`Error running SCE ${this.category}:`, e);
-            return [];
+        let attempts = 0;
+        const maxAttempts = 3;
+
+        while (attempts < maxAttempts) {
+            try {
+                const raw = await this.scrape();
+                const processed = await Promise.all(raw.map(item => this.classifyAndClean(item)));
+
+                // Filtrar items con score bajo
+                const validItems = processed.filter(p => p.quality_score > 60);
+
+                if (validItems.length === 0 && raw.length > 0) {
+                    console.warn(`[SCE ${this.category}] Warning: Scraped items found but rejected by QA.`);
+                }
+
+                return validItems;
+
+            } catch (e: any) {
+                attempts++;
+                console.warn(`[SCE ${this.category}] Fallo intento ${attempts}/${maxAttempts}:`, e.message);
+
+                if (attempts === maxAttempts) {
+                    console.error(`[SCE ${this.category}] CRITICAL: Self-healing failed after ${maxAttempts} attempts.`);
+                    // Aquí se podría notificar a un sistema de alertas (ej: Telegram)
+                    return [];
+                }
+
+                // Esperar antes de reintentar (backoff exponencial simple)
+                await new Promise(r => setTimeout(r, 2000 * attempts));
+            }
         }
+        return [];
     }
 }

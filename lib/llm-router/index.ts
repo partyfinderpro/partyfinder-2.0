@@ -12,18 +12,46 @@ interface LLMConfig {
 }
 
 const PROVIDERS: LLMConfig[] = [
-    { provider: 'gemini', apiKey: process.env.GEMINI_API_KEY, model: 'gemini-1.5-flash' },
-    { provider: 'groq', apiKey: process.env.GROQ_API_KEY, model: 'llama-3.3-70b-versatile', endpoint: 'https://api.groq.com/openai/v1/chat/completions' },
-    { provider: 'claude', apiKey: process.env.ANTHROPIC_API_KEY, model: 'claude-3-5-sonnet-20241022', endpoint: 'https://api.anthropic.com/v1/messages' },
-    { provider: 'grok', apiKey: process.env.GROK_API_KEY, model: 'grok-beta', endpoint: 'https://api.x.ai/v1/chat/completions' },
-    { provider: 'deepseek', apiKey: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat', endpoint: 'https://api.deepseek.com/v1/chat/completions' },
-].filter(p => p.apiKey); // solo las que tengan key
+    {
+        provider: 'gemini',
+        apiKey: process.env.GEMINI_API_KEY,
+        model: 'gemini-flash-latest',
+    },
+    {
+        provider: 'groq',
+        apiKey: process.env.GROQ_API_KEY,
+        model: 'llama-3.3-70b-versatile',
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+    },
+    {
+        provider: 'claude',
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        model: 'claude-3-5-sonnet-20241022',
+        endpoint: 'https://api.anthropic.com/v1/messages',
+        headers: { 'anthropic-version': '2023-06-01' },
+    },
+    {
+        provider: 'grok',
+        apiKey: process.env.GROK_API_KEY,
+        model: 'grok-beta',
+        endpoint: 'https://api.x.ai/v1/chat/completions',
+    },
+    {
+        provider: 'deepseek',
+        apiKey: process.env.DEEPSEEK_API_KEY,
+        model: 'deepseek-chat',
+        endpoint: 'https://api.deepseek.com/v1/chat/completions',
+    },
+].filter(p => p.apiKey) as LLMConfig[]; // solo las que tengan key configurada
 
 export class LLMRouter {
     private currentIndex = 0;
     private status: Record<string, { lastUsed: Date; blockedUntil?: Date }> = {};
 
-    async generateContent(prompt: string, maxTokens = 1024, temperature = 0.7): Promise<string> {
+    async generateContent(
+        prompt: string,
+        options: { temperature?: number; maxTokens?: number } = {}
+    ): Promise<string> {
         let attempts = 0;
         const maxAttempts = PROVIDERS.length;
 
@@ -35,11 +63,10 @@ export class LLMRouter {
             const config = PROVIDERS[this.currentIndex];
             const now = new Date();
 
-            // Verificar si está bloqueado temporalmente
+            // Saltar si está bloqueado temporalmente
             const blockUntil = this.status[config.provider]?.blockedUntil;
             if (blockUntil && blockUntil > now) {
-                console.warn(`⚠️ ${config.provider} está bloqueado hasta ${blockUntil.toLocaleTimeString()}. Saltando...`);
-                this.currentIndex = (this.currentIndex + 1) % maxAttempts;
+                this.currentIndex = (this.currentIndex + 1) % PROVIDERS.length;
                 attempts++;
                 continue;
             }
@@ -53,69 +80,68 @@ export class LLMRouter {
                     const result = await model.generateContent({
                         contents: [{ role: 'user', parts: [{ text: prompt }] }],
                         generationConfig: {
-                            maxOutputTokens: maxTokens,
-                            temperature: temperature
+                            maxOutputTokens: options.maxTokens || 1024,
+                            temperature: options.temperature || 0.7
                         }
                     });
                     response = result.response.text();
-                } else if (config.provider === 'claude') {
-                    const res = await fetch(config.endpoint!, {
-                        method: 'POST',
-                        headers: {
-                            'x-api-key': config.apiKey!,
-                            'anthropic-version': '2023-06-01',
-                            'content-type': 'application/json',
-                            ...(config.headers || {}),
-                        },
-                        body: JSON.stringify({
-                            model: config.model,
-                            messages: [{ role: 'user', content: prompt }],
-                            max_tokens: maxTokens,
-                            temperature: temperature,
-                        }),
-                    });
-                    if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
-                    const data = await res.json();
-                    response = data.content?.[0]?.text || '';
                 } else {
-                    // Llamada genérica OpenAI-style para Groq, Grok, DeepSeek
+                    // Llamada genérica OpenAI-style (Groq, Claude, Grok, DeepSeek)
+                    const headers: Record<string, string> = {
+                        'Content-Type': 'application/json',
+                        ...(config.headers || {}),
+                    };
+
+                    // Adjust headers for specific providers if needed
+                    if (config.provider === 'claude') {
+                        headers['x-api-key'] = config.apiKey!;
+                    } else {
+                        headers['Authorization'] = `Bearer ${config.apiKey}`;
+                    }
+
+                    const body: any = {
+                        model: config.model,
+                        messages: [{ role: 'user', content: prompt }],
+                        temperature: options.temperature || 0.7,
+                        max_tokens: options.maxTokens || 1024,
+                    };
+
                     const res = await fetch(config.endpoint!, {
                         method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${config.apiKey}`,
-                            'Content-Type': 'application/json',
-                            ...(config.headers || {}),
-                        },
-                        body: JSON.stringify({
-                            model: config.model,
-                            messages: [{ role: 'user', content: prompt }],
-                            temperature,
-                            max_tokens: maxTokens,
-                        }),
+                        headers,
+                        body: JSON.stringify(body),
                     });
 
-                    if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status} - ${await res.text()}`);
+                    }
 
                     const data = await res.json();
-                    response = data.choices?.[0]?.message?.content || '';
+
+                    // Diferentes respuestas según proveedor
+                    if (config.provider === 'claude') {
+                        response = data.content?.[0]?.text || '';
+                    } else {
+                        response = data.choices?.[0]?.message?.content || '';
+                    }
                 }
 
                 // Éxito: registrar y retornar
                 this.status[config.provider] = { lastUsed: now };
                 console.log(`✅ Usando ${config.provider.toUpperCase()}`);
-                return response;
+                return response.trim();
 
             } catch (error: any) {
                 console.warn(`❌ ${config.provider} falló: ${error.message}`);
 
                 // Bloquear temporalmente si es rate limit
-                if ((error.status === 429) || (error.message && error.message.includes('429')) || (error.message && error.message.includes('rate limit'))) {
-                    const blockUntil = new Date(now.getTime() + 60000); // 1 min timeout
+                if (error.status === 429 || error.message.includes('rate limit') || error.message.includes('quota')) {
+                    const blockUntil = new Date(now.getTime() + 60000); // 1 min
                     this.status[config.provider] = { lastUsed: now, blockedUntil };
                 }
 
                 // Rotar al siguiente
-                this.currentIndex = (this.currentIndex + 1) % maxAttempts;
+                this.currentIndex = (this.currentIndex + 1) % PROVIDERS.length;
                 attempts++;
             }
         }
@@ -124,5 +150,5 @@ export class LLMRouter {
     }
 }
 
-// Instancia global
+// Instancia global (singleton)
 export const llmRouter = new LLMRouter();
