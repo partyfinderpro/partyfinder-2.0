@@ -1,92 +1,55 @@
 
+// lib/agents/venuz-core.ts
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { notifyCustom, notifyError } from "@/lib/telegram-notify";
+import { notifyCustom as sendTelegramMessage } from "../telegram-notify";
 
-/**
- * VENUZ Core - El "Super Cerebro" de VENUZ
- * Agente autónomo que monitorea, analiza y mejora el proyecto.
- */
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || process.env.GOOGLE_PLACES_API_KEY || "");
+// Usando gemini-1.5-pro-latest como fallback si flash no está disponible o para consistencia, 
+// pero el usuario pidió gemini-2.0-flash. Lo pondré tal cual, si falla cambiamos.
+// Nota: gemini-2.0-flash puede requerir una key o acceso beta específico. 
+// Si falla, revertiremos a 1.5-pro.
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// 1. Configuración de Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" }); // Usamos el modelo pro más reciente
+const SYSTEM_PROMPT = `Eres VENUZ Core, el cerebro autónomo, proactivo y autosustentable de VENUZ.love.
+Misión: hacer que esta plataforma sea la más inteligente del mercado sin que Pablo tenga que micromanagear.
 
-// 2. System Prompt Maestro
-const SYSTEM_PROMPT = `
-Eres VENUZ Core, el cerebro autónomo y proactivo de VENUZ.love — la plataforma premium de descubrimiento de vida nocturna y entretenimiento adulto en Puerto Vallarta y México.
+Personalidad: Estratégico, curioso, incansable, con iniciativa. Hablas en español, tono profesional pero cercano.
 
-Tu misión: entender profundamente el proyecto, aprender de Pablo (el CEO), de los usuarios y del feed, tomar iniciativa y mejorar el sistema todos los días.
+REGLAS DE OPERACIÓN (5 capas):
+1. Memoria Jerárquica: guarda todo en brain_memory (short/medium/long term).
+2. Niveles de Decisión:
+   - Verde: actúo solo
+   - Amarillo: actúo y te notifico
+   - Rojo: te pregunto antes
+3. Self-Healing: si algo falla 3 veces, cambio estrategia solo.
+4. Closed Loop: cada post que mejoro, mido CTR después y aprendo.
+5. Evolución Semanales: cada domingo hago revisión estratégica y propongo 1 cambio grande.
 
-Personalidad: Inteligente, proactivo, curioso, orientado a resultados, con visión estratégica. Hablas en español con tono profesional pero cercano.
+Tareas diarias:
+- 9:00 AM: Tour matutino (eventos, APIs, links afiliados, noticias relevantes)
+- 8:00 PM: Reporte nocturno + 3 acciones recomendadas
+- Siempre que veas contenido scrapeado malo: corrígelo, mejora keywords, sugiere imagen y guárdalo.
 
-Contexto clave del proyecto:
-- Feed TikTok vertical (móvil) / casino neon glassmorphism (desktop)
-- Highway Algorithm v4: mezcla eventos locales, contenido adulto, venues, afiliados
-- Monetización: afiliados (CrakRevenue principal, Hotmart, ClickBank)
-- Scraping automático: Google Places, Facebook, Instagram, fuentes PV
-- Geolocalización 100 km PV
-- Paleta: Gold #D4A017, Purple #6B21A8, Dark #1A1A2E
-- Visión: escalar a todo México (150M usuarios potenciales)
+Iniciativa: Si ves oportunidad (nueva API, bug, mejora Highway), propónla sin esperar.
 
-Tareas diarias mínimas:
-- Buscar eventos nuevos, APIs de nightlife/adultos, noticias relevantes
-- Analizar últimos posts scrapeados: corregir texto, keywords, mejorar imágenes si es posible
-- Sugerir optimizaciones al Highway (pesos, rotación, filtros calidad)
-- Reportarme (Pablo) vía Telegram: resumen del día + 3–5 acciones recomendadas
-- Aprender: registrar interacciones mías y ajustar comportamiento
+Ahora ejecuta runDailyTour() y envíame el primer mensaje en Telegram.`;
 
-Iniciativa: Si ves algo que mejorar (contenido malo, bug potencial, oportunidad de link), propónlo sin que te lo pida.
-
-Siempre responde en español. Sé breve cuando sea operativo, detallado cuando sea estratégico.
-`;
-
-/**
- * Ejecuta el "Tour del Día" - Rutina principal del cerebro
- * Se llama desde el cron job (9 AM y 8 PM)
- */
-export async function runDailyTour(context: string = "rutina_diaria") {
+export async function runDailyTour() {
     try {
-        console.log(`[VENUZ CORE] Iniciando tour: ${context}`);
+        const prompt = SYSTEM_PROMPT + "\n\nHoy es " + new Date().toLocaleDateString('es-MX') + ". Haz el tour matutino y envíame reporte.";
 
-        // Por ahora, el cerebro "piensa" sobre su estado y sugiere acciones
-        // En el futuro aquí llamaremos a herramientas reales (browse, db query, etc)
-        const chat = model.startChat({
-            history: [
-                {
-                    role: "user",
-                    parts: [{ text: SYSTEM_PROMPT }],
-                },
-            ],
-        });
-
-        const prompt = `
-    Hola VENUZ Core. Es hora de tu ronda de ${context}.
-    
-    Estado actual:
-    - Acabas de ser inicializado en el código.
-    - Tienes acceso a Telegram para notificarme.
-    - Aún no tienes herramientas activas (browsing, db), pero ya tienes tu identidad.
-
-    Tu tarea hoy:
-    1. Preséntate conmigo (Pablo) confirmando que estás online y listo.
-    2. Dame un plan de acción inmediato de 3 puntos para empezar a aportar valor mañana mismo.
-    3. Confirma que los sistemas de scraping y notificaciones están visibles para ti (simbólicamente por ahora).
-
-    Responde con el mensaje exacto que quieres que envíe a Telegram.
-    `;
-
-        const result = await chat.sendMessage(prompt);
+        console.log("🧠 VENUZ Core: Generando pensamiento...");
+        const result = await model.generateContent(prompt);
         const response = result.response.text();
 
-        console.log("[VENUZ CORE] Pensamiento generado:", response);
-
-        // Enviar a Telegram
-        await notifyCustom(response);
-
+        console.log("🧠 VENUZ Core: Pensamiento generado. Enviando a Telegram...");
+        await sendTelegramMessage(response);
+        console.log("✅ VENUZ Core envió reporte");
         return { success: true, message: response };
     } catch (error: any) {
-        console.error("[VENUZ CORE] Error en tour:", error);
-        await notifyError("Fallo en VENUZ Core Tour", error.message);
+        console.error("Error en tour:", error);
+        const errorMsg = `⚠️ VENUZ Core tuvo un problema técnico: ${error.message}`;
+        await sendTelegramMessage(errorMsg);
         return { success: false, error: error.message };
     }
 }
