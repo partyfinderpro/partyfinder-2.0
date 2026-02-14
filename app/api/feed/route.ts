@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { HighwayAlgorithm, UserContext } from '@/lib/highway-v4';
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase client from env variables
