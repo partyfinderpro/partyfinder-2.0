@@ -15,9 +15,34 @@ export async function generarFeed(userId?: string, location?: { lat: number; lng
     console.log('[Super Cerebro] Generando feed para:', userId || 'anon', location ? `en ${location.lat},${location.lng}` : 'sin ubicación');
 
     try {
+        // 0. Ejecutar SCEs (Sistemas Cognitivos Encapsulados)
+        // Integración de fuentes vivas/scraped al momento
+        let sceContent: any[] = [];
+        try {
+            const { SCENightlife } = await import('@/lib/sce/sce-nightlife');
+            const sceNightlife = new SCENightlife();
+            const nightlifeItems = await sceNightlife.run();
+            // Mapeamos al formato de la DB para unificar
+            sceContent = nightlifeItems.map(item => ({
+                id: item.id || `sce-${Math.random().toString(36).substr(2, 9)}`,
+                title: item.title,
+                description: item.description,
+                image_url: item.image_url,
+                category: item.category,
+                quality_score: item.quality_score,
+                active: true,
+                is_premium: false,
+                source: 'sce',
+                location: item.location ? `POINT(${item.location.lng} ${item.location.lat})` : null
+            }));
+            console.log(`[Super Cerebro] SCE Nightlife aportó ${sceContent.length} items`);
+        } catch (sceError) {
+            console.error('[Super Cerebro] Error ejecutando SCEs:', sceError);
+        }
+
         // 1. Obtener contenido crudo (eventos, venues, scraped_content, afiliados)
-        // Obtenemos un mix de contenido de alta calidad
-        const { data: rawContent, error: contentError } = await supabase
+        // Obtenemos un mix de contenido de alta calidad de la DB
+        const { data: dbContent, error: contentError } = await supabase
             .from('content') // Usamos 'content' que es la vista unificada o tabla principal
             .select('*')
             .eq('active', true)
@@ -25,6 +50,9 @@ export async function generarFeed(userId?: string, location?: { lat: number; lng
             .limit(60);
 
         if (contentError) throw contentError;
+
+        // Fusionar contenido de DB y de SCEs
+        const rawContent = [...sceContent, ...(dbContent || [])];
 
         const { data: affiliates, error: affError } = await supabase
             .from('affiliate_links')
