@@ -3,12 +3,14 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { notifyCustom as sendTelegramMessage } from "../telegram-notify";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY || process.env.GOOGLE_PLACES_API_KEY || "");
-// Usando gemini-1.5-pro-latest como fallback si flash no está disponible o para consistencia, 
-// pero el usuario pidió gemini-2.0-flash. Lo pondré tal cual, si falla cambiamos.
-// Nota: gemini-2.0-flash puede requerir una key o acceso beta específico. 
-// Si falla, revertiremos a 1.5-pro.
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// Lazy init inside function to ensure env is ready
+// Lazy init inside function to ensure env is ready
+const getModel = () => {
+    const apiKey = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : "";
+    if (!apiKey) console.warn('[VENUZ CORE] Warning: GEMINI_API_KEY is missing');
+    const genAI = new GoogleGenerativeAI(apiKey);
+    return genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+};
 
 const SYSTEM_PROMPT = `Eres VENUZ Core, el cerebro autónomo, proactivo y autosustentable de VENUZ.love.
 Misión: hacer que esta plataforma sea la más inteligente del mercado sin que Pablo tenga que micromanagear.
@@ -39,6 +41,7 @@ export async function runDailyTour() {
         const prompt = SYSTEM_PROMPT + "\n\nHoy es " + new Date().toLocaleDateString('es-MX') + ". Haz el tour matutino y envíame reporte.";
 
         console.log("🧠 VENUZ Core: Generando pensamiento...");
+        const model = getModel();
         const result = await model.generateContent(prompt);
         const response = result.response.text();
 
