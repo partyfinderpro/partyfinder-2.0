@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
         // Nota: En un entorno serverless real, Playwright puede necesitar configuración especial (AWS Lambda layer).
         // Aquí asumimos que el entorno soporta el binario o usamos la lógica de fallback interna de los SCEs.
 
+
         const sceNightlife = new SCENightlife();
         const sceAdult = new SCEAdult();
         const sceEventos = new SCEEventos();
@@ -34,7 +35,8 @@ export async function GET(request: NextRequest) {
         const sceBares = new SCEBares();
         const sceMasajes = new SCEMasajes();
 
-        const results = await Promise.allSettled([
+        // Ejecutar SCEs locales en paralelo
+        const localResultsPromise = Promise.allSettled([
             sceNightlife.run(),
             sceAdult.run(),
             sceEventos.run(),
@@ -43,11 +45,66 @@ export async function GET(request: NextRequest) {
             sceMasajes.run()
         ]);
 
+        // Ejecutar VENUZ Híbrida (Tour Nacional)
+        // Dynamically import to avoid load issues if not needed
+        const { runHibridaTour } = await import('@/lib/venuz-hibrida/hibrida-graph');
+        const cities = ["Puerto Vallarta", "Ciudad de México", "Guadalajara", "Monterrey", "Cancún"];
+        const nationalResults: any[] = [];
+
+        console.log('[Pipeline] Iniciando Tour Nacional Híbrido...');
+
+        for (const city of cities) {
+            try {
+                const tourOutput = await runHibridaTour(city);
+                // Parse langchain output if string
+                let parsedItems = [];
+                if (typeof tourOutput === 'string') {
+                    // Try to find JSON array in markdown/text
+                    const cleanJson = tourOutput.replace(/```json/g, '').replace(/```/g, '').trim();
+                    try {
+                        const start = cleanJson.indexOf('[');
+                        const end = cleanJson.lastIndexOf(']');
+                        if (start !== -1 && end !== -1) {
+                            parsedItems = JSON.parse(cleanJson.substring(start, end + 1));
+                        } else {
+                            // Try parsing whole object if it is one
+                            parsedItems = JSON.parse(cleanJson);
+                            if (!Array.isArray(parsedItems)) parsedItems = [parsedItems];
+                        }
+                    } catch (e) {
+                        console.warn(`Failed to parse JSON for ${city}:`, e);
+                    }
+                } else if (Array.isArray(tourOutput)) {
+                    parsedItems = tourOutput;
+                }
+
+                // Add city metadata
+                const itemsWithCity = parsedItems.map((item: any) => ({
+                    ...item,
+                    city: city,
+                    source: 'venuz_hibrida_agent',
+                    active: true,
+                    quality_score: item.quality_score || 85 // High score for agent curated content
+                }));
+
+                nationalResults.push(...itemsWithCity);
+                console.log(`[Hibrida] ${city}: ${itemsWithCity.length} items encontrados.`);
+
+            } catch (err) {
+                console.error(`[Hibrida] Error en tour de ${city}:`, err);
+            }
+        }
+
+        const results = await localResultsPromise;
+
+
         // 2. Procesar resultados
-        const flatResults = results
+        const localFlat = results
             .filter(r => r.status === 'fulfilled')
             .map(r => (r as PromiseFulfilledResult<any[]>).value)
             .flat();
+
+        const flatResults = [...localFlat, ...nationalResults];
 
         console.log(`[Pipeline] Total items obtenidos: ${flatResults.length}`);
 
