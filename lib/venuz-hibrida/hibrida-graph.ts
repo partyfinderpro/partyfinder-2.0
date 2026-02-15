@@ -1,37 +1,41 @@
 // src/lib/venuz-hibrida/hibrida-graph.ts
-import { ChatGroq } from "@langchain/groq";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { tools } from "./tools";
 
 // Prevent errors if API keys are missing during build
 const GROQ_API_KEY = process.env.GROQ_API_KEY || "dummy";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "dummy";
 
-// Groq como principal
-const groqLLM = new ChatGroq({
-    model: "llama-3.3-70b-versatile",
-    apiKey: GROQ_API_KEY,
-});
-
-// Gemini como fallback
+// Gemini como fallback (local instance)
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const geminiLLM = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
-// Agente con Groq
-const agent = createReactAgent({
-    llm: groqLLM,
-    tools,
-});
-
-// Función con fallback
+// Función con fallback y lazy loading de LangChain
 export async function runHibridaTour(input: string, systemPrompt?: string) {
     try {
+        // 🚀 Dynamic Import of LangChain modules to avoid build/runtime issues
+        const { ChatGroq } = await import("@langchain/groq");
+        const { createReactAgent } = await import("@langchain/langgraph/prebuilt");
+
+        // Groq Instance (Lazy)
+        const groqLLM = new ChatGroq({
+            model: "llama-3.3-70b-versatile",
+            apiKey: GROQ_API_KEY,
+        });
+
+        // Agent Instance (Lazy)
+        const agent = createReactAgent({
+            llm: groqLLM,
+            tools,
+        });
+
         const messages = [];
         if (systemPrompt) {
             messages.push({ role: "system", content: systemPrompt });
         }
         messages.push({ role: "user", content: input });
+
+        console.log("🤖 Ejecutando agente híbrido...");
 
         // Intenta con Groq primero
         const result = await agent.invoke({ messages });
