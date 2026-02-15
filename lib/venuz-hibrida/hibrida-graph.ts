@@ -2,7 +2,7 @@
 import { ChatGroq } from "@langchain/groq";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { pull } from "langchain/hub";
-import { tools } from "./tools";
+import { tools } from "@/lib/venuz-hibrida/tools";
 import { HumanMessage } from "@langchain/core/messages";
 
 // Use Groq with failover/fallback logic if key missing?

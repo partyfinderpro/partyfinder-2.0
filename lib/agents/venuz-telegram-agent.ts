@@ -11,6 +11,38 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export async function handleTelegramMessage(text: string, chatId: number | string) {
     console.log(`[Telegram Agent] Recibido de ${chatId}: ${text}`);
 
+    // 0. Comandos especiales: /links
+    if (text.trim().toLowerCase().startsWith('/links')) {
+        const { data: pending } = await supabase
+            .from('project_resources')
+            .select('title, url, affiliate_program, commission_rate')
+            .eq('status', 'pending');
+
+        const { data: integrated } = await supabase
+            .from('project_resources')
+            .select('title')
+            .eq('status', 'integrated');
+
+        let msg = "📊 *Estado de Links de Afiliados*\n\n";
+
+        msg += "⏳ *Pendientes:*\n";
+        if (pending && pending.length > 0) {
+            msg += pending.map(l => `- [${l.affiliate_program || 'General'}] ${l.title} (${l.commission_rate ? l.commission_rate + '%' : 'N/A'})`).join('\n');
+        } else {
+            msg += "No hay links pendientes.";
+        }
+
+        msg += "\n\n✅ *Integrados:*\n";
+        if (integrated && integrated.length > 0) {
+            msg += integrated.map(l => `- ${l.title}`).join('\n');
+        } else {
+            msg += "No hay links integrados aún.";
+        }
+
+        await notifyCustom(msg);
+        return msg;
+    }
+
     // 1. Guardar mensaje del usuario
     await supabase.from('brain_conversations').insert({
         message: text,
@@ -28,7 +60,6 @@ export async function handleTelegramMessage(text: string, chatId: number | strin
     const historyText = history?.reverse().map(h => `${h.type === 'user' ? 'Pablo' : 'VENUZ'}: ${h.message}`).join('\n') || '';
 
     // 2.1 Recuperar tareas pendientes para contexto
-    // Fetch pending tasks to give LLM full context
     const { data: pendingTasks } = await supabase
         .from('tasks')
         .select('id, title, priority, status')
@@ -46,17 +77,31 @@ export async function handleTelegramMessage(text: string, chatId: number | strin
     if (linksFound.length > 0) {
         console.log(`[Telegram Agent] Detectados ${linksFound.length} links. Clasificando...`);
         const classificationPrompt = `
-        Clasifica estos links para el proyecto VENUZ:
-        - Tipo: api, affiliate_link, scraper_source, tool, reference, other
-        - Categoría: free_llm, event_scraper, adult_affiliate, nightlife_source, etc.
-        - Prioridad: 1-5 (5 = urgente)
-        - Título y descripción breve
+        Clasifica estos links para el proyecto VENUZ (especialmente afiliados).
+        
+        Analiza si son links de afiliados (Hotmart, ClickBank, CrakRevenue, Amazon, etc.).
+        Si es afiliado, intenta extraer/inferir:
+        - affiliate_program: (ej: Hotmart, ClickBank)
+        - commission_rate: (ej: 50, 75 - solo el número)
+        - payout_type: (CPA, RevShare, CPS)
+        - title: Título corto del producto/curso
+        
+        Output Fields:
+        - url: (la url original)
+        - type: api, affiliate_link, scraper_source, tool, reference, other
+        - category: free_llm, event_scraper, adult_affiliate, nightlife_source, etc.
+        - priority: 1-5 (5 = urgente/afiliado directo para monetizar)
+        - title: ...
+        - description: Breve descripción
+        - affiliate_program: (string o null, ej 'Hotmart')
+        - commission_rate: (number o null, ej 50)
+        - payout_type: (string o null, ej 'RevShare')
 
         Links: ${linksFound.join('\n')}
 
         Devuelve JSON array puro:
         [
-            { "url": "...", "type": "...", "category": "...", "priority": 1, "title": "...", "description": "..." }
+            { "url": "...", "type": "...", "category": "...", "priority": 5, "title": "...", "description": "...", "affiliate_program": "...", "commission_rate": 50, "payout_type": "RevShare" }
         ]
         `;
 
@@ -67,14 +112,59 @@ export async function handleTelegramMessage(text: string, chatId: number | strin
             const resources = JSON.parse(jsonStr);
 
             if (Array.isArray(resources)) {
+                let savedCount = 0;
                 for (const res of resources) {
-                    await supabase.from('project_resources').insert({
-                        ...res,
-                        status: 'pending'
-                    });
+                    // Guardar en project_resources
+                    const { data: inserted, error } = await supabase.from('project_resources').insert({
+                        type: res.type,
+                        url: res.url,
+                        title: res.title,
+                        description: res.description,
+                        category: res.category,
+                        priority: res.priority,
+                        status: 'pending',
+                        affiliate_program: res.affiliate_program,
+                        commission_rate: res.commission_rate,
+                        payout_type: res.payout_type,
+                        metadata: { original_classification: res }
+                    }).select().single();
+
+                    if (!error && inserted) {
+                        savedCount++;
+
+                        // Lógica de Integración Automática para Afiliados
+                        if (res.priority >= 4 || res.type === 'affiliate_link') {
+                            // 1. Marcar como integrado
+                            await supabase.from('project_resources')
+                                .update({ status: 'integrated' })
+                                .eq('id', inserted.id);
+
+                            // 2. Insertar en tabla de afiliados integrados
+                            await supabase.from('integrated_affiliates').insert({
+                                resource_id: inserted.id,
+                                feed_position_rule: 'every_6',
+                                active: true
+                            });
+
+                            // 3. Crear tarea de verificación
+                            const taskTitle = `Link ${res.title} integrado al feed. Verificar visualmente.`;
+                            await supabase.from('tasks').insert({
+                                title: taskTitle,
+                                description: `URL: ${res.url}\nPrograma: ${res.affiliate_program}\nComisión: ${res.commission_rate}%\nAuto-integrado desde Telegram.\nVerificar que salga en el feed y el click funcione (/api/go).`,
+                                priority: 5,
+                                status: 'pending'
+                            });
+                            linksSummary += `\n🚀 Tarea creada: ${taskTitle} (Integrado Automáticamente)`;
+                        }
+                    } else {
+                        console.error("Error inserting resource:", error);
+                    }
                 }
-                linksSummary = `\n✅ SISTEMA: Se guardaron ${resources.length} nuevos recursos: ` + resources.map((r: any) => `${r.title} (${r.category})`).join(', ');
-                await notifyCustom(`💾 Guardados automáticamente: \n${resources.map((r: any) => `- ${r.title} (${r.type})`).join('\n')}`);
+
+                if (savedCount > 0) {
+                    linksSummary = `\n✅ SISTEMA: Se guardaron ${savedCount} recursos.` + linksSummary;
+                    await notifyCustom(`💾 **Nuevos Recursos Guardados:**\n${resources.map((r: any) => `- ${r.title} (${r.affiliate_program || r.type})`).join('\n')}`);
+                }
             }
         } catch (e) {
             console.error("Error clasificando links:", e);

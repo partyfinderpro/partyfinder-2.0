@@ -58,11 +58,12 @@ export async function GET(request: NextRequest) {
         await supabase.from('affiliate_conversions').insert(clickData);
 
         // 3. Incrementar contador simple (opcional, para dashboard rápido)
-        await supabase.rpc('increment_affiliate_clicks', { row_id: linkId })
-            .catch(() => {
-                // Fallback si RPC no existe: update directo
-                // No es atómico pero sirve para estadísticas aproximadas
-            });
+        const { error: rpcError } = await supabase.rpc('increment_affiliate_clicks', { row_id: linkId });
+
+        if (rpcError) {
+            // Fallback o simplemente ignorar error de stats para no bloquear la redirección
+            console.warn("Error incrementing clicks:", rpcError);
+        }
 
         // 4. Redirección final (307 Temporary Redirect para no cachear el destino permanente)
         // Usamos 302/307 para que el navegador siempre pase por aquí y trackee.
