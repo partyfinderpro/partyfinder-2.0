@@ -11,6 +11,8 @@ import { SCEBares } from '@/lib/sce/sce-bares';
 import { SCEMasajes } from '@/lib/sce/sce-masajes';
 
 export const maxDuration = 300; // 5 minutos timeout para scraping
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     // Verificar auth básica (cron secret)
