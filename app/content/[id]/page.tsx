@@ -1,6 +1,7 @@
 // app/content/[id]/page.tsx
 // Página de detalle individual para SEO
 // Código de Grok
+export const dynamic = 'force-dynamic';
 
 import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
