@@ -2,11 +2,13 @@
 import { llmRouter } from "@/lib/llm-router";
 import { createClient } from "@supabase/supabase-js";
 
-// Init Supabase for closed loop tracking
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Init Supabase for closed loop tracking (Lazy Init)
+function getSupabase() {
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+}
 
 export interface SCEOutput {
     id?: string;
@@ -67,7 +69,10 @@ export abstract class BaseSCE {
             // Closed-Loop: Guardar registro de la "mejora" (transformación)
             // Solo si tiene ID (aunque al ser scraped nuevo igual no tiene ID de DB aún, 
             // pero guardamos el rastro para análisis futuro)
+            // Lazy load supabase here
             if (result.quality_score > 60) {
+                const supabase = getSupabase();
+
                 await supabase.from('content_improvements').insert({
                     original_content_id: null, // No hay ID de DB estable aún
                     improved_title: result.title,
