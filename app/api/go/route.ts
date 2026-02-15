@@ -48,8 +48,8 @@ export async function GET(request: NextRequest) {
             ip: request.headers.get('x-forwarded-for') || 'unknown',
             metadata: {
                 referer: request.headers.get('referer') || null,
-                country: request.geo?.country || null,
-                city: request.geo?.city || null
+                country: request.headers.get('x-vercel-ip-country') || null,
+                city: request.headers.get('x-vercel-ip-city') || null
             }
         };
 

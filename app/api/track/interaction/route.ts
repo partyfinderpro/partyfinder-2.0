@@ -9,7 +9,7 @@ export const runtime = 'edge';
 export async function POST(req: Request) {
     try {
         const { content_id, action, value = 1 } = await req.json();
-        const heads = headers();
+        const heads = await headers();
         let session_id = heads.get('x-venu-session') || heads.get('cookie')?.match(/venu_session_id=([^;]+)/)?.[1];
 
         // Si no hay sesión, crear una nueva (simple ID generation)
