@@ -3,8 +3,10 @@ import { llmRouter } from "@/lib/llm-router";
 import { notifyCustom as sendTelegramMessage } from "../telegram-notify";
 import { createClient } from "@supabase/supabase-js";
 
-// Init Supabase
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+// Init Supabase (lazy execution)
+function getSupabase() {
+    return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 const SYSTEM_PROMPT = `Eres VENUZ Core, el cerebro autónomo, proactivo y autosustentable de VENUZ.love.
 Misión: hacer que esta plataforma sea la más inteligente del mercado sin que Pablo tenga que micromanagear.
@@ -32,6 +34,7 @@ Ahora ejecuta runDailyTour() y envíame el primer mensaje en Telegram.`;
 
 export async function runDailyTour(mode: string = 'auto') {
     try {
+        const supabase = getSupabase();
         // Collect stats for proactivity
         const { count: pendingCount } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'pending');
         const { count: contentCount } = await supabase.from('content').select('*', { count: 'exact', head: true });

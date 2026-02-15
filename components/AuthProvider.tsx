@@ -17,7 +17,7 @@ const SupabaseContext = createContext<SupabaseContextType | null>(null);
 export function useSupabase() {
         const context = useContext(SupabaseContext);
         if (!context) {
-                    throw new Error('useSupabase must be used within AuthProvider');
+                throw new Error('useSupabase must be used within AuthProvider');
         }
         return context;
 }
@@ -43,52 +43,52 @@ export default function AuthProvider({
         const [session, setSession] = useState<Session | null>(null);
         const [user, setUser] = useState<User | null>(null);
 
-    // Guard: use fallback placeholder values if env vars are missing (build time safety)
-    const supabase = useMemo(
+        // Guard: use fallback placeholder values if env vars are missing (build time safety)
+        const supabase = useMemo(
                 () =>
-                                createBrowserClient(
-                                                    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
-                                                    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
-                                                ),
+                        createBrowserClient(
+                                process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+                                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
+                        ),
                 []
-            );
+        );
 
-    useEffect(() => {
+        useEffect(() => {
                 // Skip auth initialization if env vars are missing
-                      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-                                      console.warn('[VENUZ] ⚠️ Missing Supabase env vars in AuthProvider — skipping auth init');
-                                      return;
-                      }
+                if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+                        console.warn('[VENUZ] ⚠️ Missing Supabase env vars in AuthProvider — skipping auth init');
+                        return;
+                }
 
-                      // Get initial session
-                      supabase.auth.getSession().then(({ data: { session } }) => {
-                                      setSession(session);
-                                      setUser(session?.user ?? null);
-                      });
+                // Get initial session
+                supabase.auth.getSession().then(({ data: { session } }) => {
+                        setSession(session);
+                        setUser(session?.user ?? null);
+                });
 
-                      // Listen for auth changes
-                      const {
-                                      data: { subscription },
-                      } = supabase.auth.onAuthStateChange((_event, session) => {
-                                      setSession(session);
-                                      setUser(session?.user ?? null);
-                      });
+                // Listen for auth changes
+                const {
+                        data: { subscription },
+                } = supabase.auth.onAuthStateChange((_event, session) => {
+                        setSession(session);
+                        setUser(session?.user ?? null);
+                });
 
-                      return () => subscription.unsubscribe();
-    }, [supabase]);
+                return () => subscription.unsubscribe();
+        }, [supabase]);
 
-    const value = useMemo(
+        const value = useMemo(
                 () => ({
-                                supabase,
-                                session,
-                                user,
+                        supabase,
+                        session,
+                        user,
                 }),
                 [supabase, session, user]
-            );
+        );
 
-    return (
+        return (
                 <SupabaseContext.Provider value={value}>
-                    {children}
+                        {children}
                 </SupabaseContext.Provider>
-            );
+        );
 }
