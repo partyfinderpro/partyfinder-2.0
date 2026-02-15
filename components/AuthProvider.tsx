@@ -7,72 +7,88 @@ import type { SupabaseClient, Session, User } from '@supabase/supabase-js';
 
 // Context type
 interface SupabaseContextType {
-    supabase: SupabaseClient;
-    session: Session | null;
-    user: User | null;
+        supabase: SupabaseClient;
+        session: Session | null;
+        user: User | null;
 }
 
 const SupabaseContext = createContext<SupabaseContextType | null>(null);
 
 export function useSupabase() {
-    const context = useContext(SupabaseContext);
-    if (!context) {
-        throw new Error('useSupabase must be used within AuthProvider');
-    }
-    return context;
+        const context = useContext(SupabaseContext);
+        if (!context) {
+                    throw new Error('useSupabase must be used within AuthProvider');
+        }
+        return context;
 }
 
 // Convenience hooks
 export function useSupabaseClient() {
-    return useSupabase().supabase;
+        return useSupabase().supabase;
 }
 
 export function useUser() {
-    return useSupabase().user;
+        return useSupabase().user;
 }
 
 export function useSession() {
-    return useSupabase().session;
+        return useSupabase().session;
 }
 
 export default function AuthProvider({
-    children,
+        children,
 }: {
-    children: React.ReactNode;
+        children: React.ReactNode;
 }) {
-    const [session, setSession] = useState<Session | null>(null);
-    const [user, setUser] = useState<User | null>(null);
+        const [session, setSession] = useState<Session | null>(null);
+        const [user, setUser] = useState<User | null>(null);
 
-    const supabase = useMemo(() => createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    ), []);
+    // Guard: use fallback placeholder values if env vars are missing (build time safety)
+    const supabase = useMemo(
+                () =>
+                                createBrowserClient(
+                                                    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co',
+                                                    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
+                                                ),
+                []
+            );
 
     useEffect(() => {
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-        });
+                // Skip auth initialization if env vars are missing
+                      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+                                      console.warn('[VENUZ] ⚠️ Missing Supabase env vars in AuthProvider — skipping auth init');
+                                      return;
+                      }
 
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-        });
+                      // Get initial session
+                      supabase.auth.getSession().then(({ data: { session } }) => {
+                                      setSession(session);
+                                      setUser(session?.user ?? null);
+                      });
 
-        return () => subscription.unsubscribe();
+                      // Listen for auth changes
+                      const {
+                                      data: { subscription },
+                      } = supabase.auth.onAuthStateChange((_event, session) => {
+                                      setSession(session);
+                                      setUser(session?.user ?? null);
+                      });
+
+                      return () => subscription.unsubscribe();
     }, [supabase]);
 
-    const value = useMemo(() => ({
-        supabase,
-        session,
-        user,
-    }), [supabase, session, user]);
+    const value = useMemo(
+                () => ({
+                                supabase,
+                                session,
+                                user,
+                }),
+                [supabase, session, user]
+            );
 
     return (
-        <SupabaseContext.Provider value={value}>
-            {children}
-        </SupabaseContext.Provider>
-    );
+                <SupabaseContext.Provider value={value}>
+                    {children}
+                </SupabaseContext.Provider>SupabaseContext.Provider>
+            );
 }
