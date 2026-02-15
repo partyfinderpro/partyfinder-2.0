@@ -38,6 +38,49 @@ export async function handleTelegramMessage(text: string, chatId: number | strin
     // Format tasks for the prompt
     const tasksList = pendingTasks?.map(t => `- [${t.title}] (ID: ${t.id.slice(0, 4)}, P${t.priority}, ${t.status})`).join('\n') || 'No hay tareas pendientes.';
 
+    // 2.5 Auto-Clasificación de Links y APIs
+    const linkRegex = /(https?:\/\/[^\s]+)/g;
+    const linksFound = text.match(linkRegex) || [];
+    let linksSummary = "";
+
+    if (linksFound.length > 0) {
+        console.log(`[Telegram Agent] Detectados ${linksFound.length} links. Clasificando...`);
+        const classificationPrompt = `
+        Clasifica estos links para el proyecto VENUZ:
+        - Tipo: api, affiliate_link, scraper_source, tool, reference, other
+        - Categoría: free_llm, event_scraper, adult_affiliate, nightlife_source, etc.
+        - Prioridad: 1-5 (5 = urgente)
+        - Título y descripción breve
+
+        Links: ${linksFound.join('\n')}
+
+        Devuelve JSON array puro:
+        [
+            { "url": "...", "type": "...", "category": "...", "priority": 1, "title": "...", "description": "..." }
+        ]
+        `;
+
+        try {
+            const classificationRaw = await llmRouter.generateContent(classificationPrompt, { temperature: 0.1 });
+            // Cleanup JSON
+            const jsonStr = classificationRaw.replace(/```json/g, '').replace(/```/g, '').trim();
+            const resources = JSON.parse(jsonStr);
+
+            if (Array.isArray(resources)) {
+                for (const res of resources) {
+                    await supabase.from('project_resources').insert({
+                        ...res,
+                        status: 'pending'
+                    });
+                }
+                linksSummary = `\n✅ SISTEMA: Se guardaron ${resources.length} nuevos recursos: ` + resources.map((r: any) => `${r.title} (${r.category})`).join(', ');
+                await notifyCustom(`💾 Guardados automáticamente: \n${resources.map((r: any) => `- ${r.title} (${r.type})`).join('\n')}`);
+            }
+        } catch (e) {
+            console.error("Error clasificando links:", e);
+        }
+    }
+
     // 3. Prompt inteligente para el cerebro
     const systemPrompt = `
     Eres VENUZ Core, el asistente personal inteligente y proactivo de Pablo para el proyecto VENUZ.love.
@@ -46,12 +89,14 @@ export async function handleTelegramMessage(text: string, chatId: number | strin
     ESTADO ACTUAL DE TAREAS:
     ${tasksList}
 
+    ${linksSummary ? `\nEVENTO RECIENTE:\n${linksSummary}` : ''}
+
     CAPACIDADES:
     - Gestión de Tareas: 
       - "Crea tarea...": crea nueva.
       - "Actualiza tarea [ID corto o nombre] a ...": cambia estado (pending, in_progress, done).
       - "Qué tareas tengo": Responde basándote en la lista de arriba.
-    - Clasificación: Si hay links, analiza qué son (afiliado, herramienta, noticia) y guárdalos. Detecta múltiples links.
+      - "Qué APIs tengo": Si te preguntan por recursos, diles que revisen la tabla project_resources (o resume si las ves).
     - Memoria: Usa el contexto de la conversación.
     - Personalidad: Profesional, eficiente, "Grok-like", directo, usa emojis.
     
@@ -63,8 +108,7 @@ export async function handleTelegramMessage(text: string, chatId: number | strin
     {
       "actions": [
         { "type": "create_task", "data": { "title": "...", "description": "...", "priority": 1 } },
-        { "type": "update_task", "data": { "id_fragment": "...", "status": "done" } },
-        { "type": "save_link", "data": { "url": "...", "category": "...", "notes": "..." } }
+        { "type": "update_task", "data": { "id_fragment": "...", "status": "done" } }
       ]
     }
     \`\`\`
