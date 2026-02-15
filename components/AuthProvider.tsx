@@ -89,6 +89,6 @@ export default function AuthProvider({
     return (
                 <SupabaseContext.Provider value={value}>
                     {children}
-                </SupabaseContext.Provider>SupabaseContext.Provider>
+                </SupabaseContext.Provider>
             );
 }
