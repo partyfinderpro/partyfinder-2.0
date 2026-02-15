@@ -1,5 +1,9 @@
+import { TavilySearchResults } from "./tavily-tool";
 
-// src/lib/venuz-hibrida/tools.ts
-// Disabled LangChain tools for now to fix build
-
-export const tools = [];
+// Export instantiated tools array for agent usage
+export const tools = [
+    new TavilySearchResults({
+        apiKey: process.env.TAVILY_API_KEY!,
+        maxResults: 5,
+    }),
+];

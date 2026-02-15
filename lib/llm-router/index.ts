@@ -14,16 +14,16 @@ interface LLMConfig {
 
 const PROVIDERS: LLMConfig[] = [
     {
-        provider: 'gemini',
-        apiKey: process.env.GEMINI_API_KEY,
-        model: 'gemini-flash-latest',
-    },
-    {
         provider: 'groq',
         apiKey: process.env.GROQ_API_KEY,
         model: 'llama-3.3-70b-versatile',
         endpoint: 'https://api.groq.com/openai/v1/chat/completions',
         responsePath: 'choices.0.message.content',
+    },
+    {
+        provider: 'gemini',
+        apiKey: process.env.GEMINI_API_KEY,
+        model: 'gemini-flash-latest',
     },
     {
         provider: 'claude',

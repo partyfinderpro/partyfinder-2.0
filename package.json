@@ -12,7 +12,11 @@
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
     "@google/generative-ai": "^0.24.1",
+    "@langchain/community": "^1.1.15",
+    "@langchain/core": "^1.1.24",
+    "@langchain/google-genai": "^2.1.18",
     "@langchain/groq": "^1.1.0",
+    "@langchain/langgraph": "^1.1.4",
     "@next/bundle-analyzer": "^16.1.4",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/auth-helpers-react": "^0.15.0",

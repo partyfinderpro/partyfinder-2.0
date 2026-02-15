@@ -57,9 +57,11 @@ export async function GET(request: NextRequest) {
 
         for (const city of cities) {
             try {
-                const tourOutput = await runHibridaTour(city);
+                const result = await runHibridaTour(city);
+                const tourOutput = result?.output || "";
+
                 // Parse langchain output if string
-                let parsedItems = [];
+                let parsedItems: any[] = [];
                 if (typeof tourOutput === 'string') {
                     // Try to find JSON array in markdown/text
                     const cleanJson = tourOutput.replace(/```json/g, '').replace(/```/g, '').trim();

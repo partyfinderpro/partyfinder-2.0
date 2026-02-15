@@ -10,6 +10,8 @@ const NEXT_PUBLIC_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process
 const NEXT_PUBLIC_SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
 // --- AI CONFIGURATION ---
+import { runHibridaTour } from "@/lib/venuz-hibrida/hibrida-graph";
+
 const SYSTEM_PROMPT = `Eres VENUZ Bot, el asistente de inteligencia artificial del evento VENUZ.
 Tu objetivo es ayudar a Pablo (CEO) a gestionar la plataforma.
 Eres operativo, conciso y directo.
@@ -17,55 +19,8 @@ Si te piden "resumen", da un resumen del estado del sistema.
 Si te piden "crear tarea", confirma que la registrarás.
 Usa emojis para dar formato.`;
 
-async function askGroq(question: string, context: string): Promise<string | null> {
-    if (!GROQ_API_KEY) return null;
-    try {
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${GROQ_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                messages: [
-                    { role: 'system', content: `${SYSTEM_PROMPT}\n\nCONTEXTO:\n${context}` },
-                    { role: 'user', content: question }
-                ],
-                model: 'llama3-70b-8192',
-                temperature: 0.5,
-                max_tokens: 1024
-            })
-        });
-        if (!response.ok) return null;
-        const data = await response.json();
-        return data.choices?.[0]?.message?.content || null;
-    } catch (e) {
-        console.error('Groq Error:', e);
-        return null;
-    }
-}
+// Local functions removed in favor of runHibridaTour
 
-async function askGemini(question: string, context: string): Promise<string | null> {
-    if (!GEMINI_API_KEY) return null;
-    try {
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: `${SYSTEM_PROMPT}\n\nCONTEXTO:\n${context}\n\nUSER: ${question}` }] }]
-                })
-            }
-        );
-        if (!response.ok) return null;
-        const data = await response.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
-    } catch (e) {
-        console.error('Gemini Error:', e);
-        return null;
-    }
-}
 
 // --- WEBHOOK HANDLER ---
 export async function POST(req: NextRequest) {
@@ -107,10 +62,14 @@ export async function POST(req: NextRequest) {
         });
 
         // 2. Get AI Response
+        // 2. Get AI Response
         const context = `URL: ${process.env.NEXT_PUBLIC_APP_URL || 'https://labelbabel.com'}`;
+        const promptWithContext = `${SYSTEM_PROMPT}\n\nCONTEXTO:\n${context}`;
 
-        let aiResponse = await askGroq(text, context);
-        if (!aiResponse) aiResponse = await askGemini(text, context);
+        // Ejecutar agente híbrido
+        const hibridaResult = await runHibridaTour(text, promptWithContext);
+        let aiResponse = hibridaResult.output;
+
         if (!aiResponse) aiResponse = '⚠️ Mis cerebros de IA (Groq y Gemini) no responden. Intenta más tarde.';
 
         // 3. Send Reply
