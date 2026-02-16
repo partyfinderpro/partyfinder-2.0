@@ -15,7 +15,7 @@ interface HeaderProps {
     onCityChange?: (city: string) => void;
 }
 
-const MEXICO_CITIES = ['Todas', 'Ubicación Actual', 'CDMX', 'Guadalajara', 'Monterrey', 'Cancún', 'Puerto Vallarta', 'Tulum'];
+const GLOBAL_CITIES = ['Todas', 'Ubicación Actual', 'CDMX', 'Guadalajara', 'Cancún', 'Miami', 'Lisboa', 'Madrid'];
 
 export default function Header({
     notificationCount = 0,
@@ -89,7 +89,7 @@ export default function Header({
                                 exit={{ opacity: 0, y: 10 }}
                                 className="absolute top-full left-0 mt-3 w-48 bg-black/95 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50"
                             >
-                                {MEXICO_CITIES.map((c) => (
+                                {GLOBAL_CITIES.map((c) => (
                                     <button
                                         key={c}
                                         onClick={() => handleCityChange(c)}

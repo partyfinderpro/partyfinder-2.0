@@ -1,0 +1,37 @@
+{
+    "venue": {
+        "title": "Détails du Lieu",
+        "visit": "Visiter le Site",
+        "hours": "Heures",
+        "phone": "Téléphone",
+        "share": "Partager",
+        "save": "Enregistrer",
+        "alert": "📍 Alerte active - Nous vous informerons quand vous serez à proximité",
+        "verified": "VÉRIFIÉ",
+        "source": "Source",
+        "original": "Voir l'original",
+        "premium_cta": "VOUS VOULEZ DES RECOMMANDATIONS VIP ?",
+        "premium_desc": "Recevez des plans exclusifs sur Telegram",
+        "stats_popularity": "Popularité",
+        "stats_impact": "Impact"
+    },
+    "home": {
+        "title": "Découvrez les meilleurs endroits à {city}",
+        "cta": "Explorer Maintenant",
+        "hero_title": "TROUVEZ VOTRE PROCHAINE DESTINATION",
+        "hero_subtitle": "La super-APP lifestyle et nightlife la plus puissante"
+    },
+    "nav": {
+        "explore": "Explorer",
+        "feed": "Flux",
+        "profile": "Profil",
+        "admin": "Admin",
+        "feed_all": "Tout",
+        "feed_nightlife": "Vie Nocturne",
+        "feed_adult": "Adultes",
+        "trending": "Tendances",
+        "near_me": "Près de moi",
+        "favorites": "Favoris",
+        "categories_title": "CATÉGORIES"
+    }
+}

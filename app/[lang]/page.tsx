@@ -86,12 +86,17 @@ const TRENDING_TAGS = [
 
 import { useSmartLocation } from "@/hooks/useSmartLocation"; // Import nueva hook
 
-export default function HomePage() {
+import { useTranslations } from 'next-intl';
+
+export default function HomePage({ params }: { params: { lang: string, region?: string } }) {
+  const tHome = useTranslations('home');
+  const tNav = useTranslations('nav');
+  const tVenue = useTranslations('venue');
+
   // Filters & State
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [activeMenu, setActiveMenu] = useState('inicio');
   const [searchQuery, setSearchQuery] = useState("");
-  // const [selectedCity, setSelectedCity] = useState("Todas"); // Reemplazado por SmartLocation
 
   // Filter State
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
@@ -104,6 +109,21 @@ export default function HomePage() {
 
   // 🚀 Smart Location Hook
   const { city: selectedCity, lat, lng, detectLocation, setManualCity, isLoading: locLoading, error: locError } = useSmartLocation();
+
+  // If region is in params, enforce it for initial load
+  useEffect(() => {
+    if (params.region) {
+      console.log(`[VENUZ] 🌎 Global Scale: Locking context to region: ${params.region}`);
+      // Mapeo simple de códigos a Nombres (mejorable con fetchRegions)
+      const regionNames: Record<string, string> = {
+        'nayarit-mx': 'Nayarit',
+        'cancun-mx': 'Cancún',
+        'miami-us': 'Miami',
+        'lisboa-pt': 'Lisboa'
+      };
+      setManualCity(regionNames[params.region] || params.region.split('-')[0].charAt(0).toUpperCase() + params.region.split('-')[0].slice(1));
+    }
+  }, [params.region, setManualCity]);
 
   const {
     content,
@@ -381,7 +401,7 @@ export default function HomePage() {
                       }`}
                   >
                     <Home className="w-4 h-4" />
-                    Inicio
+                    {tNav('explore')}
                   </button>
                   <button
                     onClick={() => {
@@ -394,7 +414,7 @@ export default function HomePage() {
                       }`}
                   >
                     <Flame className="w-4 h-4 text-orange-400" />
-                    Tendencias
+                    {tVenue('stats_popularity')}
                   </button>
                   <button
                     onClick={() => {
@@ -407,7 +427,7 @@ export default function HomePage() {
                       }`}
                   >
                     <MapPin className="w-4 h-4 text-blue-400" />
-                    Cerca de mí
+                    {tVenue('alert').split(' - ')[0]}
                   </button>
                   <button
                     onClick={() => {
@@ -420,7 +440,7 @@ export default function HomePage() {
                       }`}
                   >
                     <Heart className="w-4 h-4 text-pink-500" />
-                    Favoritos
+                    {tVenue('save')}
                   </button>
                 </div>
               </div>
@@ -429,7 +449,7 @@ export default function HomePage() {
               <div className="venuz-card p-4">
                 <h3 className="text-sm font-semibold mb-3 text-gradient flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
-                  CATEGORÍAS
+                  {tNav('explore').toUpperCase()}
                 </h3>
                 <div className="space-y-1 max-h-[400px] overflow-y-auto scrollbar-thin">
                   <button

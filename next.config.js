@@ -188,5 +188,9 @@ const nextConfig = {
   },
 };
 
+const createNextIntlPlugin = require('next-intl/plugin');
+
+const withNextIntl = createNextIntlPlugin('./i18n.ts');
+
 // Aplicar plugins
-module.exports = withBundleAnalyzer(withPWA(nextConfig));
+module.exports = withNextIntl(withBundleAnalyzer(withPWA(nextConfig)));

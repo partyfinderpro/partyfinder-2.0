@@ -21,31 +21,34 @@ interface FeedTabsProps {
     className?: string
 }
 
-const tabs = [
-    {
-        id: 'all' as FeedMode,
-        label: 'Todo',
-        icon: Grid3X3,
-        color: 'pink'
-    },
-    {
-        id: 'nightlife' as FeedMode,
-        label: 'Vida Nocturna',
-        icon: Wine,
-        color: 'purple',
-        description: 'Bares, Clubs, Restaurantes, Beach Clubs'
-    },
-    {
-        id: 'adult' as FeedMode,
-        label: 'Adultos',
-        icon: Flame,
-        color: 'red',
-        description: 'Webcams, Estoy Soltero, Table Dance'
-    }
-]
+import { useTranslations } from 'next-intl'
 
 export function FeedTabs({ initialMode = 'all', onModeChange, className = '' }: FeedTabsProps) {
     const [mode, setMode] = useState<FeedMode>(initialMode)
+    const t = useTranslations('nav')
+
+    const tabs = [
+        {
+            id: 'all' as FeedMode,
+            label: t('feed_all'),
+            icon: Grid3X3,
+            color: 'pink'
+        },
+        {
+            id: 'nightlife' as FeedMode,
+            label: t('feed_nightlife'),
+            icon: Wine,
+            color: 'purple',
+            description: 'Bares, Clubs, Restaurantes, Beach Clubs'
+        },
+        {
+            id: 'adult' as FeedMode,
+            label: t('feed_adult'),
+            icon: Flame,
+            color: 'red',
+            description: 'Webcams, Estoy Soltero, Table Dance'
+        }
+    ]
 
     const handleChange = (newMode: FeedMode) => {
         setMode(newMode)

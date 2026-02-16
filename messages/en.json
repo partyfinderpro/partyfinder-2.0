@@ -1,0 +1,37 @@
+{
+    "venue": {
+        "title": "Venue Details",
+        "visit": "Visit Site",
+        "hours": "Hours",
+        "phone": "Phone",
+        "share": "Share",
+        "save": "Save",
+        "alert": "📍 Active Alert - We will notify you when you are nearby",
+        "verified": "VERIFIED",
+        "source": "Source",
+        "original": "View original",
+        "premium_cta": "WANT VIP RECOMMENDATIONS?",
+        "premium_desc": "Get exclusive plans on Telegram",
+        "stats_popularity": "Popularity",
+        "stats_impact": "Impact"
+    },
+    "home": {
+        "title": "Discover the best places in {city}",
+        "cta": "Explore Now",
+        "hero_title": "FIND YOUR NEXT DESTINATION",
+        "hero_subtitle": "The most powerful lifestyle and nightlife super-app"
+    },
+    "nav": {
+        "explore": "Explore",
+        "feed": "Feed",
+        "profile": "Profile",
+        "admin": "Admin",
+        "feed_all": "All",
+        "feed_nightlife": "Nightlife",
+        "feed_adult": "Adults",
+        "trending": "Trending",
+        "near_me": "Near Me",
+        "favorites": "Favorites",
+        "categories_title": "CATEGORIES"
+    }
+}

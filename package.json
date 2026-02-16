@@ -7,10 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "scrape": "node scripts/scraper.js"
+    "scrape": "node scripts/scraper.js",
+    "benchmark": "tsx scripts/benchmark-router.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.74.0",
     "@ducanh2912/next-pwa": "^10.2.9",
+    "@formatjs/intl-localematcher": "^0.8.1",
     "@google/generative-ai": "^0.24.1",
     "@langchain/community": "^1.1.15",
     "@langchain/core": "^1.1.24",
@@ -32,9 +35,12 @@
     "clsx": "^2.1.1",
     "dotenv": "^16.4.5",
     "framer-motion": "^11.18.2",
+    "groq-sdk": "^0.37.0",
     "ioredis": "^5.9.3",
     "lucide-react": "^0.417.0",
+    "negotiator": "^1.0.0",
     "next": "14.2.29",
+    "next-intl": "^4.8.3",
     "node-cron": "^3.0.3",
     "node-fetch": "^3.3.2",
     "react": "^18.3.1",
@@ -45,6 +51,8 @@
     "string-similarity": "^4.0.4",
     "tailwind-merge": "^3.4.0",
     "tavily": "^1.0.2",
+    "telegraf": "^4.16.3",
+    "uuid": "^13.0.0",
     "web-push": "^3.6.7",
     "zod": "^3.25.76"
   },
@@ -60,6 +68,7 @@
     "playwright": "^1.58.2",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.6",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   },
   "overrides": {

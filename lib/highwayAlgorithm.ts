@@ -15,6 +15,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { getDynamicDeltas, calculateEventLikeDelta, trackABEvent, type ABVariant } from '@/lib/abTestConfig';
+import { getUserExperimentVariant } from '@/lib/highway/experiment';
 
 // ============================================
 // TYPES
@@ -131,21 +132,28 @@ const CATEGORY_TO_PILLAR: Record<string, ContentPillar> = {
 // WEIGHT CALCULATION (Fórmula cuadrática de Grok)
 // ============================================
 
-export function calculatePillarWeights(intentScore: number): {
+// lib/highwayAlgorithm.ts (Weights with A/B Testing)
+
+export function calculatePillarWeights(
+    intentScore: number,
+    modifiers?: { party_weight?: number; adult_weight?: number }
+): {
     wJob: number;
     wEvent: number;
     wAdult: number
 } {
-    // Fórmula de Grok: Transiciones suaves
-    // w_job   = (1 - intent_score)^2
-    // w_event = 2 * intent_score * (1 - intent_score)  -- pico en el medio
-    // w_adult = intent_score^2
-
     const clampedScore = Math.max(0, Math.min(1, intentScore));
 
-    const wJob = Math.pow(1 - clampedScore, 2);
-    const wEvent = 2 * clampedScore * (1 - clampedScore);
-    const wAdult = Math.pow(clampedScore, 2);
+    // Base weights (Grok formula)
+    let wJob = Math.pow(1 - clampedScore, 2);
+    let wEvent = 2 * clampedScore * (1 - clampedScore);
+    let wAdult = Math.pow(clampedScore, 2);
+
+    // Apply A/B modifiers if present
+    if (modifiers) {
+        if (modifiers.party_weight) wEvent *= modifiers.party_weight;
+        if (modifiers.adult_weight) wAdult *= modifiers.adult_weight;
+    }
 
     // Normalizar para que sumen 1
     const total = wJob + wEvent + wAdult;
@@ -377,8 +385,17 @@ export async function getHighwayFeed(options: {
         }
     }
 
-    // 2. Calcular pesos por pilar
-    const weights = calculatePillarWeights(intentScore);
+    // 2. Calcular pesos por pilar con A/B Testing
+    let modifiers = undefined;
+    if (userId) {
+        const variant = await getUserExperimentVariant('party_vs_adult_boost', userId);
+        if (variant === 'B') {
+            modifiers = { party_weight: 0.8, adult_weight: 1.4 };
+            console.log(`[Highway] A/B Test 'party_vs_adult_boost' ACTIVE: Variant B applied (+Adult, -Party)`);
+        }
+    }
+
+    const weights = calculatePillarWeights(intentScore, modifiers);
     console.log(`[Highway] Intent: ${intentScore.toFixed(2)} → Weights: Job=${(weights.wJob * 100).toFixed(0)}%, Event=${(weights.wEvent * 100).toFixed(0)}%, Adult=${(weights.wAdult * 100).toFixed(0)}%`);
 
     // 3. Calcular cantidad de items por pilar

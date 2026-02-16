@@ -9,6 +9,9 @@ const DEFAULT_CITIES = {
     'Tulum': { lat: 20.2114, lng: -87.4654 },
     'Cancun': { lat: 21.1619, lng: -86.8515 },
     'Puerto Vallarta': { lat: 20.6534, lng: -105.2253 },
+    'Miami': { lat: 25.7617, lng: -80.1918 },
+    'Lisboa': { lat: 38.7223, lng: -9.1393 },
+    'Madrid': { lat: 40.4168, lng: -3.7038 },
 };
 
 interface LocationState {

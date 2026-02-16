@@ -1,0 +1,37 @@
+{
+    "venue": {
+        "title": "Detalles del Lugar",
+        "visit": "Visitar Sitio",
+        "hours": "Horario",
+        "phone": "Teléfono",
+        "share": "Compartir",
+        "save": "Guardar",
+        "alert": "📍 Alerta activa - Te notificaremos cuando estés cerca",
+        "verified": "VERIFICADO",
+        "source": "Fuente",
+        "original": "Ver original",
+        "premium_cta": "¿QUIERES RECOMENDACIONES VIP?",
+        "premium_desc": "Recibe planes exclusivos en Telegram",
+        "stats_popularity": "Popularidad",
+        "stats_impact": "Impacto"
+    },
+    "home": {
+        "title": "Descubre los mejores lugares en {city}",
+        "cta": "Explorar Ahora",
+        "hero_title": "ENCUENTRA TU PRÓXIMO DESTINO",
+        "hero_subtitle": "La super-APP de lifestyle y nightlife más potente"
+    },
+    "nav": {
+        "explore": "Explorar",
+        "feed": "Feed",
+        "profile": "Perfil",
+        "admin": "Admin",
+        "feed_all": "Todo",
+        "feed_nightlife": "Vida Nocturna",
+        "feed_adult": "Adultos",
+        "trending": "Tendencias",
+        "near_me": "Cerca de mí",
+        "favorites": "Favoritos",
+        "categories_title": "CATEGORÍAS"
+    }
+}
