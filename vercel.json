@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/cron/vegas-scrape",
+      "schedule": "0 2 * * *"
+    },
+    {
       "path": "/api/cron/sce-orchestrator",
       "schedule": "0 6 * * *"
     },

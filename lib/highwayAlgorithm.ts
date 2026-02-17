@@ -16,6 +16,7 @@
 import { supabase } from '@/lib/supabase';
 import { getDynamicDeltas, calculateEventLikeDelta, trackABEvent, type ABVariant } from '@/lib/abTestConfig';
 import { getUserExperimentVariant } from '@/lib/highway/experiment';
+import { getVegasStripItems } from '@/lib/vegas-strip/feed-integration'; // VEGAS INTEGRATION
 
 // ============================================
 // TYPES
@@ -432,8 +433,11 @@ export async function getHighwayFeed(options: {
         finalScore: calculateItemScore(item) * weights.wAdult,
     }));
 
+    // 5.5. Fetch Vegas Strip Items (The Spice)
+    const vegasItems = await getVegasStripItems(Math.ceil(limit * 0.2)); // 20% Vegas content
+
     // 6. Combinar y mezclar inteligentemente
-    const combined = [...scoredJob, ...scoredEvent, ...scoredAdult];
+    const combined = [...scoredJob, ...scoredEvent, ...scoredAdult, ...vegasItems];
     const shuffled = smartShufflePillars(combined);
 
     return shuffled;
