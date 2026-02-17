@@ -41,8 +41,9 @@ import { TopRatedSidebar, exampleTopRatedItems } from "@/components/TopRatedSide
 import { TrustSignalsBanner } from "@/components/TrustSignalsBanner";
 import { FeedTabs, filterByMode, type FeedMode } from "@/components/FeedTabs";
 import { AlgorithmBadge } from "@/components/AlgorithmBadge";
-import AffiliateAdCard from '@/components/AffiliateAdCard'; // Importar el componente de anuncios
-import { supabase } from '@/lib/supabase'; // Usar cliente singleton
+import AffiliateAdCard from '@/components/AffiliateAdCard';
+import SidebarMenu from "@/components/SidebarMenu";
+import { supabase } from '@/lib/supabase';
 
 // ============================================
 // VENUZ - Página Principal HÍBRIDA
@@ -384,109 +385,15 @@ export default function HomePage({ params }: { params: { lang: string, region?: 
               SIDEBAR IZQUIERDO - Solo Desktop (lg+)
               MenÃº + CategorÃ­as (Estilo Casino/Neon)
               ==================================== */}
-          <aside className="hidden lg:block col-span-2 xl:col-span-2">
-            <div className="sticky top-24 space-y-4">
-
-              {/* Menú Principal */}
-              <div className="venuz-card p-4">
-                <div className="space-y-2">
-                  <button
-                    onClick={() => {
-                      setActiveMenu('inicio');
-                      setSelectedCategory('');
-                    }}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${activeMenu === 'inicio' && !selectedCategory
-                      ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30'
-                      : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
-                      }`}
-                  >
-                    <Home className="w-4 h-4" />
-                    {tNav('explore')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveMenu('tendencias');
-                      setSelectedCategory('');
-                    }}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${activeMenu === 'tendencias'
-                      ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30'
-                      : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
-                      }`}
-                  >
-                    <Flame className="w-4 h-4 text-orange-400" />
-                    {tVenue('stats_popularity')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveMenu('cerca');
-                      setSelectedCategory('');
-                    }}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${activeMenu === 'cerca'
-                      ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30'
-                      : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
-                      }`}
-                  >
-                    <MapPin className="w-4 h-4 text-blue-400" />
-                    {tVenue('alert').split(' - ')[0]}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setActiveMenu('favoritos');
-                      setSelectedCategory('');
-                    }}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg transition text-sm flex items-center gap-3 ${activeMenu === 'favoritos'
-                      ? 'text-white bg-venuz-pink/20 border border-venuz-pink/30'
-                      : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
-                      }`}
-                  >
-                    <Heart className="w-4 h-4 text-pink-500" />
-                    {tVenue('save')}
-                  </button>
-                </div>
-              </div>
-
-              {/* Categorías */}
-              <div className="venuz-card p-4">
-                <h3 className="text-sm font-semibold mb-3 text-gradient flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  {tNav('explore').toUpperCase()}
-                </h3>
-                <div className="space-y-1 max-h-[400px] overflow-y-auto scrollbar-thin">
-                  <button
-                    onClick={() => handleCategorySelect('')}
-                    className={`w-full text-left px-3 py-2 rounded-lg transition text-xs flex items-center gap-2 ${selectedCategory === ''
-                      ? 'bg-venuz-pink text-white font-semibold'
-                      : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
-                      }`}
-                  >
-                    <span>🌟</span>
-                    Todo
-                  </button>
-                  {CATEGORIES.map(cat => {
-                    const Icon = getCategoryIcon(cat.id);
-                    return (
-                      <button
-                        key={cat.id}
-                        onClick={() => handleCategorySelect(cat.id)}
-                        className={`w-full text-left px-3 py-2 rounded-lg transition text-xs flex items-center gap-2 ${selectedCategory === cat.id
-                          ? 'bg-venuz-pink text-white font-semibold'
-                          : 'text-gray-400 hover:bg-venuz-gray hover:text-white'
-                          }`}
-                      >
-                        <Icon size={14} />
-                        {cat.name}
-                        {cat.isTemporary && (
-                          <span className="ml-auto text-[10px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 rounded">
-                            Live
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </aside>
+          <SidebarMenu
+            lang={params.lang}
+            region={params.region}
+            activeMenu={activeMenu}
+            onMenuChange={setActiveMenu}
+            categories={CATEGORIES}
+            selectedCategory={selectedCategory}
+            onCategorySelect={handleCategorySelect}
+          />
 
           {/* ====================================
               FEED PRINCIPAL - Centro

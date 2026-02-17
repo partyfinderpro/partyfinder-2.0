@@ -33,5 +33,11 @@
         "near_me": "Près de moi",
         "favorites": "Favoris",
         "categories_title": "CATÉGORIES"
+    },
+    "seo": {
+        "title": "VENUZ {region} - La Meilleure Vie Nocturne et Escortes",
+        "description": "Explorez les meilleurs clubs, événements et escortes à {region}. Le guide ultime de Venuz.",
+        "og_title": "Découvrez {region} avec VENUZ",
+        "og_description": "Accès exclusif aux meilleurs endroits et expériences de la ville."
     }
 }

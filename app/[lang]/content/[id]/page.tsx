@@ -201,6 +201,32 @@ export default async function ContentDetailPage({ params }: { params: { id: stri
                     </div>
                 </div>
             </div>
+
+            {/* Structured Data for SEO */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": content.category?.toLowerCase().includes('club') ? 'NightClub' : 'LocalBusiness',
+                        "name": content.title,
+                        "description": content.description,
+                        "image": sanitizeImageUrl(content.image_url),
+                        "address": {
+                            "@type": "PostalAddress",
+                            "addressLocality": content.location,
+                            "addressCountry": "MX"
+                        },
+                        "geo": {
+                            "@type": "GeoCoordinates",
+                            "latitude": 0, // En un caso real vendría de la BD
+                            "longitude": 0
+                        },
+                        "url": `https://venuz.app/${params.lang}/content/${content.id}`,
+                        "telephone": ""
+                    })
+                }}
+            />
         </div>
     );
 }

@@ -197,3 +197,33 @@ body,
 main {
   background: transparent !important;
 }
+
+/* Leaflet Customizations for Venuz Theme */
+.leaflet-popup-content-wrapper {
+  background: transparent !important;
+  color: white !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(191, 149, 63, 0.2) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8) !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  width: auto !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(10, 10, 10, 0.95) !important;
+  border: 1px solid rgba(191, 149, 63, 0.2) !important;
+}
+
+.leaflet-container {
+  background: #050505 !important;
+}
+
+.venuz-popup .leaflet-popup-close-button {
+  color: white !important;
+  padding: 10px !important;
+}

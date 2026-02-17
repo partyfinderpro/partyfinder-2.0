@@ -33,5 +33,11 @@
         "near_me": "Cerca de mí",
         "favorites": "Favoritos",
         "categories_title": "CATEGORÍAS"
+    },
+    "seo": {
+        "title": "VENUZ {region} - La mejor vida nocturna y acompañantes",
+        "description": "Explora los mejores clubs, eventos y acompañantes en {region}. La guía definitiva de Venuz.",
+        "og_title": "Descubre {region} con VENUZ",
+        "og_description": "Acceso exclusivo a los mejores lugares y experiencias en la ciudad."
     }
 }

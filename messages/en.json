@@ -33,5 +33,11 @@
         "near_me": "Near Me",
         "favorites": "Favorites",
         "categories_title": "CATEGORIES"
+    },
+    "seo": {
+        "title": "VENUZ {region} - The Best Nightlife & Companion Guide",
+        "description": "Explore the top clubs, events, and companions in {region}. The ultimate Venuz guide.",
+        "og_title": "Discover {region} with VENUZ",
+        "og_description": "Exclusive access to the best places and experiences in the city."
     }
 }

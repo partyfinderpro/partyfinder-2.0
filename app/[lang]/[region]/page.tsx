@@ -1,9 +1,41 @@
-// app/[lang]/[region]/page.tsx
 import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
-import HomePage from '../page'; // Reuse the homepage logic
+import HomePage from '../page';
+import { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 
-export const dynamic = 'force-dynamic';
+export async function generateMetadata({ params }: { params: { lang: string; region: string } }): Promise<Metadata> {
+    const t = await getTranslations({ locale: params.lang, namespace: 'seo' });
+
+    // Fetch region name for SEO
+    const { data: region } = await supabase
+        .from('regions')
+        .select('name')
+        .eq('code', params.region)
+        .maybeSingle();
+
+    const regionName = region?.name || params.region.split('-')[0].toUpperCase();
+
+    return {
+        title: t('title', { region: regionName }),
+        description: t('description', { region: regionName }),
+        alternates: {
+            languages: {
+                'es': `/es/${params.region}`,
+                'en': `/en/${params.region}`,
+                'pt': `/pt/${params.region}`,
+                'fr': `/fr/${params.region}`,
+            },
+        },
+        openGraph: {
+            title: t('og_title', { region: regionName }),
+            description: t('og_description'),
+            images: [`/og/${params.region}.jpg`],
+            url: `https://venuz.app/${params.lang}/${params.region}`,
+            type: 'website',
+        }
+    };
+}
 
 export default async function RegionPage({
     params
@@ -23,7 +55,5 @@ export default async function RegionPage({
     }
 
     // 2. Renderizar HomePage pero con la ciudad/región pre-seleccionada
-    // En el futuro, HomePage podría recibir una ciudad inicial via params
-    // Por ahora, pasamos la región en el objeto params para que HomePage lo use si quiere
     return <HomePage params={{ ...params }} />;
 }
