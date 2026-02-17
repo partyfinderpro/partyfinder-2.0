@@ -31,8 +31,15 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
 }
 
 import { useTranslations } from 'next-intl';
+import { trackEvent } from '@/lib/analytics';
 
-export default async function ContentDetailPage({ params }: { params: { id: string, lang: string } }) {
+export default async function ContentDetailPage({
+    params,
+    searchParams
+}: {
+    params: { id: string, lang: string },
+    searchParams: { [key: string]: string | string[] | undefined }
+}) {
     const t = useTranslations('venue');
     const { data: content, error } = await supabase
         .from('content')
@@ -41,6 +48,16 @@ export default async function ContentDetailPage({ params }: { params: { id: stri
         .single();
 
     if (error || !content) notFound();
+
+    // Track Page View (Background task in Server Component)
+    trackEvent({
+        event_type: 'page_view',
+        venue_id: params.id,
+        utm_source: searchParams.utm_source as string,
+        utm_medium: searchParams.utm_medium as string,
+        utm_campaign: searchParams.utm_campaign as string,
+        metadata: { lang: params.lang, url_params: searchParams }
+    });
 
     return (
         <div className="min-h-screen bg-black text-white">

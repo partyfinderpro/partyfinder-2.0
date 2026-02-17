@@ -3,12 +3,14 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
 
+import { monitorMiamiV1 } from '@/lib/agent/tasks/monitor-miami-v1';
+
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const missionId = searchParams.get('mission_id');
     const secret = searchParams.get('secret');
 
-    // Simple security check (replace with a real token in production)
+    // Simple security check
     if (secret !== process.env.TELEGRAM_BOT_TOKEN?.substring(0, 10)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -18,9 +20,19 @@ export async function GET(request: Request) {
         return NextResponse.json({ success: true, mission: 'discovery', results });
     }
 
-    if (missionId === 'highway') {
-        const results = await runHighwayMission();
-        return NextResponse.json({ success: true, mission: 'highway', results });
+    if (missionId === 'analysis' || missionId === 'highway') {
+        const results = await monitorMiamiV1();
+
+        // Notify Admin
+        if (results.report) {
+            await fetch(`${new URL(request.url).origin}/api/telegram/notify-admin`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: results.report })
+            }).catch(err => console.error('[AGENT] Notification failed:', err.message));
+        }
+
+        return NextResponse.json({ success: true, mission: 'analysis', results });
     }
 
     return NextResponse.json({ error: 'Unknown mission' }, { status: 400 });
