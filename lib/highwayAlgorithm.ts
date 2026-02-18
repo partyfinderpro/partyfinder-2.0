@@ -92,6 +92,7 @@ const INTENT_DELTAS = {
 // Mapeo de categorías a pilares
 const CATEGORY_TO_PILLAR: Record<string, ContentPillar> = {
     // Pilar 1: Adult/Monetization
+    'adult': 'adult', // 🔥 FIX: Permitir categoría genérica
     'webcam': 'adult',
     'camsoda': 'adult',
     'stripchat': 'adult',
