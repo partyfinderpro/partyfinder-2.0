@@ -43,17 +43,55 @@ export async function GET(request: NextRequest) {
     } catch (error: any) {
         console.error('Super Cerebro Error, falling back to legacy:', error);
 
-        // FALLBACK: Query directo a Supabase
+        // FALLBACK: Query directo a Supabase (Enhanced)
         try {
             const supabase = getFallbackSupabase();
             const pageSize = parseInt(searchParams.get('limit') || '20');
+            const offset = parseInt(searchParams.get('offset') || '0');
 
-            const { data, error: dbError } = await supabase
-                .from('content')
-                .select('*')
-                .eq('active', true)
-                .order('quality_score', { ascending: false })
-                .limit(pageSize);
+            const category = searchParams.get('category');
+            const mode = searchParams.get('mode');
+            const search = searchParams.get('search');
+            // Advanced filters
+            const verifiedOnly = searchParams.get('verifiedOnly') === 'true';
+            const openNow = searchParams.get('openNow') === 'true';
+            const priceMax = searchParams.get('priceMax');
+
+            let query = supabase.from('content').select('*', { count: 'exact' });
+
+            // 1. Search
+            if (search) {
+                query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`);
+            }
+
+            // 2. City logic (simplified for fallback)
+            if (city && city !== 'Todas' && city !== 'Ubicación Actual') {
+                query = query.ilike('location', `%${city}%`);
+            }
+
+            // 3. Category/Mode
+            if (category) {
+                query = query.eq('category', category);
+            } else if (mode === 'tendencias') {
+                // Simple trending logic for fallback
+                query = query.order('views', { ascending: false });
+            }
+
+            // 4. Advanced Filters
+            if (verifiedOnly) {
+                query = query.eq('is_verified', true);
+            }
+            if (openNow) {
+                query = query.eq('is_open_now', true);
+            }
+            // Add price filter if schema supports it
+
+            // Standard ordering
+            query = query.order('quality_score', { ascending: false })
+                .order('created_at', { ascending: false })
+                .range(offset, offset + pageSize - 1);
+
+            const { data, error: dbError, count } = await query;
 
             if (dbError) throw dbError;
 
@@ -61,8 +99,8 @@ export async function GET(request: NextRequest) {
                 success: true,
                 data: data || [],
                 meta: {
-                    source: 'legacy_fallback',
-                    error: error.message
+                    source: 'legacy_fallback_enhanced',
+                    count: count || 0
                 }
             });
 

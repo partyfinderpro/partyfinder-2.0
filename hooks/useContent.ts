@@ -109,166 +109,43 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
         dbOffsetRef.current = 0;
     }, [category, mode, city, search, priceMin, priceMax, verifiedOnly, openNow]);
 
+    // Updated to use server-side API
     const fetchBatch = useCallback(async (startOffset: number, batchSize: number) => {
-        // 🚀 SMART GEO-QUERIES usando PostGIS (Prioridad 1 para modo "cerca")
-        if (options.latitude && options.longitude && !search && mode === 'cerca') {
-            try {
-                // Usar la función RPC optimizada con PostGIS para geo-búsqueda
-                const { data, error } = await supabase.rpc('get_nearby_content', {
-                    user_lat: options.latitude,
-                    user_lng: options.longitude,
-                    radius_km: options.radius || 50, // 50km por defecto
-                    result_limit: 100 // Traer más para poder filtrar
-                });
+        try {
+            const params = new URLSearchParams();
+            if (category) params.append('category', category);
+            if (mode) params.append('mode', mode);
+            if (city && city !== 'Todas') params.append('city', city);
+            if (search) params.append('search', search);
+            params.append('limit', batchSize.toString());
+            params.append('offset', startOffset.toString());
 
-                if (error) {
-                    console.error('[VENUZ] RPC get_nearby_content error:', error);
-                    throw error;
-                }
+            if (options.latitude) params.append('lat', options.latitude.toString());
+            if (options.longitude) params.append('lng', options.longitude.toString());
+            if (options.radius) params.append('radius', options.radius.toString());
 
-                console.log(`[VENUZ] Nearby content found: ${(data || []).length} items within ${options.radius || 50}km`);
+            if (priceMin) params.append('priceMin', priceMin.toString());
+            if (priceMax) params.append('priceMax', priceMax.toString());
+            if (verifiedOnly) params.append('verifiedOnly', 'true');
+            if (openNow) params.append('openNow', 'true');
+            if (userId) params.append('user_id', userId);
 
-                // Mapear los campos del RPC a nuestro ContentItem
-                const mappedData = (data || []).map((item: any) => ({
-                    ...item,
-                    // Asegurar que image_url existe
-                    image_url: item.image_url || item.thumbnail_url,
-                    // El RPC devuelve distance_km que puede ser útil para UI
-                    distance_km: item.distance_km
-                }));
+            const response = await fetch(`/api/feed?${params.toString()}`);
+            const result = await response.json();
 
-                // Paginación en memoria
-                const paginated = mappedData.slice(startOffset, startOffset + batchSize);
-                return { data: paginated as ContentItem[], error: null, count: mappedData.length };
-            } catch (rpcError) {
-                console.error('[VENUZ] RPC Error, falling back to location text query:', rpcError);
-                // Fallback: usar query por texto de location en lugar de coordenadas
-            }
-        }
-
-        // Lógica Estándar (Fallback)
-        let query = supabase.from('content').select('*', { count: 'exact' });
-
-        // 1. Filtro por Búsqueda (Texto)
-        if (search) {
-            query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,category.ilike.%${search}%`);
-        }
-
-        // 2. Filtro por Ciudad (Localización Texto) - SOLO si no usamos coordenadas
-        if (city && city !== 'Todas' && (!options.latitude || !options.longitude)) {
-            query = query.ilike('location', `%${city}%`);
-        }
-
-        // 3. Filtros SQL de Calidad (Bloquear basura en origen para ahorrar ancho de banda)
-        query = query.not('source_url', 'ilike', '%theporndude%')
-            .not('title', 'ilike', '%porn sites%')
-            .not('title', 'ilike', '%sex cams%');
-
-        // 4. Lógica de filtrado según el modo o categoría
-        if (category) {
-            query = query.eq('category', category)
-                .not('image_url', 'is', null)
-                .neq('image_url', '')
-                .order('is_premium', { ascending: false })
-                .order('quality_score', { ascending: false })
-                .order('created_at', { ascending: false });
-        }
-        else if (mode === 'tendencias') {
-            // Tendencias: Top quality score + contenido reciente (últimos 7 días preferido)
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-            query = query
-                .not('image_url', 'is', null)
-                .neq('image_url', '')
-                .gte('created_at', sevenDaysAgo.toISOString())
-                .order('quality_score', { ascending: false })
-                .order('views', { ascending: false })
-                .order('created_at', { ascending: false });
-        }
-        else if (mode === 'favoritos') {
-            // Favoritos: Primero intentar localStorage, luego base de datos
-            if (typeof window !== 'undefined') {
-                const localFavorites = localStorage.getItem('venuz_favorites');
-                if (localFavorites) {
-                    try {
-                        const favIds = JSON.parse(localFavorites) as string[];
-                        if (favIds.length > 0) {
-                            query = query.in('id', favIds);
-                        } else {
-                            return { data: [], count: 0, error: null };
-                        }
-                    } catch {
-                        // Si falla el parse, intentar con userId
-                    }
-                }
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to fetch feed');
             }
 
-            // Fallback: buscar en base de datos si hay userId
-            if (userId) {
-                const { data: interactions } = await supabase
-                    .from('interactions')
-                    .select('content_id')
-                    .eq('user_id', userId)
-                    .eq('action', 'like');
-
-                if (interactions && interactions.length > 0) {
-                    const ids = interactions.map(i => i.content_id);
-                    query = query.in('id', ids);
-                } else {
-                    return { data: [], count: 0, error: null };
-                }
-            } else if (!localStorage.getItem('venuz_favorites')) {
-                // No hay favoritos ni en localStorage ni en DB
-                return { data: [], count: 0, error: null };
-            }
+            return {
+                data: result.data as ContentItem[],
+                error: null,
+                count: result.meta?.count || 0
+            };
+        } catch (err: any) {
+            console.error('[VENUZ] Error fetching feed from API:', err);
+            return { data: [], error: err.message, count: 0 };
         }
-        else if (mode === 'cerca') {
-            // Cerca de mí: Si no hay coordenadas (el RPC falló o no hay ubicación),
-            // filtrar por ciudad seleccionada o mostrar contenido con ubicación
-            query = query
-                .not('image_url', 'is', null)
-                .neq('image_url', '')
-                .not('location', 'is', null)  // Solo contenido con ubicación
-                .neq('location', '');
-
-            // Si hay ciudad seleccionada, filtrar por ella
-            if (city && city !== 'Todas') {
-                query = query.ilike('location', `%${city}%`);
-            }
-
-            // Priorizar por distancia si hay coordenadas, sino por calidad
-            query = query
-                .order('quality_score', { ascending: false })
-                .order('created_at', { ascending: false });
-        }
-        else {
-            // Modo 'inicio' o default
-            query = query
-                .not('image_url', 'is', null)
-                .neq('image_url', '')
-                .order('quality_score', { ascending: false })
-                .order('created_at', { ascending: false });
-        }
-
-        // 5. Aplicar FILTROS AVANZADOS (Si existen)
-        if (verifiedOnly) {
-            query = query.or('is_verified.eq.true,content_tier.in.(verified,premium)');
-        }
-
-        if (priceMax !== undefined) {
-            // Asumiendo que price_level es 1-4. Si es null, mostramos todo salvo que sea estricto.
-            // Aquí filtramos por nivel de precio (si la columna existe, sino ignorar)
-            // query = query.lte('price_level', priceMax); 
-        }
-
-        if (openNow) {
-            query = query.eq('is_open_now', true);
-        }
-
-        const { data, error, count } = await query.range(startOffset, startOffset + batchSize - 1);
-        return { data: data as ContentItem[], error, count };
-
     }, [category, mode, city, search, userId, options.latitude, options.longitude, options.radius, priceMin, priceMax, verifiedOnly, openNow]);
 
     // Función recursiva para llenar el 'bucket' de items válidos
@@ -276,71 +153,19 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
         setIsLoading(true);
         setError(null);
 
-        const BATCH_SIZE = 50; // Leemos más items para compensar el filtrado
-        let accumulatedItems: ContentItem[] = [];
-        let currentDbOffset = dbOffsetRef.current;
-        let loops = 0;
-        const MAX_LOOPS = 5; // Evitar loops infinitos si todo es basura
-        let totalDBCount = 0;
-
         try {
-            while (accumulatedItems.length < targetCount && loops < MAX_LOOPS) {
-                const { data, error: fetchError, count } = await fetchBatch(currentDbOffset, BATCH_SIZE);
-
-                if (fetchError) throw fetchError;
-
-                totalDBCount = count || 0;
-
-                if (!data || data.length === 0) {
-                    break; // No hay más datos en DB
-                }
-
-                // Filtrar basura client-side (doble check)
-                const validItems = filterFeedContent(data);
-
-                // Normalizar imágenes
-                const normalizedItems = validItems.map(item => ({
-                    ...item,
-                    image_url: item.image_url || (item.images && item.images.length > 0 ? item.images[0] : undefined)
-                }));
-
-                accumulatedItems = [...accumulatedItems, ...normalizedItems];
-                currentDbOffset += data.length; // Avanzamos el offset real de la DB
-                loops++;
-            }
-
-            // Actualizar referencia de offset para la próxima vez
-            dbOffsetRef.current = currentDbOffset;
-
-            console.log(`[VENUZ Fetch] Loop finished. Requested: ${targetCount}, Got: ${accumulatedItems.length}, Loops: ${loops}`);
-
-            // 🔀 Light shuffle: Mantener calidad pero variar el orden
-            // Solo para refresh (no append), mezclar los primeros 30 items ligeramente
-            if (!append && accumulatedItems.length > 5) {
-                // Dividir en grupos: top 5 intocable, resto con shuffle ligero
-                const top = accumulatedItems.slice(0, 5);
-                const rest = accumulatedItems.slice(5);
-
-                // Shuffle ligero del resto (Fisher-Yates parcial)
-                for (let i = Math.min(rest.length - 1, 20); i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [rest[i], rest[j]] = [rest[j], rest[i]];
-                }
-
-                accumulatedItems = [...top, ...rest];
-                console.log('[VENUZ] Applied light shuffle to content');
-            }
+            // Simply call fetchBatch once since the API handles the heavy lifting now
+            const { data, count } = await fetchBatch(dbOffsetRef.current, targetCount);
 
             if (append) {
-                setContent(prev => [...prev, ...accumulatedItems]);
+                setContent(prev => [...prev, ...data]);
             } else {
-                setContent(accumulatedItems);
+                setContent(data);
             }
 
-            setTotalCount(totalDBCount);
-            // Si trajimos menos items de los pedidos en el último batch crudo, es que se acabó la DB
-            // O si el count total es menor o igual al offset actual
-            setHasMore(currentDbOffset < totalDBCount);
+            setTotalCount(count);
+            // Assuming API handles pagination correctly
+            setHasMore(data.length === targetCount); // Simplification
 
         } catch (err: any) {
             console.error('[VENUZ] Error fetching content:', err);
@@ -352,24 +177,24 @@ export function useContent(options: UseContentOptions = {}): UseContentReturn {
 
     // Initial fetch - Ahora también se dispara cuando cambia la ubicación
     useEffect(() => {
-        console.log('[VENUZ] Initial fetch triggered. Mode:', mode, 'City:', city, 'Lat:', options.latitude, 'Lng:', options.longitude);
+        console.log('[VENUZ] Initial fetch triggered via API. Mode:', mode);
         setContent([]);
         dbOffsetRef.current = 0;
         fetchUntilFulfilled(limit, false);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [category, mode, city, search, limit, options.latitude, options.longitude]); // Added lat/lng
+    }, [category, mode, city, search, limit, options.latitude, options.longitude]);
 
     // Load more
     const loadMore = useCallback(async () => {
         if (isLoading || !hasMore) return;
-        console.log('[VENUZ] Loading more... current db offset:', dbOffsetRef.current);
+        dbOffsetRef.current += limit; // Increment offset
         await fetchUntilFulfilled(limit, true);
     }, [isLoading, hasMore, limit, fetchUntilFulfilled]);
 
-    // Refresh - Limpia contenido y recarga con shuffle
+    // Refresh - Limpia contenido
     const refresh = useCallback(async () => {
         console.log('[VENUZ] Refreshing feed...');
-        setContent([]); // Limpiar para feedback visual
+        setContent([]);
         setHasMore(true);
         dbOffsetRef.current = 0;
         await fetchUntilFulfilled(limit, false);

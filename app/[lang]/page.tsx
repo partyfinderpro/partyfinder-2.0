@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
 import ContentCard, { VideoPlayer, MemoizedContentCard } from "@/components/ContentCard";
-import FeedCardDynamic from "@/components/FeedCardDynamic";
+import dynamic from 'next/dynamic';
+const FeedCardDynamic = dynamic(() => import('@/components/FeedCardDynamic'), { ssr: false });
 import BannerRotator from "@/components/ui/BannerRotator";
 // import ContentCardDesktop from '@/components/ContentCardDesktop'; // Removed legacy
 import Image from "next/image";
