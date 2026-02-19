@@ -34,8 +34,8 @@ export async function GET() {
                 // Monetization
                 const affiliateUrl = await linkTransformer.transform(item.originalUrl);
 
-                // Insert
-                await supabase.from('scraped_items').upsert({
+                // Insert into scraped_items
+                const { data: scrapedRecord, error: scrapeError } = await supabase.from('scraped_items').upsert({
                     source_id: source.id,
                     title: item.title,
                     rewritten_title: analysis.rewrittenTitle || item.title,
@@ -54,7 +54,29 @@ export async function GET() {
                     priority_level: Math.round((analysis.qualityScore || 80) * 0.6 + (analysis.trendingScore || 75) * 0.4),
                     is_approved: true,
                     is_published: true
-                }, { onConflict: 'original_url' });
+                }, { onConflict: 'original_url' }).select().single();
+
+                if (scrapeError) {
+                    logger.error('[VegasScrape] Error inserting scraped item', scrapeError);
+                } else if (scrapedRecord) {
+                    // SYNC TO MAIN CONTENT TABLE (Temporary Bridge)
+                    // This ensures content appears in the feed immediately even if the new engine isn't fully integrated
+                    await supabase.from('content').upsert({
+                        title: scrapedRecord.rewritten_title || scrapedRecord.title,
+                        description: scrapedRecord.rewritten_description || scrapedRecord.description,
+                        image_url: scrapedRecord.hero_image_url,
+                        category: scrapedRecord.category,
+                        affiliate_url: scrapedRecord.affiliate_url,
+                        source_url: scrapedRecord.original_url,
+                        visual_style: {}, // Ensure not null
+                        images: scrapedRecord.gallery_urls,
+                        quality_score: scrapedRecord.quality_score, // Map score
+                        is_verified: true, // Mark as verified since it comes from trusted source
+                        is_premium: false,
+                        active: true,
+                        // Add a special marker for scraped content if schema allows, or use source_url filtering
+                    }, { onConflict: 'source_url' }); // Assuming source_url is unique or we use another conflict target if needed
+                }
 
                 totalItems++;
             }
