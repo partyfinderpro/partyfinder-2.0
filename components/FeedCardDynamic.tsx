@@ -19,6 +19,83 @@ interface FeedCardDynamicProps {
     isActive?: boolean;
 }
 
+// ── Función para determinar el tipo de card ──
+function getCardVariant(item: ContentItem) {
+    if (item.category === 'webcam') return 'webcam'
+    // Si la fuente es google maps o tiene latitud, es un lugar físico
+    if ((item.category !== 'webcam' && item.category !== 'online') &&
+        (item.source_url?.includes('maps.google') || item.source_url?.includes('google.com/maps') || item.location)) {
+        return 'place'
+    }
+    return 'content'
+}
+
+// ── Badge component ──
+function CardBadge({ variant }: { variant: string }) {
+    if (variant === 'webcam') {
+        return (
+            <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-red-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full z-20 shadow-lg shadow-red-500/30 animate-pulse uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 bg-white rounded-full" />
+                EN VIVO
+            </div>
+        )
+    }
+    if (variant === 'place') {
+        return (
+            <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-black/80 backdrop-blur-md text-cyan-400 text-[10px] font-bold px-3 py-1.5 rounded-full z-20 border border-cyan-400/30 shadow-lg uppercase tracking-wider">
+                <MapPin className="w-3 h-3" />
+                Puerto Vallarta
+            </div>
+        )
+    }
+    return (
+        <div className="absolute top-4 left-4 bg-purple-600/90 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-full z-20 shadow-lg">
+            ✨ Destacado
+        </div>
+    )
+}
+
+// ── Botón de acción por tipo ──
+function CardAction({ item, variant }: { item: ContentItem; variant: string }) {
+    if (variant === 'webcam') {
+        const url = item.affiliate_url || item.source_url
+        if (!url) return null;
+        return (
+            <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="block w-full mt-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-sm font-bold text-center rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 pointer-events-auto"
+            >
+                <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                🔴 Ver Ahora — Gratis
+            </a>
+        )
+    }
+    if (variant === 'place') {
+        // Construir URL de maps si no existe
+        const mapsUrl = item.source_url?.includes('maps') ? item.source_url :
+            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((item.title || '') + ' Puerto Vallarta')}`
+
+        return (
+            <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="block w-full mt-4 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-bold text-center rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2 pointer-events-auto border border-white/10"
+            >
+                <MapPin className="w-4 h-4" />
+                🗺️ Ver en Maps
+            </a>
+        )
+    }
+    return null
+}
+
+// ... (existing helper functions if any)
+
 export default function FeedCardDynamic({
     item,
     className = '',
@@ -39,6 +116,8 @@ export default function FeedCardDynamic({
         initialLikes: item.likes || 0,
         initialViews: item.views || 0,
     });
+
+    const variant = useMemo(() => getCardVariant(item), [item]);
 
     // Mapeo inteligente de URLs según disponibilidad
     // Prioridad: preview_video > video_url > iframe > image
@@ -83,40 +162,14 @@ export default function FeedCardDynamic({
                 <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-none" />
             </div>
 
-            {/* Badges Superiores */}
-            <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-20 pointer-events-none">
-                <div className="flex gap-2 flex-wrap">
-                    {/* Categoría */}
-                    {item.category && (
-                        <span className="bg-white/20 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider border border-white/10">
-                            {item.category}
-                        </span>
-                    )}
+            {/* Badges Superiores (NUEVO) */}
+            <div className="absolute top-0 left-0 w-full p-4 z-20 pointer-events-none flex justify-between items-start">
+                <CardBadge variant={variant} />
 
-                    {/* Premium Badge */}
-                    {isPremium && (
-                        <span className="bg-gradient-to-r from-amber-400 to-yellow-600 text-black text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-black" />
-                            VIP
-                        </span>
-                    )}
-
-                    {/* Verified Badge */}
-                    {isVerified && (
-                        <span className="bg-blue-500/90 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                            <BadgeCheck className="w-3 h-3" />
-                            Verificado
-                        </span>
-                    )}
+                {/* Premium/Verified Tags Small */}
+                <div className="flex gap-1">
+                    {isPremium && <span className="bg-amber-500 text-black text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">VIP</span>}
                 </div>
-
-                {/* Live Indicator */}
-                {(item.viewers_now || item.preview_type === 'embed') && (
-                    <span className="bg-red-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider flex items-center gap-1.5 animate-pulse shadow-lg shadow-red-500/30">
-                        <span className="w-1.5 h-1.5 bg-white rounded-full" />
-                        LIVE
-                    </span>
-                )}
             </div>
 
             {/* Acciones Laterales (Estilo TikTok) */}
@@ -195,15 +248,21 @@ export default function FeedCardDynamic({
                     </div>
                 </div>
 
-                {/* CTA Botón Principal (Solo si es interactivo) */}
+                {/* CTA Botón Principal (Dinámico por variante) */}
                 <div className="mt-4 pointer-events-auto">
-                    <button
-                        onClick={() => onClick?.(item.id)}
-                        className="w-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white font-bold py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2"
-                    >
-                        <span>Ver Detalles</span>
-                        <ExternalLink className="w-4 h-4" />
-                    </button>
+                    {/* Usamos el componente CardAction para Maps o Webcams */}
+                    {variant !== 'content' ? (
+                        <CardAction item={item} variant={variant} />
+                    ) : (
+                        /* Botón Genérico para contenido estándar */
+                        <button
+                            onClick={() => onClick?.(item.id)}
+                            className="w-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white font-bold py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+                        >
+                            <span>Ver Detalles</span>
+                            <ExternalLink className="w-4 h-4" />
+                        </button>
+                    )}
                 </div>
             </div >
         </div >

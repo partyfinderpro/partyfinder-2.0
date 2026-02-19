@@ -441,6 +441,29 @@ export default function HomePage({ params }: { params: { lang: string, region?: 
               </div>
             </div>
 
+            {/* HEADER VENUZ — Contexto Local */}
+            <div className="sticky top-0 z-20 bg-black/80 backdrop-blur-md border-b border-cyan-500/20 px-4 py-3 mb-4 rounded-b-xl shadow-lg shadow-cyan-900/10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent flex items-center gap-2">
+                    VENUZ 🌴
+                  </h1>
+                  <p className="text-xs text-gray-400 font-medium">
+                    Puerto Vallarta · {new Date().toLocaleDateString('es-MX', {
+                      weekday: 'long', day: 'numeric', month: 'long'
+                    })}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 bg-black/60 px-3 py-1.5 rounded-full border border-white/10">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                  </span>
+                  <span className="text-xs text-gray-200 font-bold">En vivo</span>
+                </div>
+              </div>
+            </div>
+
             {/* 🔥 NUEVOS: Feed Mode Tabs (Nightlife vs Adult) + Algorithm Badge */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
               <FeedTabs
