@@ -72,39 +72,46 @@ export async function GET(request: NextRequest) {
 
         const data = rawData || []
 
-        // ── MEZCLA INTELIGENTE: intercalar webcams con lugares (Simulated) ──
-        // This logic replaces the "Highway" partially on the frontend side for now
+        // ── MEZCLA INTELIGENTE 2.0 (Incluye Escorts) ──
+        const escorts = data.filter(item => item.category === 'escort')
         const webcams = data.filter(item => item.category === 'webcam')
-        const places = data.filter(item => item.category !== 'webcam')
+        const places = data.filter(item => item.category !== 'webcam' && item.category !== 'escort')
 
-        // Simple mixing logic: 1 webcam every 4 places
         const mixed: any[] = []
-        let wi = 0
-        let pi = 0
+        let ei = 0, wi = 0, pi = 0
 
-        while (pi < places.length || wi < webcams.length) {
-            // Add up to 4 places
-            for (let i = 0; i < 4 && pi < places.length; i++) {
-                mixed.push(places[pi++]);
-            }
-            // Add 1 webcam if available
-            if (wi < webcams.length) {
-                mixed.push(webcams[wi++]);
-            }
-            // If no places left but webcams exist, add remaining webcams
-            if (pi >= places.length && wi < webcams.length) {
-                mixed.push(...webcams.slice(wi));
-                break;
-            }
+        // Loop principal: Mientras haya contenido en CUALQUIERA de los buckets
+        while (ei < escorts.length || wi < webcams.length || pi < places.length) {
+            // Patrón de Mezcla: 2 Escorts -> 1 Webcam -> 3 Lugares
+
+            // 1. Dos Escorts (High Value)
+            if (ei < escorts.length) mixed.push(escorts[ei++])
+            if (ei < escorts.length) mixed.push(escorts[ei++])
+
+            // 2. Una Webcam (Live Action)
+            if (wi < webcams.length) mixed.push(webcams[wi++])
+
+            // 3. Tres Lugares (Contexto Local)
+            if (pi < places.length) mixed.push(places[pi++])
+            if (pi < places.length) mixed.push(places[pi++])
+            if (pi < places.length) mixed.push(places[pi++])
+
+            // Breaker de seguridad para evitar loops infinitos si algo falla lógicamente
+            if (mixed.length >= data.length + 10) break;
         }
 
         return NextResponse.json({
-            success: true, // Frontend might expect this based on previous codebase
+            success: true,
             data: mixed,
             count: mixed.length,
             meta: {
                 city: city || 'puerto-vallarta',
-                total: count
+                total: count,
+                breakdown: {
+                    escorts: escorts.length,
+                    webcams: webcams.length,
+                    places: places.length
+                }
             }
         })
 
