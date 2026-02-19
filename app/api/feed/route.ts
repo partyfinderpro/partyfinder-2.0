@@ -22,56 +22,120 @@ export async function GET(request: NextRequest) {
     try {
         // Start building query
         let query = supabase
+        let data: any[] = [];
+        let count: number | null = 0;
+
+        // Start building query (this will be used for non-Vallarta cities)
+        let baseQuery = supabase
             .from('content')
             .select('*', { count: 'exact' })
             .eq('active', true)
             .not('image_url', 'is', null)
             .neq('image_url', '')
 
-        // ── FILTRO CIUDAD DEFAULT: Puerto Vallarta ──
-        // Note: Checking strict string equality or containing 'vallarta'
+        // ── FILTRO CIUDAD DEFAULT: Puerto Vallarta (Enhanced) ──
+        let textResults: any[] = [];
+        let geoResults: any[] = [];
+
         if (!city || city === 'puerto-vallarta' || city.toLowerCase().includes('vallarta')) {
-            // Using .or() with standard Supabase syntax for "source_url contains 'vallarta' OR lat/lng in box"
-            // The instruction provided "source_url.ilike.%vallarta%," which is correct postgrest syntax usually passed to .or()
-            query = query.or(
-                'source_url.ilike.%vallarta%,location.ilike.%vallarta%'
-            )
-            // Note: Adding lat/lng filter in .or() can be tricky if columns key existence isn't guaranteed or types mismatch.
-            // For safety in this "emergency fix", we stick to text search on source_url/location which is safer.
-            // If you are sure about lat/lng columns:
-            // query = query.or('source_url.ilike.%vallarta%,and(lat.gte.20.5,lat.lte.20.8,lng.gte.-105.5,lng.lte.-105.1)')
+            // 1. Text Search Query
+            const textQuery = supabase
+                .from('content')
+                .select('*')
+                .eq('active', true)
+                .not('image_url', 'is', null)
+                .neq('image_url', '')
+                .or('source_url.ilike.%vallarta%,location.ilike.%vallarta%')
+                // Apply hygiene filters to text query too
+                .not('source_url', 'ilike', '%reddit%')
+                .not('source_url', 'ilike', '%theporndude%')
+                .not('title', 'ilike', '%porn sites%')
+                .not('title', 'ilike', '%sex cams%')
+                .not('title', 'ilike', '%temblor%')
+                .not('title', 'ilike', '%sismo%')
+                .order('quality_score', { ascending: false })
+                .limit(limit);
+
+            const { data: tData } = await textQuery;
+            textResults = tData || [];
+
+            // 2. Geo Box Query (Vallarta Coordinates)
+            // Lat: 20.5 to 20.8, Lng: -105.5 to -105.1
+            const geoQuery = supabase
+                .from('content')
+                .select('*')
+                .eq('active', true)
+                .not('image_url', 'is', null)
+                .neq('image_url', '')
+                .gte('lat', 20.5)
+                .lte('lat', 20.8)
+                .gte('lng', -105.5)
+                .lte('lng', -105.1)
+                // Apply hygiene filters
+                .not('source_url', 'ilike', '%reddit%')
+                .not('source_url', 'ilike', '%theporndude%')
+                .not('title', 'ilike', '%porn sites%')
+                .not('title', 'ilike', '%sex cams%')
+                .not('title', 'ilike', '%temblor%')
+                .not('title', 'ilike', '%sismo%')
+                .order('quality_score', { ascending: false })
+                .limit(limit);
+
+            const { data: gData } = await geoQuery;
+            geoResults = gData || [];
+
+            // Merge and Deduplicate
+            const combined = [...textResults, ...geoResults];
+            const uniqueMap = new Map();
+            combined.forEach(item => {
+                if (!uniqueMap.has(item.id)) {
+                    uniqueMap.set(item.id, item);
+                }
+            });
+
+            // Sort combined results
+            const sortedUnique = Array.from(uniqueMap.values())
+                .sort((a, b) => (b.quality_score || 0) - (a.quality_score || 0));
+
+            // Apply pagination after merge
+            data = sortedUnique.slice(offset, offset + limit);
+            count = uniqueMap.size; // Total unique found before pagination
+
         } else {
-            // If another city is requested
+            // Non-Vallarta Query
+            let query = supabase
+                .from('content')
+                .select('*', { count: 'exact' })
+                .eq('active', true)
+                .not('image_url', 'is', null)
+                .neq('image_url', '')
+
             query = query.ilike('location', `%${city}%`)
+
+            // Hygiene
+            query = query.not('title', 'ilike', '%sex cams%')
+            query = query.not('title', 'ilike', '%temblor%')
+            query = query.not('title', 'ilike', '%sismo%')
+
+            // ── FILTRO CATEGORÍA OPCIONAL ──
+            if (category) {
+                query = query.eq('category', category)
+            }
+
+            // ── ORDEN: reciente y calidad ──
+            query = query
+                .order('quality_score', { ascending: false })
+                .order('created_at', { ascending: false })
+                .range(offset, offset + limit - 1)
+
+            const { data: rawData, error, count: rawCount } = await query
+
+            if (error) throw error
+            data = rawData || []
+            count = rawCount || 0
         }
 
-        // ── HIGIENE: Sacar Reddit del feed principal (y otros indeseados) ──
-        // Using filter chaining which acts as AND
-        query = query.not('source_url', 'ilike', '%reddit%')
-        query = query.not('source_url', 'ilike', '%theporndude%')
-        query = query.not('title', 'ilike', '%porn sites%')
-        query = query.not('title', 'ilike', '%sex cams%')
-        query = query.not('title', 'ilike', '%temblor%')
-        query = query.not('title', 'ilike', '%sismo%')
-
-        // ── FILTRO CATEGORÍA OPCIONAL ──
-        if (category) {
-            query = query.eq('category', category)
-        }
-
-        // ── ORDEN: reciente y calidad ──
-        // We fetch a bit more to handle the manual mixing if needed, or just respect limit
-        query = query
-            .order('quality_score', { ascending: false })
-            .order('created_at', { ascending: false })
-            .range(offset, offset + limit - 1)
-
-        const { data: rawData, error, count } = await query
-
-        if (error) throw error
-
-        const data = rawData || []
-
+        // SHARED MIXING LOGIC (Applied to both branches)
         // ── MEZCLA INTELIGENTE 2.0 (Incluye Escorts) ──
         const escorts = data.filter(item => item.category === 'escort')
         const webcams = data.filter(item => item.category === 'webcam')
@@ -96,7 +160,7 @@ export async function GET(request: NextRequest) {
             if (pi < places.length) mixed.push(places[pi++])
             if (pi < places.length) mixed.push(places[pi++])
 
-            // Breaker de seguridad para evitar loops infinitos si algo falla lógicamente
+            // Breaker de seguridad
             if (mixed.length >= data.length + 10) break;
         }
 
@@ -114,7 +178,6 @@ export async function GET(request: NextRequest) {
                 }
             }
         })
-
     } catch (error: any) {
         console.error('Feed API error:', error)
         return NextResponse.json({
