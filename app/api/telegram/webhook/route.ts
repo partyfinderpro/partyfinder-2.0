@@ -26,18 +26,23 @@ async function sendTelegramMessage(chatId: string, text: string, parseMode = 'Ma
     }
 }
 
-async function handleCommand(chatId: string, command: string, userId: string) {
+async function handleCommand(chatId: string, command: string, userId: string, args: string[]) {
     switch (command) {
         case '/start':
+        case '/help':
             await sendTelegramMessage(
                 chatId,
-                `🎰 *VENUZ Bot V3 - Cerebro Híbrido*\n\nComandos disponibles:\n\n` +
-                `📊 /status - Estado completo del sistema\n` +
-                `📋 /tasks - Ver tareas pendientes\n` +
-                `📈 /stats - Métricas de la plataforma\n` +
-                `🔧 /optimize - Optimizar contenido bajo CTR\n` +
-                `🧹 /cleanup - Limpiar contenido duplicado\n` +
-                `🔄 /refresh - Actualizar estadísticas CTR\n\n` +
+                `🎰 *VENUZ Bot V3 - Las Vegas Strip*\n\n` +
+                `📊 /status — Estado del sistema\n` +
+                `📋 /tasks — Tareas pendientes\n` +
+                `📈 /stats — Métricas y CTR\n` +
+                `🔧 /optimize — Optimizar bajo CTR\n` +
+                `🧹 /cleanup — Limpiar duplicados\n` +
+                `🔄 /refresh — Actualizar estadísticas\n\n` +
+                `🕷 /scrape <url> [prioridad] — Scrapear sitio\n` +
+                `   Ej: /scrape https://candy.ai/es 9\n\n` +
+                `💰 /activar <dominio> <tu_id> — Activar afiliado\n` +
+                `   Ej: /activar candy.ai pv123\n\n` +
                 `Powered by Groq + Gemini 🧠`
             );
             break;
@@ -66,8 +71,69 @@ async function handleCommand(chatId: string, command: string, userId: string) {
             await handleRefreshCommand(chatId);
             break;
 
+        case '/scrape': {
+            const url = args[0];
+            const priority = parseInt(args[1] || '7', 10);
+            if (!url || !url.startsWith('http')) {
+                await sendTelegramMessage(chatId, '⚠️ Uso: `/scrape <url> [prioridad]`\nEj: `/scrape https://candy.ai/es 9`');
+                break;
+            }
+            await sendTelegramMessage(chatId, `🕷 Iniciando scrape de:\n\`${url}\`\nPrioridad: ${priority}\n\nEsto puede tomar ~30s...`);
+            try {
+                const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelbabel.com';
+                const res = await fetch(`${baseUrl}/api/cron/vegas-scrape?source_url=${encodeURIComponent(url)}&priority=${priority}`, {
+                    method: 'GET',
+                    headers: { Authorization: `Bearer ${process.env.CRON_SECRET || ''}` },
+                });
+                const data = await res.json();
+                await sendTelegramMessage(
+                    chatId,
+                    `✅ *Scrape Completado*\n\n` +
+                    `🌐 URL: ${url}\n` +
+                    `📦 Items encontrados: ${data.items ?? 0}\n` +
+                    `⏱ Tiempo: ${data.elapsed ?? '-'}\n` +
+                    (data.errors?.length ? `\n⚠️ Errores (${data.errors.length}):\n${data.errors.slice(0, 3).join('\n')}` : '')
+                );
+            } catch (err: any) {
+                await sendTelegramMessage(chatId, `❌ Error en scrape: ${err.message}`);
+            }
+            break;
+        }
+
+        case '/activar': {
+            const domain = args[0];
+            const affiliateId = args[1];
+            if (!domain || !affiliateId) {
+                await sendTelegramMessage(chatId, '⚠️ Uso: `/activar <dominio> <tu_id>`\nEj: `/activar candy.ai pv123`');
+                break;
+            }
+            try {
+                const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelbabel.com';
+                const res = await fetch(`${baseUrl}/api/affiliate/activate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${process.env.CRON_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || ''}`,
+                    },
+                    body: JSON.stringify({ domain, affiliate_id: affiliateId }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await sendTelegramMessage(
+                        chatId,
+                        `💰 *Afiliado Activado*\n\n🌐 ${domain}\n🆔 ID: \`${affiliateId}\`\n📦 Links actualizados: ${data.items_updated}\n\nDe ahora en adelante todos los links de este sitio llevarán tu ID. ✅`
+                    );
+                } else {
+                    await sendTelegramMessage(chatId, `❌ Error: ${data.error}`);
+                }
+            } catch (err: any) {
+                await sendTelegramMessage(chatId, `❌ Error activando afiliado: ${err.message}`);
+            }
+            break;
+        }
+
         default:
-            await sendTelegramMessage(chatId, `Comando no reconocido. Usa /start para ver comandos disponibles.`);
+            await sendTelegramMessage(chatId, `Comando no reconocido. Usa /help para ver comandos disponibles.`);
     }
 }
 
@@ -264,7 +330,10 @@ export async function POST(request: NextRequest) {
 
         // Manejar comandos
         if (text.startsWith('/')) {
-            await handleCommand(chatId, text.split(' ')[0], userId);
+            const parts = text.trim().split(/\s+/);
+            const command = parts[0].split('@')[0]; // strip bot username if present
+            const args = parts.slice(1);
+            await handleCommand(chatId, command, userId, args);
             return NextResponse.json({ ok: true });
         }
 
