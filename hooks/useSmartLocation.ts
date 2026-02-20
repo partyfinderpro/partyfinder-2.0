@@ -130,22 +130,45 @@ export function useSmartLocation() {
     };
 
     useEffect(() => {
-        // Intentar detectar al montar
+        // 🔑 CLAVE: Nunca pedimos GPS automáticamente al cargar la página.
+        // Solo restauramos datos guardados del localStorage (sesión anterior).
+        // El usuario puede activar GPS manualmente desde el selector de ciudad.
         const savedLat = localStorage.getItem('venuz_user_lat');
-        if (savedLat) {
-            // Si ya tenemos datos, no molestamos al usuario inmediatamente, usamos caché
-            const savedLng = localStorage.getItem('venuz_user_lng');
-            const savedCity = localStorage.getItem('venuz_user_city');
+        const savedLng = localStorage.getItem('venuz_user_lng');
+        const savedCity = localStorage.getItem('venuz_user_city');
+
+        if (savedLat && savedLng) {
+            // Restaurar ubicación guardada silenciosamente — sin popup
             setLocation({
-                city: savedCity || 'Todas',
+                city: savedCity || 'Puerto Vallarta',
                 lat: parseFloat(savedLat),
-                lng: parseFloat(savedLng!),
+                lng: parseFloat(savedLng),
+                error: null,
+                isLoading: false,
+                permissionDenied: false,
+            });
+        } else if (savedCity) {
+            // Tenemos ciudad manual, sin coords: usarla
+            const knownCity = DEFAULT_CITIES[savedCity as keyof typeof DEFAULT_CITIES];
+            setLocation({
+                city: savedCity,
+                lat: knownCity?.lat ?? null,
+                lng: knownCity?.lng ?? null,
                 error: null,
                 isLoading: false,
                 permissionDenied: false,
             });
         } else {
-            detectLocation();
+            // Sin datos previos: default silencioso a Puerto Vallarta (ciudad principal)
+            // SIN pedir permiso GPS — el usuario elige si quiere cambiar ciudad
+            setLocation({
+                city: 'Puerto Vallarta',
+                lat: DEFAULT_CITIES['Puerto Vallarta'].lat,
+                lng: DEFAULT_CITIES['Puerto Vallarta'].lng,
+                error: null,
+                isLoading: false,
+                permissionDenied: false,
+            });
         }
     }, []);
 

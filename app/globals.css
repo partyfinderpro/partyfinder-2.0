@@ -142,7 +142,8 @@
 
   ::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, #bf953f 0%, #aa771c 100%);
-    border: 2px solid #050505; /* Padding effect */
+    border: 2px solid #050505;
+    /* Padding effect */
     border-radius: 10px;
   }
 
@@ -232,4 +233,65 @@ main {
 .venuz-popup .leaflet-popup-close-button {
   color: white !important;
   padding: 10px !important;
+}
+
+/* ============================================
+   VENUZ - SCROLLBAR PREMIUM (Neon Glow)
+   ============================================ */
+
+/* Scrollbar global - más grueso con contraste neón */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(10, 10, 10, 0.8);
+  border-radius: 100px;
+  /* Halo sutil para que destaque sobre el fondo negro */
+  box-shadow: inset 0 0 6px rgba(247, 37, 133, 0.15);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #f72585 0%, #7b2cbf 60%, #240046 100%);
+  border-radius: 100px;
+  border: 1px solid rgba(247, 37, 133, 0.3);
+  /* Glow neón en el thumb */
+  box-shadow:
+    0 0 6px rgba(247, 37, 133, 0.6),
+    0 0 12px rgba(123, 44, 191, 0.4);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ff4da6 0%, #9b3de8 60%, #3d0070 100%);
+  box-shadow:
+    0 0 10px rgba(247, 37, 133, 0.9),
+    0 0 20px rgba(123, 44, 191, 0.6);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #f72585 rgba(10, 10, 10, 0.8);
+}
+
+/* Scrollbar para el feed principal en mobile */
+.feed-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.feed-scroll-container::-webkit-scrollbar-track {
+  background: rgba(5, 5, 5, 0.6);
+  border-radius: 100px;
+  margin: 8px 0;
+}
+
+.feed-scroll-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #f72585, #7b2cbf);
+  border-radius: 100px;
+  box-shadow: 0 0 8px rgba(247, 37, 133, 0.7);
 }

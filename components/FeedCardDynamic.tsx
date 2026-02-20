@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Heart, Share2, ExternalLink, MapPin, Sparkles, BadgeCheck, Eye, ThumbsDown } from 'lucide-react';
 import { useInteractions } from '@/hooks/useInteractions';
 import { useUserIntent } from '@/hooks/useUserIntent';
+import { notifyUserInteraction } from '@/components/PushNotificationPrompt';
 import type { ContentItem } from '@/hooks/useContent';
 
 // Import dinámico para evitar SSR issues con media players
@@ -131,6 +132,7 @@ export default function FeedCardDynamic({
         await toggleLike();
         if (!liked) { // Si estamos dando like ahora (estaba en false)
             await recordLike(item.id, pillar);
+            notifyUserInteraction(); // 🔔 Señal para el sistema de notificaciones
         }
     };
 

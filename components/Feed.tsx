@@ -292,7 +292,7 @@ export default function Feed({
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        {mixedFeed.map((item, index) => (
+                        {(mixedFeed as any[]).map((item: any, index: number) => (
                             <article
                                 key={item.id}
                                 data-index={index}
