@@ -82,7 +82,7 @@ export default function SidebarMenu({
                             <Sparkles className="w-4 h-4" />
                             {tNav('categories_title')}
                         </h3>
-                        <div className="space-y-1 max-h-[400px] overflow-y-auto scrollbar-thin pr-1">
+                        <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1">
                             <button
                                 onClick={() => onCategorySelect?.('')}
                                 className={`w-full text-left px-3 py-2 rounded-lg transition text-xs flex items-center gap-2 ${selectedCategory === ''
