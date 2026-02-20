@@ -1,11 +1,12 @@
 // components/FeedCardDynamic.tsx
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { cn } from "@/lib/utils";
 import { Heart, Share2, ExternalLink, MapPin, Sparkles, BadgeCheck, Eye, ThumbsDown } from 'lucide-react';
 import { useInteractions } from '@/hooks/useInteractions';
+import { useUserIntent } from '@/hooks/useUserIntent';
 import type { ContentItem } from '@/hooks/useContent';
 
 // Import dinámico para evitar SSR issues con media players
@@ -17,6 +18,8 @@ interface FeedCardDynamicProps {
     onClick?: (id: string) => void;
     onShare?: (id: string) => void;
     isActive?: boolean;
+    slotType?: 'standard' | 'hero_banner' | 'video_reel' | 'compact_grid';
+    neonEffect?: boolean;
 }
 
 // ── Función para determinar el tipo de card ──
@@ -101,9 +104,10 @@ export default function FeedCardDynamic({
     className = '',
     onClick,
     onShare,
-    isActive
+    isActive,
+    slotType = 'standard',
+    neonEffect = false
 }: FeedCardDynamicProps) {
-    // Hook de interacciones (Likes, Views, Shares)
     const {
         liked,
         disliked,
@@ -116,6 +120,26 @@ export default function FeedCardDynamic({
         initialLikes: item.likes || 0,
         initialViews: item.views || 0,
     });
+
+    // ✨ PASO 3: Inteligencia de Carretera (Highway Intent Tracking)
+    const { recordLike, recordView } = useUserIntent();
+
+    const pillar = (item as any).pillar || 'event'; // Default to event if not specified
+
+    // Sincronizar Likes con Highway
+    const handleToggleLike = async () => {
+        await toggleLike();
+        if (!liked) { // Si estamos dando like ahora (estaba en false)
+            await recordLike(item.id, pillar);
+        }
+    };
+
+    // Sincronizar Vistas con Highway
+    useEffect(() => {
+        if (isActive) {
+            recordView(item.id, pillar);
+        }
+    }, [isActive, item.id, pillar, recordView]);
 
     const variant = useMemo(() => getCardVariant(item), [item]);
 
@@ -132,8 +156,38 @@ export default function FeedCardDynamic({
     const isPremium = item.content_tier === 'premium' || item.is_premium;
     const isVerified = item.content_tier === 'verified' || item.is_verified;
 
+    // Extra data details for Vegas Strip
+    const vegasStyle = item.extra_data?.visual_style || item.visual_style || {};
+    const neonColor = neonEffect ? (vegasStyle.neonColor || '#ff0088') : null;
+
+    // Aspect ratio responsive según slot
+    const aspectClass = slotType === 'hero_banner'
+        ? 'aspect-[16/9] lg:aspect-[21/9]'
+        : slotType === 'video_reel'
+            ? 'aspect-[9/16]'
+            : 'aspect-[9/16]';
+
     return (
-        <div className={cn("relative w-full aspect-[9/16] bg-black rounded-2xl overflow-hidden shadow-2xl group", className)}>
+        <div
+            className={cn(
+                "relative w-full bg-black rounded-2xl overflow-hidden shadow-2xl group transition-all duration-500",
+                aspectClass,
+                neonEffect && "ring-1",
+                className
+            )}
+            style={{
+                boxShadow: neonEffect ? `0 0 25px ${neonColor}60, 0 0 50px ${neonColor}30, inset 0 0 10px ${neonColor}20` : undefined,
+                borderColor: neonEffect ? `${neonColor}` : undefined,
+                borderWidth: neonEffect ? '2px' : '0px',
+            }}
+        >
+            {/* Neon Border Bloom (Only if neonEffect) */}
+            {neonEffect && (
+                <div
+                    className="absolute inset-0 z-0 pointer-events-none opacity-30 blur-2xl animate-pulse"
+                    style={{ backgroundColor: neonColor }}
+                />
+            )}
             {/* Componente de Preview Dinámico (Video/Iframe/Imagen) */}
             <DynamicPreview
                 type={previewType}
@@ -176,7 +230,7 @@ export default function FeedCardDynamic({
             <div className="absolute right-4 bottom-24 flex flex-col gap-4 z-30 pointer-events-auto">
                 {/* Like Button */}
                 <button
-                    onClick={(e) => { e.stopPropagation(); toggleLike(); }}
+                    onClick={(e) => { e.stopPropagation(); handleToggleLike(); }}
                     className="group/btn flex flex-col items-center gap-1"
                 >
                     <div className={`p-3 rounded-full backdrop-blur-md transition-all duration-300 ${liked ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/40' : 'bg-black/40 text-white hover:bg-black/60'}`}>

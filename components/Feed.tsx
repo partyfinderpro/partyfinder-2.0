@@ -10,6 +10,8 @@ import { Loader2, MapPin, Flame, Sparkles, Heart } from "lucide-react";
 import AffiliateAdCard from '@/components/AffiliateAdCard';
 import type { ContentItem } from "@/hooks/useContent";
 import { type FilterOptions } from '@/components/AdvancedFiltersModal';
+import { curateVegasStrip } from "@/lib/highway/curator";
+import { cn } from "@/lib/utils";
 
 // Dynamic import for FeedCard to improve initial load
 const FeedCardDynamic = dynamic(() => import('@/components/FeedCardDynamic'), { ssr: false });
@@ -125,7 +127,10 @@ export default function Feed({
             }
         });
 
-        return mixed;
+        // 🔥 APLICAR CURACIÓN VEGAS STRIP: Slot types (hero, video) y Neon effects
+        // Extraemos solo lo que no es ad para curar, luego volvemos a insertar ads si fuera necesario,
+        // o curamos la lista final. En este caso curamos la lista final para que el ritmo visual incluya ads.
+        return curateVegasStrip(mixed as any);
     }, [filteredContent, affiliateAds]);
 
     // Intersection Observer
@@ -304,7 +309,12 @@ export default function Feed({
                                                 isActive={activeIndex === index}
                                                 onClick={() => onContentClick(item)}
                                                 onShare={onShare}
-                                                className="max-w-md mx-auto shadow-2xl hover:shadow-venuz-pink/20 transition-shadow duration-300"
+                                                slotType={item.slotType}
+                                                neonEffect={item.neonEffect}
+                                                className={cn(
+                                                    "max-w-md mx-auto shadow-2xl hover:shadow-venuz-pink/20 transition-shadow duration-300",
+                                                    item.slotType === 'hero_banner' && "max-w-4xl"
+                                                )}
                                             />
                                         </div>
                                         <div className="lg:hidden">
@@ -313,7 +323,12 @@ export default function Feed({
                                                 isActive={activeIndex === index}
                                                 onClick={() => onContentClick(item)}
                                                 onShare={onShare}
-                                                className="h-[calc(100vh-140px)] w-full rounded-xl"
+                                                slotType={item.slotType}
+                                                neonEffect={item.neonEffect}
+                                                className={cn(
+                                                    "h-[calc(100vh-140px)] w-full rounded-xl",
+                                                    item.slotType === 'hero_banner' && "aspect-video h-auto"
+                                                )}
                                             />
                                         </div>
                                     </>
