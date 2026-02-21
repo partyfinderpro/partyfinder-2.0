@@ -1,4 +1,4 @@
-import { supabaseAdmin as supabase } from '@/lib/supabase-admin';
+import { supabaseAdmin as supabase } from '../supabase-admin';
 // import { logger } from '@/lib/logger';
 const logger = console;
 

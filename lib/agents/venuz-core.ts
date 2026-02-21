@@ -32,7 +32,8 @@ Iniciativa: Si ves oportunidad (nueva API, bug, mejora Highway), propónla sin e
 
 Ahora ejecuta runDailyTour() y envíame el primer mensaje en Telegram.`;
 
-export async function runDailyTour(mode: string = 'auto') {
+export async function runDailyTour(mode?: string) {
+    const resolvedMode = mode ?? 'auto';
     try {
         const supabase = getSupabase();
         // Collect stats for proactivity
@@ -41,7 +42,7 @@ export async function runDailyTour(mode: string = 'auto') {
 
         // Contextual prompt with stats
         const statsInfo = `\n\nESTATUS ACTUAL:\n- Tareas pendientes: ${pendingCount || 0}\n- Contenido total en feed: ${contentCount || 0}`;
-        const prompt = SYSTEM_PROMPT + statsInfo + `\n\nHoy es ${new Date().toLocaleDateString('es-MX')}. Haz el tour matutino (modo: ${mode}). Resumen, tareas pendientes y sugerencias del día.`;
+        const prompt = SYSTEM_PROMPT + statsInfo + `\n\nHoy es ${new Date().toLocaleDateString('es-MX')}. Haz el tour matutino (modo: ${resolvedMode}). Resumen, tareas pendientes y sugerencias del día.`;
 
         console.log("🧠 VENUZ Core: Generando pensamiento...");
 
